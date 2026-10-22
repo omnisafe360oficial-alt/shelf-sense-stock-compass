@@ -95,11 +95,11 @@ export function vender(s: Estado, itens: ItemVenda[], caixa: string, minimos: Re
   for (const i of itens) {
     if (i.qtd <= 0) throw new Error("Quantidade inválida.");
     if ((gondola[i.produtoId] ?? 0) < i.qtd) throw new Error("Quantidade maior que a gôndola.");
-    gondola[i.produtoId] -= i.qtd;
+    gondola[i.produtoId] = (gondola[i.produtoId] ?? 0) - i.qtd;
   }
   const agora = new Date().toISOString().slice(0, 16);
   const novos: Mov[] = itens.map((i, n) => ({ id: `v${Date.now()}${n}`, data: agora, tipo: "venda", produtoId: i.produtoId, qtd: i.qtd, origem: "Gôndola", destino: `PDV · ${caixa}`, usuario: `Caixa · ${caixa}` }));
-  const repor = itens.filter((i) => gondola[i.produtoId] <= (minimos[i.produtoId] ?? 0) && (s.gondola[i.produtoId] ?? 0) > (minimos[i.produtoId] ?? 0)).map((i) => i.produtoId);
+  const repor = itens.filter((i) => (gondola[i.produtoId] ?? 0) <= (minimos[i.produtoId] ?? 0) && (s.gondola[i.produtoId] ?? 0) > (minimos[i.produtoId] ?? 0)).map((i) => i.produtoId);
   return { estado: { ...s, gondola, movs: [...novos, ...s.movs] }, repor };
 }
 
