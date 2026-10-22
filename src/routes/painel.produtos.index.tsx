@@ -44,7 +44,7 @@ function Produtos() {
           <p className="text-muted-foreground">{produtos.length} produtos cadastrados</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" disabled title="Etapa 5"><FileCode2 /> Importar XML</Button>
+          <Button asChild variant="outline" size="lg"><Link to="/painel/produtos/importar"><FileCode2 /> Importar XML</Link></Button>
           <Button asChild size="lg"><Link to="/painel/produtos/novo"><Plus /> Novo produto</Link></Button>
         </div>
       </div>
