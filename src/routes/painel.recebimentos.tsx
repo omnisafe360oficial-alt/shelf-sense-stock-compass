@@ -23,7 +23,7 @@ export const Route = createFileRoute("/painel/recebimentos")({
 });
 
 const rotulo = { aguardando: "Aguardando conferência", conferida: "Conferida", divergente: "Com divergência" } as const;
-const tom = { aguardando: "bg-warning/15 text-warning-foreground", conferida: "bg-success/15 text-success", divergente: "bg-destructive/10 text-destructive" } as const;
+const tom = { aguardando: "bg-warning/15 text-warning", conferida: "bg-success/15 text-success", divergente: "bg-destructive/10 text-destructive" } as const;
 
 function Recebimentos() {
   const op = useOperacao();
