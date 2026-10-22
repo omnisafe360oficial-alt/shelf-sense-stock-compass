@@ -1,24 +1,62 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AuthShell, Divider, GoogleButton } from "@/components/auth/AuthShell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Entrar — OmniSafe 360" },
+      { name: "description", content: "Acesse o painel OmniSafe 360 e controle o estoque do seu comércio." },
+      { property: "og:title", content: "Entrar — OmniSafe 360" },
+      { property: "og:description", content: "Acesse o painel OmniSafe 360 e controle o estoque do seu comércio." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Login,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const go = () => navigate({ to: "/configurar-loja" });
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <AuthShell>
+      <h2 className="text-3xl font-bold">Bem-vindo de volta</h2>
+      <p className="mt-2 text-muted-foreground">Entre para acessar o painel da sua loja.</p>
+      <div className="mt-8">
+        <GoogleButton label="Entrar com Google" onClick={go} />
+      </div>
+      <Divider />
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          go();
+        }}
+      >
+        <div className="space-y-2">
+          <Label htmlFor="email">E-mail</Label>
+          <Input id="email" type="email" required placeholder="voce@sualoja.com.br" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label htmlFor="password">Senha</Label>
+            <button type="button" className="text-sm font-medium text-primary hover:underline">Esqueci a senha</button>
+          </div>
+          <Input id="password" type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" />
+        </div>
+        <Button type="submit" className="h-11 w-full text-base font-semibold">Entrar</Button>
+      </form>
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Ainda não tem conta?{" "}
+        <Link to="/cadastro" className="font-semibold text-primary hover:underline">Criar conta grátis</Link>
+      </p>
+    </AuthShell>
   );
 }
