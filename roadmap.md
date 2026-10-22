@@ -10,6 +10,6 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 6. Estoque: Depósito, Gôndola, Movimentações
 - [x] 7. Validades por lote
 - [x] 8. PDV
-- [ ] 9. Reposição, Recebimentos, Inconsistências
+- [x] 9. Reposição, Recebimentos, Inconsistências
 - [ ] 10. Relatórios, Equipe, Configurações
 - [ ] 11. Dados reais (Lovable Cloud, login Google)
