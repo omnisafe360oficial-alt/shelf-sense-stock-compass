@@ -70,8 +70,8 @@ function Inicio() {
           </div>
           <div className="mt-6 flex h-52 items-end gap-3">
             {vendas.map((v, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-2">
-                <div className="w-full rounded-t-md bg-gradient-brand" style={{ height: `${v}%` }} />
+              <div key={i} className="flex h-full flex-1 flex-col items-center gap-2">
+                <div className="flex w-full flex-1 items-end"><div className="w-full rounded-t-md bg-gradient-brand" style={{ height: `${v}%` }} /></div>
                 <span className="text-[10px] text-muted-foreground">{8 + i}h</span>
               </div>
             ))}
