@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, Cross, IceCreamCone, Shirt, ShoppingCart, Store } from "lucide-react";
@@ -39,6 +39,7 @@ function maskDoc(v: string) {
 }
 
 function ConfigurarLoja() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [tipo, setTipo] = useState("");
   const [nome, setNome] = useState("");
@@ -50,7 +51,8 @@ function ConfigurarLoja() {
 
   const next = () => {
     if (step < 2) return setStep(step + 1);
-    toast.success(`Loja "${nome}" configurada! O painel chega na próxima etapa.`);
+    toast.success(`Loja "${nome}" configurada!`);
+    navigate({ to: "/painel" });
   };
 
   return (
