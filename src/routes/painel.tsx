@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import {
-  AlertTriangle, BarChart3, Bell, Boxes, CalendarClock, ClipboardCheck, LayoutDashboard,
+  AlertTriangle, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
   Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Truck, Users, Warehouse,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -68,4 +68,4 @@ function PainelLayout() {
   );
 }
 
-export { ClipboardCheck };
+
