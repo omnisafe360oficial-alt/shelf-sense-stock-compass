@@ -108,3 +108,23 @@ export function fecharVenda(itens: ItemVenda[], caixa: string, minimos: Record<s
   emitir(r.estado);
   return r.repor;
 }
+
+const agoraIso = () => new Date().toISOString().slice(0, 16);
+
+/** Entrada no depósito (recebimento) criando um lote novo. */
+export function registrarEntrada(produtoId: string, qtd: number, lote: string, validade: string, origem: string, usuario: string) {
+  if (qtd <= 0) return;
+  const novo: Lote = { id: `l${Date.now()}${produtoId}`, produtoId, lote, validade, qtd, local: "Doca de recebimento" };
+  const mov: Mov = { id: `e${Date.now()}${produtoId}`, data: agoraIso(), tipo: "entrada", produtoId, lote, qtd, origem, destino: "Depósito", usuario };
+  emitir({ ...estado, lotes: [...estado.lotes, novo], movs: [mov, ...estado.movs] });
+}
+
+/** Acerta a quantidade da gôndola para o que foi contado e registra o ajuste. */
+export function ajustarGondola(produtoId: string, contado: number, motivo: string) {
+  const atual = estado.gondola[produtoId] ?? 0;
+  if (atual === contado) return;
+  const mov: Mov = { id: `a${Date.now()}`, data: agoraIso(), tipo: "ajuste", produtoId, qtd: contado - atual, origem: "Gôndola", destino: motivo, usuario: "Maria Souza" };
+  emitir({ ...estado, gondola: { ...estado.gondola, [produtoId]: contado }, movs: [mov, ...estado.movs] });
+}
+
+export const estadoAtual = () => estado;
