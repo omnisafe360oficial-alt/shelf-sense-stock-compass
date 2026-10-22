@@ -13,3 +13,14 @@ describe("transferência depósito → gôndola", () => {
     expect(() => transferir(s, "3", 61)).toThrow();
   });
 });
+
+import { faixaValidade } from "./estoque-store";
+describe("faixas de validade", () => {
+  it("classifica por dias até vencer", () => {
+    expect(faixaValidade(-1)).toBe("vencido");
+    expect(faixaValidade(7)).toBe("7");
+    expect(faixaValidade(8)).toBe("15");
+    expect(faixaValidade(30)).toBe("30");
+    expect(faixaValidade(31)).toBe("ok");
+  });
+});

@@ -16,6 +16,8 @@ let estado: Estado = {
     { id: "l6", produtoId: "4", lote: "YP3320", validade: "2028-01-15", qtd: 300, local: "C4 · P3" },
     { id: "l7", produtoId: "5", lote: "L2310A", validade: "2026-10-23", qtd: 36, local: "Câmara fria" },
     { id: "l8", produtoId: "6", lote: "SD7781", validade: "2028-03-02", qtd: 72, local: "C1 · P4" },
+    { id: "l9", produtoId: "5", lote: "L2309C", validade: "2026-10-19", qtd: 8, local: "Câmara fria" },
+    { id: "l10", produtoId: "3", lote: "TJ0815", validade: "2026-11-04", qtd: 14, local: "C3 · P1" },
   ],
   gondola: Object.fromEntries(produtos.map((p) => [p.id, p.gondola])),
   movs: [
@@ -66,3 +68,20 @@ export function executarTransferencia(produtoId: string, qtd: number) {
 }
 
 export const diasAte = (iso: string, hoje = new Date("2026-10-22")) => Math.round((new Date(iso).getTime() - hoje.getTime()) / 86400000);
+
+export type Faixa = "vencido" | "7" | "15" | "30" | "ok";
+export function faixaValidade(dias: number): Faixa {
+  if (dias < 0) return "vencido";
+  if (dias <= 7) return "7";
+  if (dias <= 15) return "15";
+  if (dias <= 30) return "30";
+  return "ok";
+}
+
+/** Dá baixa no lote inteiro como perda (vencido/avariado) e registra no histórico. */
+export function registrarPerda(loteId: string, motivo: string) {
+  const l = estado.lotes.find((x) => x.id === loteId);
+  if (!l || l.qtd <= 0) return;
+  const mov: Mov = { id: `m${Date.now()}`, data: new Date().toISOString().slice(0, 16), tipo: "ajuste", produtoId: l.produtoId, lote: l.lote, qtd: -l.qtd, origem: "Depósito", destino: `Perda (${motivo})`, usuario: "Maria Souza" };
+  emitir({ ...estado, lotes: estado.lotes.map((x) => (x.id === loteId ? { ...x, qtd: 0 } : x)), movs: [mov, ...estado.movs] });
+}

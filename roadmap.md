@@ -8,7 +8,7 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 4. Fornecedores
 - [x] 5. Importação por XML
 - [x] 6. Estoque: Depósito, Gôndola, Movimentações
-- [ ] 7. Validades por lote
+- [x] 7. Validades por lote
 - [ ] 8. PDV
 - [ ] 9. Reposição, Recebimentos, Inconsistências
 - [ ] 10. Relatórios, Equipe, Configurações
