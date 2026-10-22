@@ -4,8 +4,8 @@ export type ItemNfe = {
   unidadeCompra: string;
   qtdCompra: number;
   custoUnitCompra: number;
-  lote?: string;
-  validade?: string;
+  lote?: string | undefined;
+  validade?: string | undefined;
 };
 export type Nfe = { numero: string; emissao: string; fornecedor: { nome: string; cnpj: string; cidade: string }; itens: ItemNfe[] };
 
