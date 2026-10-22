@@ -6,7 +6,7 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 2. Estrutura do painel + Início com indicadores
 - [x] 3. Produtos: lista + assistente de cadastro em etapas
 - [x] 4. Fornecedores
-- [ ] 5. Importação por XML
+- [x] 5. Importação por XML
 - [ ] 6. Estoque: Depósito, Gôndola, Movimentações
 - [ ] 7. Validades por lote
 - [ ] 8. PDV
