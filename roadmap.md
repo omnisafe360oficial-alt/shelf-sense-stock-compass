@@ -11,5 +11,5 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 7. Validades por lote
 - [x] 8. PDV
 - [x] 9. Reposição, Recebimentos, Inconsistências
-- [ ] 10. Relatórios, Equipe, Configurações
+- [x] 10. Relatórios, Equipe, Configurações
 - [ ] 11. Dados reais (Lovable Cloud, login Google)
