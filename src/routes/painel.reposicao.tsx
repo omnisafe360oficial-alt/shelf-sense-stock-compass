@@ -43,8 +43,8 @@ function Reposicao() {
 
   function confirmar(id: string, deposito: number) {
     const enc = Number(encontrado), rep = Number(reposto);
-    if (encontrado === "" || enc < 0 || rep < 0) return toast.error("Informe quanto encontrou na gôndola.");
-    if (rep > deposito) return toast.error(`O depósito só tem ${deposito}.`);
+    if (encontrado === "" || enc < 0 || rep < 0) { toast.error("Informe quanto encontrou na gôndola."); return; }
+    if (rep > deposito) { toast.error(`O depósito só tem ${deposito}.`); return; }
     const bateu = conferirReposicao(id, enc, rep, "Repositor · Pedro");
     if (bateu) toast.success("Contagem bateu. Gôndola reposta.");
     else toast.warning("Contagem não bateu com o sistema. Inconsistência aberta.");
