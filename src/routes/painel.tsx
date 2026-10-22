@@ -13,7 +13,7 @@ const grupos = [
   { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse, to: "/painel/deposito" as const }, { label: "Gôndola", icon: Boxes, to: "/painel/gondola" as const }, { label: "Movimentações", icon: ArrowRightLeft, to: "/painel/movimentacoes" as const }, { label: "Validades", icon: CalendarClock, to: "/painel/validades" as const }] },
   { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }] },
-  { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3 }, { label: "Equipe", icon: Users }, { label: "Configurações", icon: Settings }] },
+  { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3, to: "/painel/relatorios" as const }, { label: "Equipe", icon: Users, to: "/painel/equipe" as const }, { label: "Configurações", icon: Settings, to: "/painel/configuracoes" as const }] },
 ];
 
 function PainelLayout() {
@@ -28,15 +28,10 @@ function PainelLayout() {
               {g.itens.map((i) => {
                 const Icon = i.icon;
                 const base = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
-                return "to" in i && i.to ? (
+                return (
                   <Link key={i.label} to={i.to} activeOptions={{ exact: "exact" in i && !!i.exact }} className={base} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}>
                     <Icon className="h-4 w-4 text-sidebar-primary" /> {i.label}
                   </Link>
-                ) : (
-                  <span key={i.label} className={`${base} cursor-default text-sidebar-foreground/55`} title="Em breve">
-                    <Icon className="h-4 w-4" /> {i.label}
-                    <span className="ml-auto rounded bg-sidebar-accent px-1.5 py-0.5 text-[9px] uppercase">breve</span>
-                  </span>
                 );
               })}
             </div>
