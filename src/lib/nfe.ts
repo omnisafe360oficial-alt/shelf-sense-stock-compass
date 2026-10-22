@@ -44,7 +44,7 @@ export function lerNfe(xml: string): Nfe {
 /** Tenta descobrir quantas unidades vêm por embalagem pelo nome (ex.: "CX 12UN", "C/24", "PACK 6"). */
 export function sugerirConversao(nome: string, unidade: string): number {
   if (/^(UN|UND|UNID|KG|L|LT)$/i.test(unidade)) return 1;
-  const m = nome.match(/(?:C\/|CX\s*|PACK\s*|FD\s*|X\s*)(\d{1,3})\s*(?:UN)?/i) ?? nome.match(/(\d{1,3})\s*UN\b/i);
+  const m = nome.match(/(?:\bC\/|\bCX\s*|\bPACK\s*|\bFD\s*|\bPCT\s*)(\d{1,3})(?!\s*(?:G|KG|ML|L)\b)/i) ?? nome.match(/(\d{1,3})\s*UN\b/i);
   return m ? Number(m[1]) : 1;
 }
 
