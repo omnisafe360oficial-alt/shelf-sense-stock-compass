@@ -82,7 +82,7 @@ function Relatorios() {
           <h2 className="mb-3 font-display text-lg font-semibold">Produtos parados</h2>
           {parados.map((p) => (
             <div key={p.id} className="flex justify-between border-b py-2 text-sm last:border-0">
-              <span>{p.nome}</span><span className="text-warning">sem venda há {vendasMes[p.id].ultima} dias</span>
+              <span>{p.nome}</span><span className="text-warning">sem venda há {vendasMes[p.id]?.ultima} dias</span>
             </div>
           ))}
         </section>

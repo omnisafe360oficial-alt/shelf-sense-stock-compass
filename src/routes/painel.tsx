@@ -28,15 +28,10 @@ function PainelLayout() {
               {g.itens.map((i) => {
                 const Icon = i.icon;
                 const base = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
-                return "to" in i && i.to ? (
+                return (
                   <Link key={i.label} to={i.to} activeOptions={{ exact: "exact" in i && !!i.exact }} className={base} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}>
                     <Icon className="h-4 w-4 text-sidebar-primary" /> {i.label}
                   </Link>
-                ) : (
-                  <span key={i.label} className={`${base} cursor-default text-sidebar-foreground/55`} title="Em breve">
-                    <Icon className="h-4 w-4" /> {i.label}
-                    <span className="ml-auto rounded bg-sidebar-accent px-1.5 py-0.5 text-[9px] uppercase">breve</span>
-                  </span>
                 );
               })}
             </div>

@@ -41,7 +41,7 @@ function Equipe() {
   const [novo, setNovo] = useState({ nome: "", email: "", papel: "Caixa" as Papel });
 
   const convidar = () => {
-    if (!novo.nome || !novo.email.includes("@")) return toast.error("Preencha nome e e-mail.");
+    if (!novo.nome || !novo.email.includes("@")) { toast.error("Preencha nome e e-mail."); return; }
     setMembros((m) => [...m, { ...novo, ativo: true }]);
     setAberto(false);
     setNovo({ nome: "", email: "", papel: "Caixa" });
