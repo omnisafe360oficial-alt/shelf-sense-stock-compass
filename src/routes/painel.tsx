@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import {
-  AlertTriangle, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
+  AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
   Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Truck, Users, Warehouse,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/painel")({ component: PainelLayout });
 const grupos = [
   { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const, exact: true }] },
   { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
-  { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse }, { label: "Gôndola", icon: Boxes }, { label: "Validades", icon: CalendarClock }] },
+  { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse, to: "/painel/deposito" as const }, { label: "Gôndola", icon: Boxes, to: "/painel/gondola" as const }, { label: "Movimentações", icon: ArrowRightLeft, to: "/painel/movimentacoes" as const }, { label: "Validades", icon: CalendarClock }] },
   { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode }, { label: "Reposição", icon: RefreshCw }, { label: "Recebimentos", icon: PackageOpen }, { label: "Inconsistências", icon: AlertTriangle }] },
   { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3 }, { label: "Equipe", icon: Users }, { label: "Configurações", icon: Settings }] },
 ];

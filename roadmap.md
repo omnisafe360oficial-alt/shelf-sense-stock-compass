@@ -7,7 +7,7 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 3. Produtos: lista + assistente de cadastro em etapas
 - [x] 4. Fornecedores
 - [x] 5. Importação por XML
-- [ ] 6. Estoque: Depósito, Gôndola, Movimentações
+- [x] 6. Estoque: Depósito, Gôndola, Movimentações
 - [ ] 7. Validades por lote
 - [ ] 8. PDV
 - [ ] 9. Reposição, Recebimentos, Inconsistências
