@@ -10,7 +10,7 @@ describe("transferência depósito → gôndola", () => {
     expect(r.estado.gondola["2"]).toBe(76);
   });
   it("bloqueia mais do que tem no depósito", () => {
-    expect(() => transferir(s, "3", 61)).toThrow();
+    expect(() => transferir(s, "3", 75)).toThrow();
   });
 });
 
