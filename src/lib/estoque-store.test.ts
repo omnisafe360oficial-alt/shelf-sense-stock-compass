@@ -24,3 +24,16 @@ describe("faixas de validade", () => {
     expect(faixaValidade(31)).toBe("ok");
   });
 });
+
+import { vender } from "./estoque-store";
+describe("vender", () => {
+  const base = { lotes: [], gondola: { a: 15 }, movs: [] };
+  it("desconta da gôndola e avisa ao atingir o mínimo", () => {
+    const r = vender(base, [{ produtoId: "a", qtd: 5 }], "Caixa 1", { a: 10 });
+    expect(r.estado.gondola["a"]).toBe(10);
+    expect(r.repor).toEqual(["a"]);
+  });
+  it("não vende mais que a gôndola tem", () => {
+    expect(() => vender(base, [{ produtoId: "a", qtd: 16 }], "Caixa 1", { a: 10 })).toThrow();
+  });
+});

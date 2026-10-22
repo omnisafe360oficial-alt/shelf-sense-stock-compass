@@ -17,6 +17,7 @@ import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelDepositoRouteImport } from './routes/painel.deposito'
 import { Route as PainelGondolaRouteImport } from './routes/painel.gondola'
 import { Route as PainelMovimentacoesRouteImport } from './routes/painel.movimentacoes'
+import { Route as PainelPdvRouteImport } from './routes/painel.pdv'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as PainelFornecedoresIndexRouteImport } from './routes/painel.fornecedores.index'
 import { Route as PainelFornecedoresIdRouteImport } from './routes/painel.fornecedores.$id'
@@ -64,6 +65,11 @@ const PainelMovimentacoesRoute = PainelMovimentacoesRouteImport.update({
   path: '/movimentacoes',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelPdvRoute = PainelPdvRouteImport.update({
+  id: '/pdv',
+  path: '/pdv',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelValidadesRoute = PainelValidadesRouteImport.update({
   id: '/validades',
   path: '/validades',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
+  '/painel/pdv': typeof PainelPdvRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/painel/': typeof PainelIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
+  '/painel/pdv': typeof PainelPdvRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/painel': typeof PainelIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
+  '/painel/pdv': typeof PainelPdvRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/painel/': typeof PainelIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/gondola'
     | '/painel/movimentacoes'
+    | '/painel/pdv'
     | '/painel/validades'
     | '/painel/'
     | '/painel/fornecedores/$id'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/gondola'
     | '/painel/movimentacoes'
+    | '/painel/pdv'
     | '/painel/validades'
     | '/painel'
     | '/painel/fornecedores/$id'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/gondola'
     | '/painel/movimentacoes'
+    | '/painel/pdv'
     | '/painel/validades'
     | '/painel/'
     | '/painel/fornecedores/$id'
@@ -258,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelMovimentacoesRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/pdv': {
+      id: '/painel/pdv'
+      path: '/pdv'
+      fullPath: '/painel/pdv'
+      preLoaderRoute: typeof PainelPdvRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/validades': {
       id: '/painel/validades'
       path: '/validades'
@@ -307,6 +326,7 @@ interface PainelRouteChildren {
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelGondolaRoute: typeof PainelGondolaRoute
   PainelMovimentacoesRoute: typeof PainelMovimentacoesRoute
+  PainelPdvRoute: typeof PainelPdvRoute
   PainelValidadesRoute: typeof PainelValidadesRoute
   PainelIndexRoute: typeof PainelIndexRoute
   PainelFornecedoresIdRoute: typeof PainelFornecedoresIdRoute
@@ -320,6 +340,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelDepositoRoute: PainelDepositoRoute,
   PainelGondolaRoute: PainelGondolaRoute,
   PainelMovimentacoesRoute: PainelMovimentacoesRoute,
+  PainelPdvRoute: PainelPdvRoute,
   PainelValidadesRoute: PainelValidadesRoute,
   PainelIndexRoute: PainelIndexRoute,
   PainelFornecedoresIdRoute: PainelFornecedoresIdRoute,
