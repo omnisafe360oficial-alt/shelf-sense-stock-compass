@@ -11,11 +11,13 @@ export type Produto = {
   validade?: string;
 };
 
-export const fornecedores = [
-  { id: "f1", nome: "Unilever Brasil", cnpj: "61.068.276/0001-04" },
-  { id: "f2", nome: "Laticínios Serra Verde", cnpj: "12.345.678/0001-90" },
-  { id: "f3", nome: "Distribuidora Camil", cnpj: "64.904.295/0001-03" },
-  { id: "f4", nome: "Química Amparo (Ypê)", cnpj: "43.461.789/0001-90" },
+export type Fornecedor = { id: string; nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };
+
+export const fornecedores: Fornecedor[] = [
+  { id: "f1", nome: "Unilever Brasil", cnpj: "61.068.276/0001-04", contato: "Carlos Mendes", telefone: "(11) 3568-8000", email: "pedidos@unilever.com.br", cidade: "São Paulo · SP", prazo: "28 dias" },
+  { id: "f2", nome: "Laticínios Serra Verde", cnpj: "12.345.678/0001-90", contato: "Ana Ribeiro", telefone: "(35) 3221-4400", email: "vendas@serraverde.com.br", cidade: "Poços de Caldas · MG", prazo: "14 dias" },
+  { id: "f3", nome: "Distribuidora Camil", cnpj: "64.904.295/0001-03", contato: "Roberto Lima", telefone: "(11) 3039-9200", email: "comercial@camil.com.br", cidade: "São Paulo · SP", prazo: "21 dias" },
+  { id: "f4", nome: "Química Amparo (Ypê)", cnpj: "43.461.789/0001-90", contato: "Juliana Prado", telefone: "(19) 3808-8000", email: "atendimento@ype.ind.br", cidade: "Amparo · SP", prazo: "30 dias" },
 ];
 
 export const categorias = ["Higiene", "Laticínios", "Mercearia", "Limpeza", "Padaria", "Bebidas", "Frios"];

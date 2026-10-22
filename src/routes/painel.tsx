@@ -10,7 +10,7 @@ export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
 const grupos = [
   { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const, exact: true }] },
-  { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck }] },
+  { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse }, { label: "Gôndola", icon: Boxes }, { label: "Validades", icon: CalendarClock }] },
   { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode }, { label: "Reposição", icon: RefreshCw }, { label: "Recebimentos", icon: PackageOpen }, { label: "Inconsistências", icon: AlertTriangle }] },
   { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3 }, { label: "Equipe", icon: Users }, { label: "Configurações", icon: Settings }] },
