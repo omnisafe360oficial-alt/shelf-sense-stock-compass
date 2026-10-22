@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
 const grupos = [
-  { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const }] },
-  { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package }, { label: "Fornecedores", icon: Truck }] },
+  { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const, exact: true }] },
+  { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse }, { label: "Gôndola", icon: Boxes }, { label: "Validades", icon: CalendarClock }] },
   { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode }, { label: "Reposição", icon: RefreshCw }, { label: "Recebimentos", icon: PackageOpen }, { label: "Inconsistências", icon: AlertTriangle }] },
   { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3 }, { label: "Equipe", icon: Users }, { label: "Configurações", icon: Settings }] },
@@ -29,7 +29,7 @@ function PainelLayout() {
                 const Icon = i.icon;
                 const base = "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition";
                 return "to" in i && i.to ? (
-                  <Link key={i.label} to={i.to} activeOptions={{ exact: true }} className={base} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}>
+                  <Link key={i.label} to={i.to} activeOptions={{ exact: "exact" in i && !!i.exact }} className={base} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}>
                     <Icon className="h-4 w-4 text-sidebar-primary" /> {i.label}
                   </Link>
                 ) : (

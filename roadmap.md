@@ -4,7 +4,7 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 
 - [x] 1. Identidade + Login + Cadastro + Configurar loja (3 passos)
 - [x] 2. Estrutura do painel + Início com indicadores
-- [ ] 3. Produtos: lista + assistente de cadastro em etapas
+- [x] 3. Produtos: lista + assistente de cadastro em etapas
 - [ ] 4. Fornecedores
 - [ ] 5. Importação por XML
 - [ ] 6. Estoque: Depósito, Gôndola, Movimentações
