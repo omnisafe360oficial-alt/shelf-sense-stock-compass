@@ -10,6 +10,17 @@ describe("transferência depósito → gôndola", () => {
     expect(r.estado.gondola["2"]).toBe(76);
   });
   it("bloqueia mais do que tem no depósito", () => {
-    expect(() => transferir(s, "3", 61)).toThrow();
+    expect(() => transferir(s, "3", 75)).toThrow();
+  });
+});
+
+import { faixaValidade } from "./estoque-store";
+describe("faixas de validade", () => {
+  it("classifica por dias até vencer", () => {
+    expect(faixaValidade(-1)).toBe("vencido");
+    expect(faixaValidade(7)).toBe("7");
+    expect(faixaValidade(8)).toBe("15");
+    expect(faixaValidade(30)).toBe("30");
+    expect(faixaValidade(31)).toBe("ok");
   });
 });
