@@ -100,7 +100,7 @@ function NovoProduto() {
 
         <div className="rounded-2xl border bg-card p-8">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">Passo {step + 1} de {passos.length}</p>
-          <h2 className="mb-6 mt-1 text-2xl font-bold">{passos[step].t}</h2>
+          <h2 className="mb-6 mt-1 text-2xl font-bold">{passos[step]?.t}</h2>
 
           {step === 0 && (
             <div className="grid gap-5 sm:grid-cols-2">
