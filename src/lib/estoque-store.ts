@@ -85,3 +85,26 @@ export function registrarPerda(loteId: string, motivo: string) {
   const mov: Mov = { id: `m${Date.now()}`, data: new Date().toISOString().slice(0, 16), tipo: "ajuste", produtoId: l.produtoId, lote: l.lote, qtd: -l.qtd, origem: "Depósito", destino: `Perda (${motivo})`, usuario: "Maria Souza" };
   emitir({ ...estado, lotes: estado.lotes.map((x) => (x.id === loteId ? { ...x, qtd: 0 } : x)), movs: [mov, ...estado.movs] });
 }
+
+export type ItemVenda = { produtoId: string; qtd: number };
+
+/** Fecha a venda: desconta da gôndola e registra no histórico. Retorna produtos que chegaram ao mínimo. */
+export function vender(s: Estado, itens: ItemVenda[], caixa: string, minimos: Record<string, number>): { estado: Estado; repor: string[] } {
+  if (!itens.length) throw new Error("Nenhum item na venda.");
+  const gondola = { ...s.gondola };
+  for (const i of itens) {
+    if (i.qtd <= 0) throw new Error("Quantidade inválida.");
+    if ((gondola[i.produtoId] ?? 0) < i.qtd) throw new Error("Quantidade maior que a gôndola.");
+    gondola[i.produtoId] -= i.qtd;
+  }
+  const agora = new Date().toISOString().slice(0, 16);
+  const novos: Mov[] = itens.map((i, n) => ({ id: `v${Date.now()}${n}`, data: agora, tipo: "venda", produtoId: i.produtoId, qtd: i.qtd, origem: "Gôndola", destino: `PDV · ${caixa}`, usuario: `Caixa · ${caixa}` }));
+  const repor = itens.filter((i) => gondola[i.produtoId] <= (minimos[i.produtoId] ?? 0) && (s.gondola[i.produtoId] ?? 0) > (minimos[i.produtoId] ?? 0)).map((i) => i.produtoId);
+  return { estado: { ...s, gondola, movs: [...novos, ...s.movs] }, repor };
+}
+
+export function fecharVenda(itens: ItemVenda[], caixa: string, minimos: Record<string, number>) {
+  const r = vender(estado, itens, caixa, minimos);
+  emitir(r.estado);
+  return r.repor;
+}
