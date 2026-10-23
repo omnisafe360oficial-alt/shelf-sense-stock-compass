@@ -20,3 +20,8 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
   notificar();
   return id;
 }
+
+export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): void {
+  estado = estado.map((p) => (p.id === id ? { ...p, ...dados } : p));
+  notificar();
+}

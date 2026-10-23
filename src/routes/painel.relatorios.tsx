@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, PackageX, TrendingDown, Trophy } from "lucide-react";
 import { brl } from "@/lib/mock-data";
 import { useEstoque, type Mov } from "@/lib/estoque-store";
-import { diasSemVenda, vendasPorProduto } from "@/lib/computed";
+import { HOJE, diasSemVenda, vendasPorProduto } from "@/lib/computed";
 import { useProdutos, getProdutos } from "@/lib/produtos-store";
 
 export const Route = createFileRoute("/painel/relatorios")({
@@ -48,7 +48,7 @@ function Relatorios() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Relatórios</h1>
-        <p className="text-sm text-muted-foreground">Outubro de 2026 · o que mais vende, o que está parado e o que se perdeu.</p>
+        <p className="text-sm text-muted-foreground">{new Date(HOJE).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })} · o que mais vende, o que está parado e o que se perdeu.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {[

@@ -108,7 +108,12 @@ function Produtos() {
               const b = badge[sit];
               return (
                 <tr key={p.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-3"><p className="font-semibold">{p.nome}</p><p className="font-mono text-xs text-muted-foreground">{p.codigo} · {p.categoria}</p></td>
+                  <td className="px-4 py-3">
+                    <Link to="/painel/produtos/$id" params={{ id: p.id }} className="group">
+                      <p className="font-semibold group-hover:text-primary">{p.nome}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{p.codigo} · {p.categoria}</p>
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.fornecedor}</td>
                   <td className="px-4 py-3 text-right font-medium">{brl(p.preco)}</td>
                   <td className="px-4 py-3 text-right">{dep}</td>
