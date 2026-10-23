@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
-  Menu, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Truck, Users, Warehouse, X,
+  Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Sun, Truck, Users, Warehouse, X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { abaixoDoMinimo, lotesVencendo } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
+import { useTema, alternarTema } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
@@ -31,6 +32,7 @@ function PainelLayout() {
   const config = useConfig();
   const equipe = useEquipe();
   const dono = equipe[0];
+  const tema = useTema();
 
   // --- Sidebar mobile ---
   const [sidebarAberto, setSidebarAberto] = useState(false);
@@ -140,8 +142,17 @@ function PainelLayout() {
             )}
           </div>
 
+          {/* Tema */}
+          <button
+            className="ml-auto rounded-lg p-2 hover:bg-muted"
+            aria-label={tema === "escuro" ? "Modo claro" : "Modo escuro"}
+            onClick={alternarTema}
+          >
+            {tema === "escuro" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+
           {/* Notificações */}
-          <div ref={notifRef} className="relative ml-auto">
+          <div ref={notifRef} className="relative">
             <button
               className="relative rounded-lg p-2 hover:bg-muted"
               aria-label="Notificações"
