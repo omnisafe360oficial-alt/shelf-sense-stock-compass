@@ -1,12 +1,13 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Mail, MapPin, Phone, User } from "lucide-react";
-import { brl, fornecedores, situacao } from "@/lib/mock-data";
+import { brl, situacao } from "@/lib/mock-data";
+import { getFornecedores } from "@/lib/fornecedores-store";
 import { getProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/fornecedores/$id")({
   loader: ({ params }) => {
-    const f = fornecedores.find((x) => x.id === params.id);
+    const f = getFornecedores().find((x) => x.id === params.id);
     if (!f) throw notFound();
     return f;
   },

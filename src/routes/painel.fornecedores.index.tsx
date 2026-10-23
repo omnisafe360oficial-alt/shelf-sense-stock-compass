@@ -5,7 +5,7 @@ import { Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fornecedores } from "@/lib/mock-data";
+import { useFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 
 export const Route = createFileRoute("/painel/fornecedores/")({
@@ -22,10 +22,15 @@ export const Route = createFileRoute("/painel/fornecedores/")({
   component: Fornecedores,
 });
 
+const FORM_VAZIO = { nome: "", cnpj: "", contato: "", telefone: "", email: "", cidade: "", prazo: "" };
+
 function Fornecedores() {
+  const fornecedores = useFornecedores();
   const produtos = useProdutos();
   const [q, setQ] = useState("");
   const [novo, setNovo] = useState(false);
+  const [form, setForm] = useState(FORM_VAZIO);
+  const sf = (k: keyof typeof FORM_VAZIO) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const lista = fornecedores.filter((f) => f.nome.toLowerCase().includes(q.toLowerCase()) || f.cnpj.includes(q));
 
   return (
@@ -35,7 +40,7 @@ function Fornecedores() {
           <h1 className="text-3xl font-bold">Fornecedores</h1>
           <p className="text-muted-foreground">{fornecedores.length} fornecedores cadastrados</p>
         </div>
-        <Button size="lg" onClick={() => setNovo(true)}><Plus /> Novo fornecedor</Button>
+        <Button size="lg" onClick={() => { setForm(FORM_VAZIO); setNovo(true); }}><Plus /> Novo fornecedor</Button>
       </div>
 
       <div className="relative max-w-md">
@@ -73,22 +78,27 @@ function Fornecedores() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4" onClick={() => setNovo(false)}>
           <form
             onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => { e.preventDefault(); setNovo(false); toast.success("Fornecedor cadastrado!"); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              cadastrarFornecedor(form);
+              setNovo(false);
+              toast.success(`Fornecedor "${form.nome}" cadastrado!`);
+            }}
             className="w-full max-w-lg space-y-4 rounded-2xl bg-card p-8 shadow-elegant"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Novo fornecedor</h2>
               <button type="button" onClick={() => setNovo(false)} aria-label="Fechar"><X className="h-5 w-5" /></button>
             </div>
-            <div className="space-y-2"><Label>Nome / razão social</Label><Input required /></div>
+            <div className="space-y-2"><Label>Nome / razão social</Label><Input required value={form.nome} onChange={sf("nome")} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>CNPJ</Label><Input required /></div>
-              <div className="space-y-2"><Label>Telefone</Label><Input /></div>
+              <div className="space-y-2"><Label>CNPJ</Label><Input required value={form.cnpj} onChange={sf("cnpj")} /></div>
+              <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} onChange={sf("telefone")} /></div>
             </div>
-            <div className="space-y-2"><Label>E-mail</Label><Input type="email" /></div>
+            <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={form.email} onChange={sf("email")} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Cidade</Label><Input /></div>
-              <div className="space-y-2"><Label>Prazo de pagamento</Label><Input placeholder="28 dias" /></div>
+              <div className="space-y-2"><Label>Cidade</Label><Input value={form.cidade} onChange={sf("cidade")} /></div>
+              <div className="space-y-2"><Label>Prazo de pagamento</Label><Input placeholder="28 dias" value={form.prazo} onChange={sf("prazo")} /></div>
             </div>
             <Button type="submit" className="h-11 w-full">Salvar fornecedor</Button>
           </form>
