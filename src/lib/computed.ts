@@ -1,5 +1,6 @@
 import { diasAte, faixaValidade, type Faixa, type Lote, type Mov } from "./estoque-store";
-import { produtos, type Produto } from "./mock-data";
+import { getProdutos } from "./produtos-store";
+import { type Produto } from "./mock-data";
 
 export const HOJE = "2026-10-22";
 const ONTEM = "2026-10-21";
@@ -26,13 +27,13 @@ export function diasSemVenda(ultimaData: string | null): number {
 export function vendasHoje(movs: Mov[]): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.startsWith(HOJE))
-    .reduce((s, m) => s + m.qtd * (produtos.find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 export function vendasOntem(movs: Mov[]): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.startsWith(ONTEM))
-    .reduce((s, m) => s + m.qtd * (produtos.find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 /** Retorna array de 12 valores (R$) para as horas 8h–19h do dia de hoje. */
@@ -43,14 +44,14 @@ export function vendasPorHora(movs: Mov[]): number[] {
     const h = parseInt(m.data.slice(11, 13), 10);
     const idx = h - 8;
     if (idx >= 0 && idx < 12) {
-      hours[idx] += m.qtd * (produtos.find((p) => p.id === m.produtoId)?.preco ?? 0);
+      hours[idx] += m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0);
     }
   }
   return hours;
 }
 
 export function abaixoDoMinimo(gondola: Record<string, number>): Produto[] {
-  return produtos
+  return getProdutos()
     .filter((p) => (gondola[p.id] ?? 0) <= p.minimo)
     .sort((a, b) => (gondola[a.id] ?? 0) / a.minimo - (gondola[b.id] ?? 0) / b.minimo);
 }
@@ -62,7 +63,7 @@ export function lotesVencendo(lotes: Lote[], limiar: 7 | 15 | 30 = 15): LoteInfo
     .filter((l) => l.qtd > 0)
     .map((l) => {
       const dias = diasAte(l.validade);
-      const produto = produtos.find((p) => p.id === l.produtoId)!;
+      const produto = getProdutos().find((p) => p.id === l.produtoId)!;
       return { ...l, produto, dias, faixa: faixaValidade(dias) };
     })
     .filter((l) => l.dias <= limiar)

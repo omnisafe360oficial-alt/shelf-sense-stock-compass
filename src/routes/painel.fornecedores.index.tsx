@@ -5,7 +5,8 @@ import { Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fornecedores, produtos } from "@/lib/mock-data";
+import { fornecedores } from "@/lib/mock-data";
+import { useProdutos } from "@/lib/produtos-store";
 
 export const Route = createFileRoute("/painel/fornecedores/")({
   head: () => ({
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/painel/fornecedores/")({
 });
 
 function Fornecedores() {
+  const produtos = useProdutos();
   const [q, setQ] = useState("");
   const [novo, setNovo] = useState(false);
   const lista = fornecedores.filter((f) => f.nome.toLowerCase().includes(q.toLowerCase()) || f.cnpj.includes(q));

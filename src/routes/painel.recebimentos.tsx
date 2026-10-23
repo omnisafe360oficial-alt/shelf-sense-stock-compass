@@ -4,8 +4,8 @@ import { EyeOff, PackageOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { produtos } from "@/lib/mock-data";
 import { conferirNota, emUnidades, useOperacao } from "@/lib/operacao-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/recebimentos")({
@@ -27,6 +27,7 @@ const tom = { aguardando: "bg-warning/15 text-warning", conferida: "bg-success/1
 
 function Recebimentos() {
   const op = useOperacao();
+  const produtos = useProdutos();
   const [sel, setSel] = useState<string | null>(null);
   const [cont, setCont] = useState<Record<string, { emb: string; un: string }>>({});
   const nota = op.notas.find((n) => n.id === sel);

@@ -4,8 +4,9 @@ import { BellRing, Minus, Plus, ScanBarcode, Trash2, CheckCircle2 } from "lucide
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { produtos, brl } from "@/lib/mock-data";
+import { brl } from "@/lib/mock-data";
 import { fecharVenda, useEstoque } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/pdv")({
@@ -24,10 +25,11 @@ export const Route = createFileRoute("/painel/pdv")({
 
 type Linha = { produtoId: string; qtd: number };
 const pagamentos = ["Dinheiro", "Pix", "Débito", "Crédito"] as const;
-const minimos = Object.fromEntries(produtos.map((p) => [p.id, p.minimo]));
 
 function Pdv() {
   const s = useEstoque();
+  const produtos = useProdutos();
+  const minimos = useMemo(() => Object.fromEntries(produtos.map((p) => [p.id, p.minimo])), [produtos]);
   const [codigo, setCodigo] = useState("");
   const [itens, setItens] = useState<Linha[]>([]);
   const [pag, setPag] = useState<(typeof pagamentos)[number]>("Pix");

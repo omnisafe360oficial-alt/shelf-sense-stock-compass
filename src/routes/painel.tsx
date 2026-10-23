@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
 import { abaixoDoMinimo, lotesVencendo } from "@/lib/computed";
-import { produtos } from "@/lib/mock-data";
+import { useProdutos } from "@/lib/produtos-store";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -24,6 +24,7 @@ const grupos = [
 function PainelLayout() {
   const est = useEstoque();
   const op = useOperacao();
+  const produtos = useProdutos();
 
   // --- Busca global ---
   const [busca, setBusca] = useState("");

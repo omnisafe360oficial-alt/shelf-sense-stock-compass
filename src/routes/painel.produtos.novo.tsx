@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { brl, categorias, fornecedores } from "@/lib/mock-data";
+import { cadastrarProduto } from "@/lib/produtos-store";
+import { inicializarProduto, registrarEntrada, executarTransferencia } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/produtos/novo")({
@@ -75,6 +77,32 @@ function NovoProduto() {
 
   const avancar = () => {
     if (step < passos.length - 1) return setStep(step + 1);
+
+    const qtdDep = num(f.qtdDeposito);
+    const qtdGond = num(f.qtdGondola);
+    const total = qtdDep + qtdGond;
+
+    const id = cadastrarProduto({
+      nome: f.nome.trim(),
+      codigo: f.codigo,
+      categoria: f.categoria,
+      fornecedor: fornecedorNome ?? "",
+      preco: venda,
+      deposito: 0,
+      gondola: 0,
+      minimo: num(f.minimo),
+      validade: f.validade || undefined,
+    });
+
+    inicializarProduto(id);
+
+    if (total > 0 && f.lote && f.validade) {
+      registrarEntrada(id, total, f.lote, f.validade, "Cadastro inicial", "Maria Souza");
+      if (qtdGond > 0) {
+        try { executarTransferencia(id, Math.min(qtdGond, total)); } catch { /* depósito insuficiente */ }
+      }
+    }
+
     toast.success(`"${f.nome}" cadastrado com sucesso!`);
     navigate({ to: "/painel/produtos" });
   };

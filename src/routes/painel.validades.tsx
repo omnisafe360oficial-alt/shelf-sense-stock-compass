@@ -3,7 +3,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BadgePercent, CalendarClock, CalendarX, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { brl, produtos } from "@/lib/mock-data";
+import { brl } from "@/lib/mock-data";
+import { useProdutos } from "@/lib/produtos-store";
 import { diasAte, faixaValidade, registrarPerda, useEstoque, type Faixa } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ const faixas: { id: Faixa; t: string; c: string; ring: string }[] = [
 
 function Validades() {
   const s = useEstoque();
+  const produtos = useProdutos();
   const [sel, setSel] = useState<Faixa | "todas">("todas");
   const lotes = s.lotes
     .filter((l) => l.qtd > 0)

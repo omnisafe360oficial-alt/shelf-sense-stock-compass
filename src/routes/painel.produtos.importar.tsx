@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brl, fornecedores, produtos } from "@/lib/mock-data";
+import { brl, fornecedores } from "@/lib/mock-data";
+import { getProdutos } from "@/lib/produtos-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,7 @@ function Importar() {
       setLinhas(n.itens.map((i) => {
         const conv = sugerirConversao(i.nome, i.unidadeCompra);
         const custoUnit = i.custoUnitCompra / conv;
-        const ex = produtos.find((p) => p.codigo === i.codigo);
+        const ex = getProdutos().find((p) => p.codigo === i.codigo);
         return {
           codigo: i.codigo, nome: ex?.nome ?? i.nome, existente: !!ex, unidadeCompra: i.unidadeCompra, qtdCompra: i.qtdCompra,
           porEmbalagem: conv, custoUnit, venda: ex ? ex.preco.toFixed(2) : (custoUnit * 1.45).toFixed(2),

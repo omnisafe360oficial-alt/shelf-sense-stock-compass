@@ -3,12 +3,12 @@ import { toast } from "sonner";
 import { ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { produtos } from "@/lib/mock-data";
+import { getProdutos } from "@/lib/produtos-store";
 import { executarTransferencia, lotesFefo, useEstoque } from "@/lib/estoque-store";
 
 export function TransferirDialog({ produtoId, onClose }: { produtoId: string; onClose: () => void }) {
   const s = useEstoque();
-  const p = produtos.find((x) => x.id === produtoId)!;
+  const p = getProdutos().find((x) => x.id === produtoId)!;
   const lotes = lotesFefo(s, produtoId);
   const disp = lotes.reduce((t, l) => t + l.qtd, 0);
   const atual = s.gondola[produtoId] ?? 0;
