@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { FileCode2, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brl, categorias, produtos, situacao } from "@/lib/mock-data";
+import { brl, categorias, produtos } from "@/lib/mock-data";
+import { useEstoque } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/produtos/")({
@@ -26,15 +27,36 @@ const badge = {
   sem: { t: "Sem estoque", c: "bg-destructive/10 text-destructive" },
 };
 
+function situacaoViva(dep: number, gond: number, min: number): "ok" | "baixo" | "sem" {
+  if (dep + gond === 0 || (dep === 0 && gond < min)) return "sem";
+  if (gond <= min) return "baixo";
+  return "ok";
+}
+
 function Produtos() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
+  const est = useEstoque();
+
+  const livePorProduto = useMemo(() => {
+    const map: Record<string, { dep: number; gond: number }> = {};
+    for (const p of produtos) {
+      const dep = est.lotes.filter((l) => l.produtoId === p.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
+      map[p.id] = { dep, gond: est.gondola[p.id] ?? 0 };
+    }
+    return map;
+  }, [est.lotes, est.gondola]);
+
   const lista = useMemo(
     () => produtos.filter((p) => (cat === "Todas" || p.categoria === cat) && (p.nome.toLowerCase().includes(q.toLowerCase()) || p.codigo.includes(q))),
     [q, cat],
   );
+
   const cont = { ok: 0, baixo: 0, sem: 0 };
-  produtos.forEach((p) => cont[situacao(p)]++);
+  produtos.forEach((p) => {
+    const { dep, gond } = livePorProduto[p.id] ?? { dep: 0, gond: 0 };
+    cont[situacaoViva(dep, gond, p.minimo)]++;
+  });
 
   return (
     <div className="space-y-6">
@@ -79,15 +101,17 @@ function Produtos() {
           </thead>
           <tbody className="divide-y">
             {lista.map((p) => {
-              const s = badge[situacao(p)];
+              const { dep, gond } = livePorProduto[p.id] ?? { dep: 0, gond: 0 };
+              const sit = situacaoViva(dep, gond, p.minimo);
+              const b = badge[sit];
               return (
                 <tr key={p.id} className="hover:bg-muted/40">
                   <td className="px-4 py-3"><p className="font-semibold">{p.nome}</p><p className="font-mono text-xs text-muted-foreground">{p.codigo} · {p.categoria}</p></td>
                   <td className="px-4 py-3 text-muted-foreground">{p.fornecedor}</td>
                   <td className="px-4 py-3 text-right font-medium">{brl(p.preco)}</td>
-                  <td className="px-4 py-3 text-right">{p.deposito}</td>
-                  <td className="px-4 py-3 text-right">{p.gondola} / {p.minimo}</td>
-                  <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", s.c)}>{s.t}</span></td>
+                  <td className="px-4 py-3 text-right">{dep}</td>
+                  <td className="px-4 py-3 text-right">{gond} / {p.minimo}</td>
+                  <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", b.c)}>{b.t}</span></td>
                 </tr>
               );
             })}

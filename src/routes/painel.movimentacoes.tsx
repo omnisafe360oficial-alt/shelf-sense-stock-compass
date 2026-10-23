@@ -29,7 +29,9 @@ const tipos: Record<Mov["tipo"], { l: string; icon: typeof ShoppingCart; c: stri
 function Movimentacoes() {
   const s = useEstoque();
   const [tipo, setTipo] = useState<Mov["tipo"] | "todos">("todos");
-  const lista = s.movs.filter((m) => tipo === "todos" || m.tipo === tipo);
+  const lista = [...s.movs]
+    .filter((m) => tipo === "todos" || m.tipo === tipo)
+    .sort((a, b) => b.data.localeCompare(a.data));
   return (
     <div className="space-y-6">
       <div><h1 className="text-3xl font-bold">Movimentações</h1><p className="text-muted-foreground">Tudo que entrou, mudou de lugar ou saiu do estoque</p></div>
@@ -50,7 +52,7 @@ function Movimentacoes() {
               const t = tipos[m.tipo]; const Icon = t.icon;
               return (
                 <tr key={m.id}>
-                  <td className="px-4 py-3 text-muted-foreground">{m.data.slice(11, 16)} · {m.data.slice(8, 10)}/{m.data.slice(5, 7)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{m.data.slice(8, 10)}/{m.data.slice(5, 7)} · {m.data.slice(11, 16)}</td>
                   <td className="px-4 py-3"><span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", t.c)}><Icon className="h-3 w-3" />{t.l}</span></td>
                   <td className="px-4 py-3"><p className="font-medium">{produtos.find((p) => p.id === m.produtoId)?.nome}</p>{m.lote && <p className="font-mono text-xs text-muted-foreground">Lote {m.lote}</p>}</td>
                   <td className="px-4 py-3 text-muted-foreground">{m.origem} → {m.destino}</td>
