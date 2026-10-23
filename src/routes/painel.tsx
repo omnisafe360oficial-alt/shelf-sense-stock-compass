@@ -10,6 +10,8 @@ import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
 import { abaixoDoMinimo, lotesVencendo } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
+import { useConfig } from "@/lib/config-store";
+import { useEquipe } from "@/lib/equipe-store";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -25,6 +27,9 @@ function PainelLayout() {
   const est = useEstoque();
   const op = useOperacao();
   const produtos = useProdutos();
+  const config = useConfig();
+  const equipe = useEquipe();
+  const dono = equipe[0];
 
   // --- Busca global ---
   const [busca, setBusca] = useState("");
@@ -42,7 +47,7 @@ function PainelLayout() {
   const notifRef = useRef<HTMLDivElement>(null);
 
   const abaixo = abaixoDoMinimo(est.gondola);
-  const vencendo7 = lotesVencendo(est.lotes, 7);
+  const vencendo7 = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
   const inconsAbertas = op.inconsistencias.filter((i) => i.status === "aberta");
   const totalAlertas = abaixo.length + vencendo7.length + inconsAbertas.length;
 
@@ -75,8 +80,8 @@ function PainelLayout() {
           ))}
         </nav>
         <div className="border-t border-sidebar-border p-4 text-sm">
-          <p className="font-semibold text-sidebar-accent-foreground">Mercado Bom Preço</p>
-          <p className="text-xs text-sidebar-foreground/55">Campinas · SP</p>
+          <p className="font-semibold text-sidebar-accent-foreground">{config.nomeLoja}</p>
+          <p className="text-xs text-sidebar-foreground/55">{config.cidade} · {config.uf}</p>
         </div>
       </aside>
 
@@ -98,7 +103,8 @@ function PainelLayout() {
                 {resultados.map((p) => (
                   <Link
                     key={p.id}
-                    to="/painel/produtos"
+                    to="/painel/produtos/$id"
+                    params={{ id: p.id }}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-muted"
                     onClick={() => setBusca("")}
                   >
@@ -195,11 +201,11 @@ function PainelLayout() {
           {/* Usuário */}
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-primary-foreground">
-              MS
+              {(dono?.nome ?? "MS").split(" ").map((n) => n[0]).slice(0, 2).join("")}
             </span>
             <div className="text-sm leading-tight">
-              <p className="font-semibold">Maria Souza</p>
-              <p className="text-xs text-muted-foreground">Proprietária</p>
+              <p className="font-semibold">{dono?.nome ?? "Usuário"}</p>
+              <p className="text-xs text-muted-foreground">{dono?.papel ?? "Proprietário"}</p>
             </div>
           </div>
         </header>

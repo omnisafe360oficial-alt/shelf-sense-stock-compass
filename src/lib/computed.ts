@@ -58,7 +58,7 @@ export function abaixoDoMinimo(gondola: Record<string, number>): Produto[] {
 
 export type LoteInfo = Lote & { produto: Produto; dias: number; faixa: Faixa };
 
-export function lotesVencendo(lotes: Lote[], limiar: 7 | 15 | 30 = 15): LoteInfo[] {
+export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {
   return lotes
     .filter((l) => l.qtd > 0)
     .map((l) => {
