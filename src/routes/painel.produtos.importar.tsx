@@ -4,8 +4,10 @@ import { toast } from "sonner";
 import { ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brl, fornecedores } from "@/lib/mock-data";
-import { getProdutos } from "@/lib/produtos-store";
+import { brl } from "@/lib/mock-data";
+import { getProdutos, cadastrarProduto } from "@/lib/produtos-store";
+import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
+import { inicializarProduto, registrarEntrada } from "@/lib/estoque-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +58,7 @@ function Importar() {
   const lerArquivo = (f?: File) => f && f.text().then(carregar);
   const upd = (i: number, k: keyof Linha, v: string | number) => setLinhas((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
 
-  const fornecedorExiste = nota && fornecedores.some((f) => f.cnpj === nota.fornecedor.cnpj);
+  const fornecedorExiste = nota && getFornecedores().some((f) => f.cnpj === nota.fornecedor.cnpj);
   const pendentes = linhas.filter((l) => !l.minimo || !l.venda).length;
 
   if (!nota) {
@@ -86,7 +88,29 @@ function Importar() {
       <button onClick={() => setNota(null)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Trocar arquivo</button>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold">Conferir importação</h1><p className="text-muted-foreground">NF-e nº {nota.numero} · emitida em {nota.emissao.split("-").reverse().join("/")}</p></div>
-        <Button size="lg" disabled={pendentes > 0} onClick={() => { toast.success(`${linhas.length} produtos importados para o depósito!`); navigate({ to: "/painel/produtos" }); }}>
+        <Button size="lg" disabled={pendentes > 0} onClick={() => {
+          if (!nota) return;
+          if (!fornecedorExiste) {
+            cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" });
+          }
+          linhas.forEach((l) => {
+            const qtdTotal = l.qtdCompra * l.porEmbalagem;
+            if (l.existente) {
+              const p = getProdutos().find((x) => x.codigo === l.codigo);
+              if (p && qtdTotal > 0 && l.lote && l.validade) {
+                registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+              }
+            } else {
+              const id = cadastrarProduto({ nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, validade: l.validade || undefined });
+              inicializarProduto(id);
+              if (qtdTotal > 0 && l.lote && l.validade) {
+                registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+              }
+            }
+          });
+          toast.success(`${linhas.length} produtos importados para o depósito!`);
+          navigate({ to: "/painel/produtos" });
+        }}>
           <Check /> Confirmar importação
         </Button>
       </div>
