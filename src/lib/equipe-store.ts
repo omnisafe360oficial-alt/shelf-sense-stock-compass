@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { carregar, salvar, CHAVE } from "./persist";
 
 export const PAPEIS = {
   Proprietário: "Acesso a tudo",
@@ -19,9 +20,9 @@ const SEED: Membro[] = [
   { id: "eq5", nome: "João Mendes", email: "joao@bompreco.com.br", papel: "Recebimento", ativo: false },
 ];
 
-let estado: Membro[] = [...SEED];
+let estado: Membro[] = carregar(CHAVE.equipe, [...SEED]);
 const ouvintes = new Set<() => void>();
-const notificar = () => ouvintes.forEach((fn) => fn());
+const notificar = () => { salvar(CHAVE.equipe, estado); ouvintes.forEach((fn) => fn()); };
 
 export function useEquipe(): Membro[] {
   return useSyncExternalStore(

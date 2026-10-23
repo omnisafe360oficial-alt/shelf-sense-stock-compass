@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { carregar, salvar, CHAVE } from "./persist";
 
 export type Config = {
   nomeLoja: string; cnpj: string; cidade: string; uf: string;
@@ -19,9 +20,9 @@ const PADRAO: Config = {
   resumoDiario: false, avisosWhatsApp: false,
 };
 
-let estado: Config = { ...PADRAO };
+let estado: Config = carregar(CHAVE.config, { ...PADRAO });
 const ouvintes = new Set<() => void>();
-const notificar = () => ouvintes.forEach((fn) => fn());
+const notificar = () => { salvar(CHAVE.config, estado); ouvintes.forEach((fn) => fn()); };
 
 export function useConfig(): Config {
   return useSyncExternalStore(

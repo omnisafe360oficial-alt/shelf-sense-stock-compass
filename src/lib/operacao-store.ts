@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { ajustarGondola, estadoAtual, executarTransferencia, registrarEntrada } from "@/lib/estoque-store";
+import { carregar, salvar, CHAVE } from "./persist";
 
 export type Inconsistencia = {
   id: string; data: string; origem: "Reposição" | "Recebimento"; produtoId: string;
@@ -12,7 +13,7 @@ export type Conferencia = { id: string; data: string; produtoId: string; sistema
 
 type Estado = { notas: Nota[]; inconsistencias: Inconsistencia[]; conferencias: Conferencia[] };
 
-let estado: Estado = {
+const SEED_OPERACAO: Estado = {
   notas: [
     { id: "n1", numero: "NF-e 48211", fornecedor: "Laticínios Serra Verde", chegada: "2026-10-22T14:10", status: "aguardando", itens: [
       { produtoId: "2", caixas: 10, fator: 12, embalagem: "Caixa c/ 12", lote: "SV1201", validade: "2026-12-05" },
@@ -31,8 +32,9 @@ let estado: Estado = {
     { id: "c1", data: "2026-10-22T09:40", produtoId: "2", sistema: 6, encontrado: 6, reposto: 24, usuario: "Repositor · Pedro" },
   ],
 };
+let estado: Estado = carregar(CHAVE.operacao, SEED_OPERACAO);
 const ouvintes = new Set<() => void>();
-const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
+const emitir = (n: Estado) => { estado = n; salvar(CHAVE.operacao, estado); ouvintes.forEach((o) => o()); };
 export function useOperacao() {
   return useSyncExternalStore((cb) => { ouvintes.add(cb); return () => ouvintes.delete(cb); }, () => estado, () => estado);
 }

@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from "react";
 import { produtos as seed, type Produto } from "./mock-data";
+import { carregar, salvar, CHAVE } from "./persist";
 
-let estado: Produto[] = [...seed];
+let estado: Produto[] = carregar(CHAVE.produtos, [...seed]);
 const ouvintes = new Set<() => void>();
-const notificar = () => ouvintes.forEach((fn) => fn());
+const notificar = () => { salvar(CHAVE.produtos, estado); ouvintes.forEach((fn) => fn()); };
 
 export function useProdutos(): Produto[] {
   return useSyncExternalStore(

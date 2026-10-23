@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from "react";
 import { getProdutos } from "@/lib/produtos-store";
+import { carregar, salvar, CHAVE } from "./persist";
 
 export type Lote = { id: string; produtoId: string; lote: string; validade: string; qtd: number; local: string };
 export type Mov = { id: string; data: string; tipo: "entrada" | "transferencia" | "venda" | "ajuste"; produtoId: string; lote?: string; qtd: number; origem: string; destino: string; usuario: string };
 
 type Estado = { lotes: Lote[]; gondola: Record<string, number>; movs: Mov[] };
 
-let estado: Estado = {
+const SEED_ESTOQUE: Estado = {
   lotes: [
     { id: "l1", produtoId: "1", lote: "LX2504", validade: "2027-03-10", qtd: 96, local: "C1 · P2" },
     { id: "l2", produtoId: "1", lote: "LX2610", validade: "2027-08-10", qtd: 144, local: "C1 · P2" },
@@ -77,8 +78,9 @@ let estado: Estado = {
     { id: "t19", data: "2026-10-22T19:00", tipo: "venda" as const, produtoId: "3", qtd: 5, origem: "Gôndola", destino: "PDV · Caixa 1", usuario: "Caixa · Luana" },
   ],
 };
+let estado: Estado = carregar(CHAVE.estoque, SEED_ESTOQUE);
 const ouvintes = new Set<() => void>();
-const emitir = (novo: Estado) => { estado = novo; ouvintes.forEach((o) => o()); };
+const emitir = (novo: Estado) => { estado = novo; salvar(CHAVE.estoque, estado); ouvintes.forEach((o) => o()); };
 
 export function useEstoque() {
   return useSyncExternalStore((cb) => { ouvintes.add(cb); return () => ouvintes.delete(cb); }, () => estado, () => estado);
