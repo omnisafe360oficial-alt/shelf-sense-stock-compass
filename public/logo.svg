@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"  stop-color="#132238"/>
+      <stop offset="55%" stop-color="#1d5570"/>
+      <stop offset="100%" stop-color="#184e67"/>
+    </linearGradient>
+    <linearGradient id="shelf" x1="8" y1="0" x2="40" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3ecfb8"/>
+      <stop offset="100%" stop-color="#3ecfb8" stop-opacity="0.65"/>
+    </linearGradient>
+    <clipPath id="clip">
+      <rect width="48" height="48" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background badge -->
+  <rect width="48" height="48" rx="12" fill="url(#bg)"/>
+
+  <!-- 360° arc accent – concentric circles anchored at top-right corner -->
+  <g clip-path="url(#clip)">
+    <circle cx="48" cy="0" r="22"   fill="none" stroke="#3ecfb8" stroke-width="1.5" stroke-opacity="0.28"/>
+    <circle cx="48" cy="0" r="14.5" fill="none" stroke="#3ecfb8" stroke-width="1.5" stroke-opacity="0.18"/>
+  </g>
+
+  <!-- Shelf 1 bar -->
+  <rect x="8" y="15.5" width="32" height="2.5" rx="1.25" fill="url(#shelf)"/>
+  <!-- Products on shelf 1 -->
+  <rect x="9"    y="8.5" width="6.5" height="7"   rx="1.5" fill="white" opacity="0.88"/>
+  <rect x="17"   y="10"  width="4.5" height="5.5"  rx="1.5" fill="white" opacity="0.48"/>
+  <rect x="23.5" y="8.5" width="7"   height="7"   rx="1.5" fill="white" opacity="0.72"/>
+  <rect x="32.5" y="10"  width="6"   height="5.5"  rx="1.5" fill="#3ecfb8" opacity="0.92"/>
+
+  <!-- Shelf 2 bar -->
+  <rect x="8" y="29" width="32" height="2.5" rx="1.25" fill="url(#shelf)"/>
+  <!-- Products on shelf 2 -->
+  <rect x="9"    y="22"   width="5.5" height="7"   rx="1.5" fill="white" opacity="0.62"/>
+  <rect x="16.5" y="21"   width="8"   height="8"   rx="1.5" fill="white" opacity="0.88"/>
+  <rect x="27"   y="22"   width="5"   height="7"   rx="1.5" fill="#3ecfb8" opacity="0.78"/>
+  <rect x="34"   y="22.5" width="5"   height="6.5" rx="1.5" fill="white" opacity="0.48"/>
+
+  <!-- Shelf 3 bar -->
+  <rect x="8" y="41.5" width="32" height="2.5" rx="1.25" fill="url(#shelf)" opacity="0.62"/>
+  <!-- Products on shelf 3 -->
+  <rect x="9"  y="35" width="8"   height="6.5" rx="1.5" fill="white" opacity="0.50"/>
+  <rect x="19" y="36" width="5"   height="5.5" rx="1.5" fill="#3ecfb8" opacity="0.68"/>
+  <rect x="26" y="35" width="9.5" height="6.5" rx="1.5" fill="white" opacity="0.42"/>
+</svg>
