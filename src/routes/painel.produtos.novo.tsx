@@ -5,8 +5,9 @@ import { ArrowLeft, ArrowRight, Barcode, Boxes, Check, DollarSign, Layers, ListC
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { brl, categorias, fornecedores } from "@/lib/mock-data";
+import { brl, categorias } from "@/lib/mock-data";
 import { cadastrarProduto } from "@/lib/produtos-store";
+import { useFornecedores } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada, executarTransferencia } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,7 @@ const num = (s: string) => Number(s.replace(",", ".")) || 0;
 
 function NovoProduto() {
   const navigate = useNavigate();
+  const fornecedores = useFornecedores();
   const [step, setStep] = useState(0);
   const [f, setF] = useState(inicial);
   const set = (k: keyof typeof inicial) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });

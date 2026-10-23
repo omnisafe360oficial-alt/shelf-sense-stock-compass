@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { getConfig, salvarConfig, type Config } from "@/lib/config-store";
 
 export const Route = createFileRoute("/painel/configuracoes")({
   head: () => ({
@@ -19,8 +21,23 @@ export const Route = createFileRoute("/painel/configuracoes")({
   component: Configuracoes,
 });
 
-function Campo({ label, ...p }: { label: string } & React.ComponentProps<typeof Input>) {
-  return <div className="space-y-1.5"><Label>{label}</Label><Input {...p} /></div>;
+type SetF = (k: keyof Config, v: string | number | boolean) => void;
+
+function Campo({ label, field, type = "text", f, onSet }: { label: string; field: keyof Config; type?: string; f: Config; onSet: SetF }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input type={type} value={String(f[field])} onChange={(e) => onSet(field, type === "number" ? Number(e.target.value) : e.target.value)} />
+    </div>
+  );
+}
+
+function Aviso({ t, field, f, onSet }: { t: string; field: keyof Config; f: Config; onSet: SetF }) {
+  return (
+    <label className="flex items-center justify-between rounded-lg border p-3 text-sm md:col-span-2">
+      {t}<Switch checked={f[field] as boolean} onCheckedChange={(v) => onSet(field, v)} />
+    </label>
+  );
 }
 
 function Bloco({ t, d, children }: { t: string; d: string; children: React.ReactNode }) {
@@ -32,11 +49,10 @@ function Bloco({ t, d, children }: { t: string; d: string; children: React.React
   );
 }
 
-function Aviso({ t, on = true }: { t: string; on?: boolean }) {
-  return <label className="flex items-center justify-between rounded-lg border p-3 text-sm md:col-span-2">{t}<Switch defaultChecked={on} /></label>;
-}
-
 function Configuracoes() {
+  const [f, setF] = useState<Config>(getConfig);
+  const onSet: SetF = (k, v) => setF((c) => ({ ...c, [k]: v }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -44,30 +60,32 @@ function Configuracoes() {
         <p className="text-sm text-muted-foreground">Ajuste como o sistema funciona na sua loja.</p>
       </div>
       <Bloco t="Dados da loja" d="Aparecem nos relatórios e nos aplicativos.">
-        <Campo label="Nome da loja" defaultValue="Mercado Bom Preço" />
-        <Campo label="CNPJ / CPF" defaultValue="12.345.678/0001-90" />
-        <Campo label="Cidade" defaultValue="Campinas" />
-        <Campo label="UF" defaultValue="SP" />
+        <Campo label="Nome da loja" field="nomeLoja" f={f} onSet={onSet} />
+        <Campo label="CNPJ / CPF" field="cnpj" f={f} onSet={onSet} />
+        <Campo label="Cidade" field="cidade" f={f} onSet={onSet} />
+        <Campo label="UF" field="uf" f={f} onSet={onSet} />
       </Bloco>
       <Bloco t="Estoque" d="Valores usados quando um produto novo é cadastrado.">
-        <Campo label="Mínimo padrão na gôndola (un)" type="number" defaultValue={10} />
-        <Campo label="Margem de lucro padrão (%)" type="number" defaultValue={45} />
-        <Campo label="Tolerância na conferência (un)" type="number" defaultValue={0} />
-        <Campo label="Locais do depósito" defaultValue="C1, C2, C3, C4, Câmara fria" />
+        <Campo label="Mínimo padrão na gôndola (un)" field="minimoPadrao" type="number" f={f} onSet={onSet} />
+        <Campo label="Margem de lucro padrão (%)" field="margemPadrao" type="number" f={f} onSet={onSet} />
+        <Campo label="Tolerância na conferência (un)" field="toleranciaConferencia" type="number" f={f} onSet={onSet} />
+        <Campo label="Locais do depósito" field="locaisDeposito" f={f} onSet={onSet} />
       </Bloco>
       <Bloco t="Validades" d="Quando o sistema começa a avisar sobre um lote.">
-        <Campo label="Primeiro aviso (dias antes)" type="number" defaultValue={30} />
-        <Campo label="Aviso urgente (dias antes)" type="number" defaultValue={7} />
-        <Aviso t="Sugerir promoção automática para lotes perto do vencimento" />
-        <Aviso t="Bloquear venda de lote vencido no PDV" />
+        <Campo label="Primeiro aviso (dias antes)" field="avisoVencimento1" type="number" f={f} onSet={onSet} />
+        <Campo label="Aviso urgente (dias antes)" field="avisoVencimentoUrgente" type="number" f={f} onSet={onSet} />
+        <Aviso t="Sugerir promoção automática para lotes perto do vencimento" field="sugestaoPromocao" f={f} onSet={onSet} />
+        <Aviso t="Bloquear venda de lote vencido no PDV" field="bloquearVencido" f={f} onSet={onSet} />
       </Bloco>
       <Bloco t="Avisos" d="O que chega para você e para a equipe.">
-        <Aviso t="Avisar o repositor quando a gôndola atingir o mínimo" />
-        <Aviso t="Me avisar de inconsistências na conferência" />
-        <Aviso t="Resumo diário por e-mail" on={false} />
-        <Aviso t="Avisos por WhatsApp" on={false} />
+        <Aviso t="Avisar o repositor quando a gôndola atingir o mínimo" field="avisoRepositor" f={f} onSet={onSet} />
+        <Aviso t="Me avisar de inconsistências na conferência" field="avisoInconsistencias" f={f} onSet={onSet} />
+        <Aviso t="Resumo diário por e-mail" field="resumoDiario" f={f} onSet={onSet} />
+        <Aviso t="Avisos por WhatsApp" field="avisosWhatsApp" f={f} onSet={onSet} />
       </Bloco>
-      <div className="flex justify-end"><Button onClick={() => toast.success("Configurações salvas")}>Salvar alterações</Button></div>
+      <div className="flex justify-end">
+        <Button onClick={() => { salvarConfig(f); toast.success("Configurações salvas"); }}>Salvar alterações</Button>
+      </div>
     </div>
   );
 }

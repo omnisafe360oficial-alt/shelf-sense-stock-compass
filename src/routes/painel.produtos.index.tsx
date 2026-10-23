@@ -51,7 +51,7 @@ function Produtos() {
 
   const lista = useMemo(
     () => produtos.filter((p) => (cat === "Todas" || p.categoria === cat) && (p.nome.toLowerCase().includes(q.toLowerCase()) || p.codigo.includes(q))),
-    [q, cat],
+    [q, cat, produtos],
   );
 
   const cont = { ok: 0, baixo: 0, sem: 0 };

@@ -5,6 +5,7 @@ import { ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
+import { getConfig } from "@/lib/config-store";
 import { getProdutos, cadastrarProduto } from "@/lib/produtos-store";
 import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada } from "@/lib/estoque-store";
@@ -47,7 +48,7 @@ function Importar() {
         const ex = getProdutos().find((p) => p.codigo === i.codigo);
         return {
           codigo: i.codigo, nome: ex?.nome ?? i.nome, existente: !!ex, unidadeCompra: i.unidadeCompra, qtdCompra: i.qtdCompra,
-          porEmbalagem: conv, custoUnit, venda: ex ? ex.preco.toFixed(2) : (custoUnit * 1.45).toFixed(2),
+          porEmbalagem: conv, custoUnit, venda: ex ? ex.preco.toFixed(2) : (custoUnit * (1 + getConfig().margemPadrao / 100)).toFixed(2),
           minimo: ex ? String(ex.minimo) : "", lote: i.lote ?? "", validade: i.validade ?? "",
         };
       }));
@@ -156,7 +157,7 @@ function Importar() {
           </tbody>
         </table>
       </div>
-      <p className="flex items-center gap-2 text-sm text-muted-foreground"><FileCode2 className="h-4 w-4" />O preço de venda sugerido usa margem de 45%. A conversão foi lida do nome do produto; ajuste se precisar.</p>
+      <p className="flex items-center gap-2 text-sm text-muted-foreground"><FileCode2 className="h-4 w-4" />O preço de venda sugerido usa a margem padrão ({getConfig().margemPadrao}%) configurada em Configurações. A conversão foi lida do nome do produto; ajuste se precisar.</p>
     </div>
   );
 }
