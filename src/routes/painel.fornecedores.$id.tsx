@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Mail, MapPin, Phone, User } from "lucide-react";
-import { brl, fornecedores, produtos, situacao } from "@/lib/mock-data";
+import { brl, fornecedores, situacao } from "@/lib/mock-data";
+import { getProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/fornecedores/$id")({
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/painel/fornecedores/$id")({
 
 function Ficha() {
   const f = Route.useLoaderData();
-  const itens = produtos.filter((p) => p.fornecedor === f.nome);
+  const itens = getProdutos().filter((p) => p.fornecedor === f.nome);
   const info = [
     { icon: User, l: "Contato", v: f.contato },
     { icon: Phone, l: "Telefone", v: f.telefone },

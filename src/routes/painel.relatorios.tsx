@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, PackageX, TrendingDown, Trophy } from "lucide-react";
-import { brl, produtos } from "@/lib/mock-data";
+import { brl } from "@/lib/mock-data";
 import { useEstoque, type Mov } from "@/lib/estoque-store";
 import { diasSemVenda, vendasPorProduto } from "@/lib/computed";
+import { useProdutos, getProdutos } from "@/lib/produtos-store";
 
 export const Route = createFileRoute("/painel/relatorios")({
   head: () => ({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/painel/relatorios")({
 
 export function curvaAbc(movs: Mov[]) {
   const vp = vendasPorProduto(movs);
-  const linhas = produtos.map((p) => ({ p, fat: (vp[p.id]?.un ?? 0) * p.preco })).sort((a, b) => b.fat - a.fat);
+  const linhas = getProdutos().map((p) => ({ p, fat: (vp[p.id]?.un ?? 0) * p.preco })).sort((a, b) => b.fat - a.fat);
   const total = linhas.reduce((s, l) => s + l.fat, 0);
   let acum = 0;
   return linhas.map((l) => {
@@ -32,6 +33,7 @@ export function curvaAbc(movs: Mov[]) {
 
 function Relatorios() {
   const est = useEstoque();
+  const produtos = useProdutos();
   const abc = curvaAbc(est.movs);
   const total = abc.reduce((s, l) => s + l.fat, 0);
 

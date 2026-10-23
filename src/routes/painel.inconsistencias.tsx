@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { produtos } from "@/lib/mock-data";
 import { resolverInconsistencia, useOperacao } from "@/lib/operacao-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/inconsistencias")({
@@ -24,6 +24,7 @@ const status = { aberta: "Aberta", ajustada: "Contagem aceita", mantida: "Sistem
 
 function Inconsistencias() {
   const op = useOperacao();
+  const produtos = useProdutos();
   const [filtro, setFiltro] = useState<"aberta" | "todas">("aberta");
   const lista = op.inconsistencias.filter((i) => filtro === "todas" || i.status === "aberta");
   const abertas = op.inconsistencias.filter((i) => i.status === "aberta").length;

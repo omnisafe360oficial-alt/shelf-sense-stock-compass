@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { produtos } from "@/lib/mock-data";
+import { getProdutos } from "@/lib/produtos-store";
 
 export type Lote = { id: string; produtoId: string; lote: string; validade: string; qtd: number; local: string };
 export type Mov = { id: string; data: string; tipo: "entrada" | "transferencia" | "venda" | "ajuste"; produtoId: string; lote?: string; qtd: number; origem: string; destino: string; usuario: string };
@@ -19,7 +19,7 @@ let estado: Estado = {
     { id: "l9", produtoId: "5", lote: "L2309C", validade: "2026-10-19", qtd: 8, local: "Câmara fria" },
     { id: "l10", produtoId: "3", lote: "TJ0815", validade: "2026-11-04", qtd: 14, local: "C3 · P1" },
   ],
-  gondola: Object.fromEntries(produtos.map((p) => [p.id, p.gondola])),
+  gondola: Object.fromEntries(getProdutos().map((p) => [p.id, p.gondola])),
   movs: [
     { id: "m1", data: "2026-10-22T08:12", tipo: "entrada", produtoId: "1", lote: "LX2610", qtd: 144, origem: "NF-e 48190", destino: "Depósito", usuario: "Recebimento · João" },
     { id: "m2", data: "2026-10-22T09:40", tipo: "transferencia", produtoId: "2", lote: "SV1022", qtd: 24, origem: "Depósito", destino: "Gôndola", usuario: "Repositor · Pedro" },
@@ -177,3 +177,9 @@ export function ajustarGondola(produtoId: string, contado: number, motivo: strin
 }
 
 export const estadoAtual = () => estado;
+
+/** Inicializa a entrada da gôndola para um produto recém-cadastrado (gondola = 0). */
+export function inicializarProduto(produtoId: string) {
+  if (estado.gondola[produtoId] !== undefined) return;
+  emitir({ ...estado, gondola: { ...estado.gondola, [produtoId]: 0 } });
+}

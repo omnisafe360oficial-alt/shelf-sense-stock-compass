@@ -3,8 +3,8 @@ import { useState } from "react";
 import { ArrowRightLeft, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
-import { produtos } from "@/lib/mock-data";
 import { useEstoque } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/gondola")({
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/painel/gondola")({
 
 function Gondola() {
   const s = useEstoque();
+  const produtos = useProdutos();
   const [filtro, setFiltro] = useState<"todos" | "repor">("todos");
   const [transf, setTransf] = useState<string | null>(null);
   const itens = produtos.map((p) => ({ p, qtd: s.gondola[p.id] ?? 0, max: p.minimo * 3 }));

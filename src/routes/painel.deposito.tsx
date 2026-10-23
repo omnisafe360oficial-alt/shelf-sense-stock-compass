@@ -4,8 +4,8 @@ import { ArrowRightLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
-import { produtos } from "@/lib/mock-data";
 import { diasAte, useEstoque } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/deposito")({
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/painel/deposito")({
 
 function Deposito() {
   const s = useEstoque();
+  const produtos = useProdutos();
   const [q, setQ] = useState("");
   const [transf, setTransf] = useState<string | null>(null);
   const lista = produtos

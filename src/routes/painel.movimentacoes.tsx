@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowDownToLine, ArrowRightLeft, ShoppingCart, Wrench } from "lucide-react";
-import { produtos } from "@/lib/mock-data";
 import { useEstoque, type Mov } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/movimentacoes")({
@@ -28,6 +28,7 @@ const tipos: Record<Mov["tipo"], { l: string; icon: typeof ShoppingCart; c: stri
 
 function Movimentacoes() {
   const s = useEstoque();
+  const produtos = useProdutos();
   const [tipo, setTipo] = useState<Mov["tipo"] | "todos">("todos");
   const lista = [...s.movs]
     .filter((m) => tipo === "todos" || m.tipo === tipo)

@@ -3,8 +3,9 @@ import { useMemo, useState } from "react";
 import { FileCode2, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { brl, categorias, produtos } from "@/lib/mock-data";
+import { brl, categorias } from "@/lib/mock-data";
 import { useEstoque } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/produtos/")({
@@ -37,6 +38,7 @@ function Produtos() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todas");
   const est = useEstoque();
+  const produtos = useProdutos();
 
   const livePorProduto = useMemo(() => {
     const map: Record<string, { dep: number; gond: number }> = {};

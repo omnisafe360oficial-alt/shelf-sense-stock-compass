@@ -4,8 +4,8 @@ import { CheckCircle2, EyeOff, RefreshCw, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { produtos } from "@/lib/mock-data";
 import { lotesFefo, useEstoque } from "@/lib/estoque-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { conferirReposicao, useOperacao } from "@/lib/operacao-store";
 
 export const Route = createFileRoute("/painel/reposicao")({
@@ -27,6 +27,7 @@ const hora = (d: string) => new Date(d).toLocaleString("pt-BR", { day: "2-digit"
 function Reposicao() {
   const s = useEstoque();
   const op = useOperacao();
+  const produtos = useProdutos();
   const [aberto, setAberto] = useState<string | null>(null);
   const [encontrado, setEncontrado] = useState("");
   const [reposto, setReposto] = useState("");
