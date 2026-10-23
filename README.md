@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# Shelf Sense Stock Compass
+
+Olha, estou querendo criar um sistema onde o comerciante tenha total controle do estoque do seu comércio. No caso, seria para supermercados, farmácias, sorveterias, outro tipo de comércio, como lojas de roupas. Qual é o intuito? Vai ter um painel web da loja bem completo. Onde no cadastro inicial, que é a autenticação do sistema, pode entrar tanto com a conta Google quanto com um cadastro normal. Tem que ser um cadastro bem fácil de fazer. Outra coisa: depois do cadastro, tem que preencher a cidade, nome da loja, colocar o CNPJ ou CPF, tanto no login com a conta Google quanto no cadastro normal. Tem que ser bem fácil de mexer e um sistema bonito, cor bonita, uma logo bem bonita, logo padrão em todo o sistema. O nome do sistema vai chamar OmniSafe 360. Outra coisa, eu quero um planejamento primeiro. Planejamento antes de criar alguma tela. Esse sistema vai ter cadastro de produto, direto no cadastro de produto, eu quero que tenha como já adicionar o fornecedor. Depois tem uma aba lá que eu quero que crie também um lugar que dá para ver todos os fornecedores também. No cadastro de produto também tem que ter a configuração do depósito, a configuração da gôndola, que é pedido mínimo. No depósito, como que funciona? Tem o cadastro do produto, depois tem o código de barras, data de validade, etc. Isso daí é tudo que precisa para cadastro de produto, tem que ter os dados necessários. Porque esse sistema eu quero que ele tenha também controle de validade. Que ele avisa no painel aqui produtos que estão vencendo por lote, tem que ter o lote também. Configuração da gôndola, quando sai do depósito para a gôndola. Eu quero que tenha configuração também que é quando chega num pedido mínimo, porque ele vai ser controlado direto no PDV. O PDV, como que funciona? O caixa vai bipando os produtos pro cliente. Na hora que ele fechar a venda, aí já desconta o produto da gôndola. Vamos supor, tem lá 20 produtos, vamos supor 20 sabonetes, e o mínimo dessa configuração desse produto foi para 10. Então a hora que bater 10 no mínimo, o sistema já avisa no aplicativo do repositor pra ele repor a mercadoria. E os aplicativos, o que eu quero fazer? Eu quero fazer separadamente desse sistema. Primeiramente a gente vai criar o painel web, para depois posteriormente a gente fazer o aplicativo. Os aplicativos que a gente vai usar. Então o que eu quero aqui? Eu quero fazer um painel muito bem completo, muito bem estruturado, cores bonitas, tem que aparentar um sistema de empresa grande, renomada no mercado. Ao abrir no computador, abrir bem bonito. Um negócio muito bem feito. Eu quero que você faça um planejamento de como que seria esse sistema agora pra gente ir começando ele. Faça o planejamento primeiro, que eu quero saber o que você vai achar disso daí. Pode fazer pra mim o planejamento, não execute nada ainda, faça esse planejamento e crie uma fonte da verdade pra gente ir fazendo ele por etapas, onde cada etapa você vai falando pra mim que está pronto, eu vou dando um ok e você vai prosseguindo com as próximas etapas. As etapas têm que já ir criando telas. Já tem que ser bem visível já de começo, tipo criar tela de cadastro. Ir criando as telas. Eu não quero saber de fundação, não quero saber de nada. Quero fazer primeiramente as telas, todas as telas. Então você vai fazer um planejamento pra gente já começar a fazer ele, entendeu? Você tem que fazer de uma forma que os fluxos fechem e tem que ser algo que seja muito fácil do comerciante entender. Uma outra coisa que eu quero. O cadastro de produto tem que ter uma forma de cadastro em massa, que é por XML, onde o sistema já puxa tudo e já deixa quase tudo configurado. Então você vai ter que fazer esse planejamento também pra gente estar fazendo. Eu quero que você crie esse planejamento, faça um mapa, tudo corretinho, e a forma que a gente vai construir em etapas esse sistema. O que você fizer aí, está feito. E você vai também falar pra mim o que mais que daria pra pôr nesse sistema. Lembrando que ele vai ter que ter um aplicativo, que não vai ser criado agora, que é um aplicativo onde vai ter um recebimento de mercadorias, que chega já pra entrada no depósito, que vai receber a mercadoria e fazer uma conferência cega. A pessoa que vai receber não vai ter acesso à nota fiscal, então ele vai ter que contar o produto. Aí tem que ter as conversões também, se é por pack. Você vai saber fazer tudo isso daí. A questão também, a reposição na gôndola, vai ser um outro aplicativo, que é do repositor. Ele vai lá, daí ele vai ter que escanear o scanner no código de barras, tudo certinho, vai ter que fazer uma conferência cega mínima, vai ter que colocar quanto que tem de mercadoria, que ele encontrou na hora da reposição. Se não bater a conferência, dá inconsistência no sistema. Então tem tudo isso aí. Eu quero que você faça um planejamento muito bem elaborado. Além de ser muito bem elaborado, tem que ser algo que seja fácil pro comerciante e seja um fluxo, um sistema bem pensado mesmo. Algo que seja fácil. Vai cadastrar um produto, ele vai por etapa. O sistema vai pedindo, conforme o comerciante vai preenchendo, o próprio sistema já vai pedindo, vai fazendo tudo por etapa
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/59843c80-3ba1-4375-bba7-128019829bdd).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
