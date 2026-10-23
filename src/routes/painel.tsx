@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
-  Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Truck, Users, Warehouse, X,
+  Menu, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Truck, Users, Warehouse, X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { abaixoDoMinimo, lotesVencendo } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -30,6 +31,9 @@ function PainelLayout() {
   const config = useConfig();
   const equipe = useEquipe();
   const dono = equipe[0];
+
+  // --- Sidebar mobile ---
+  const [sidebarAberto, setSidebarAberto] = useState(false);
 
   // --- Busca global ---
   const [busca, setBusca] = useState("");
@@ -53,9 +57,18 @@ function PainelLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="px-5 py-6">
+      {sidebarAberto && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarAberto(false)} />
+      )}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 flex h-screen w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-transform lg:sticky lg:top-0 lg:translate-x-0",
+        sidebarAberto ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+      )}>
+        <div className="flex items-center justify-between px-5 py-6">
           <Logo light />
+          <button className="rounded-lg p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent lg:hidden" onClick={() => setSidebarAberto(false)} aria-label="Fechar menu">
+            <X className="h-4 w-4" />
+          </button>
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-6">
           {grupos.map((g) => (
@@ -71,6 +84,7 @@ function PainelLayout() {
                     activeOptions={{ exact: "exact" in i && !!i.exact }}
                     className={base}
                     activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+                    onClick={() => setSidebarAberto(false)}
                   >
                     <Icon className="h-4 w-4 text-sidebar-primary" /> {i.label}
                   </Link>
@@ -86,7 +100,14 @@ function PainelLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card/90 px-8 backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card/90 px-4 backdrop-blur lg:px-8">
+          <button
+            className="rounded-lg p-2 hover:bg-muted lg:hidden"
+            aria-label="Menu"
+            onClick={() => setSidebarAberto((v) => !v)}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
           {/* Busca global */}
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

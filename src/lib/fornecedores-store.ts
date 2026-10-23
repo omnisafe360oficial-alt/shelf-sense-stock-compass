@@ -20,3 +20,8 @@ export function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): string {
   notificar();
   return id;
 }
+
+export function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id">>): void {
+  estado = estado.map((f) => (f.id === id ? { ...f, ...dados } : f));
+  notificar();
+}

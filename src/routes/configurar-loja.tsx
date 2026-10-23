@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { salvarConfig } from "@/lib/config-store";
 import { ArrowLeft, ArrowRight, Check, Cross, IceCreamCone, Shirt, ShoppingCart, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ function ConfigurarLoja() {
 
   const next = () => {
     if (step < 2) return setStep(step + 1);
+    salvarConfig({ nomeLoja: nome, cnpj: doc, cidade, uf });
     toast.success(`Loja "${nome}" configurada!`);
     navigate({ to: "/painel" });
   };

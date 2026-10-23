@@ -4,6 +4,8 @@ import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
 import { abaixoDoMinimo, HOJE, lotesVencendo, vendasHoje, vendasOntem, vendasPorHora } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
+import { useConfig } from "@/lib/config-store";
+import { useEquipe } from "@/lib/equipe-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/")({
@@ -39,6 +41,9 @@ function saudacao() {
 function Inicio() {
   const est = useEstoque();
   const op = useOperacao();
+  const config = useConfig();
+  const equipe = useEquipe();
+  const dono = equipe[0];
 
   const hoje = vendasHoje(est.movs);
   const ontem = vendasOntem(est.movs);
@@ -46,25 +51,25 @@ function Inicio() {
   const pctLabel = `${pct >= 0 ? "+" : ""}${pct}% vs. ontem`;
 
   const abaixo = abaixoDoMinimo(est.gondola);
-  const vencendo7 = lotesVencendo(est.lotes, 7);
-  const vencendoAmanha = vencendo7.filter((l) => l.dias >= 0 && l.dias <= 1).length;
+  const vencendoUrgente = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
+  const vencendoAmanha = vencendoUrgente.filter((l) => l.dias >= 0 && l.dias <= 1).length;
   const inconsAbertas = op.inconsistencias.filter((i) => i.status === "aberta");
 
   const horas = vendasPorHora(est.movs);
   const maxHora = Math.max(...horas, 1);
 
   const reposicao = abaixo.slice(0, 4);
-  const validades = lotesVencendo(est.lotes, 15);
+  const validades = lotesVencendo(est.lotes, config.avisoVencimento1);
 
   const kpis = [
     { label: "Vendas hoje", valor: brl(hoje), extra: pctLabel, icon: DollarSign, tom: "primary" },
     { label: "Abaixo do mínimo", valor: String(abaixo.length), extra: `${abaixo.length} aguardam reposição`, icon: PackageMinus, tom: "warning" },
     {
-      label: "Lotes vencendo (7 dias)",
-      valor: String(vencendo7.length),
+      label: `Lotes vencendo (${config.avisoVencimentoUrgente} dias)`,
+      valor: String(vencendoUrgente.length),
       extra: vencendoAmanha > 0 ? `${vencendoAmanha} vence${vencendoAmanha > 1 ? "m" : ""} amanhã` : "dentro do prazo",
       icon: CalendarClock,
-      tom: vencendo7.length > 0 ? "destructive" : "primary",
+      tom: vencendoUrgente.length > 0 ? "destructive" : "primary",
     },
     { label: "Inconsistências", valor: String(inconsAbertas.length), extra: "aguardando análise", icon: AlertTriangle, tom: inconsAbertas.length > 0 ? "warning" : "primary" },
   ];
@@ -73,7 +78,7 @@ function Inicio() {
     <div className="space-y-8">
       <div>
         <p className="text-sm text-muted-foreground">{dataFormatada()}</p>
-        <h1 className="text-3xl font-bold">{saudacao()}, Maria 👋</h1>
+        <h1 className="text-3xl font-bold">{saudacao()}, {dono?.nome.split(" ")[0] ?? "Maria"} 👋</h1>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -150,7 +155,7 @@ function Inicio() {
           Lotes perto do vencimento
         </h2>
         {validades.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">Nenhum lote vence nos próximos 15 dias.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Nenhum lote vence nos próximos {config.avisoVencimento1} dias.</p>
         ) : (
           <table className="mt-4 w-full text-sm">
             <thead className="text-left text-xs uppercase text-muted-foreground">
