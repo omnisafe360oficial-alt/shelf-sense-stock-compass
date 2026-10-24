@@ -1,8 +1,8 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
-  Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Sun, Truck, Users, Warehouse, X,
+  LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Sun, Truck, Users, Warehouse, X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
 import { useTema, alternarTema } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { useAuth, signOut } from "@/lib/auth";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -26,6 +27,8 @@ const grupos = [
 ];
 
 function PainelLayout() {
+  const navigate = useNavigate();
+  const auth = useAuth();
   const est = useEstoque();
   const op = useOperacao();
   const produtos = useProdutos();
@@ -33,6 +36,14 @@ function PainelLayout() {
   const equipe = useEquipe();
   const dono = equipe[0];
   const tema = useTema();
+
+  useEffect(() => {
+    if (auth.loading) return;
+    if (!auth.session) navigate({ to: "/" });
+    else if (!auth.lojaId) navigate({ to: "/configurar-loja" });
+  }, [auth.loading, auth.session, auth.lojaId, navigate]);
+
+  if (auth.loading || !auth.session) return null;
 
   // --- Sidebar mobile ---
   const [sidebarAberto, setSidebarAberto] = useState(false);
@@ -233,12 +244,19 @@ function PainelLayout() {
           {/* Usuário */}
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-primary-foreground">
-              {(dono?.nome ?? "MS").split(" ").map((n) => n[0]).slice(0, 2).join("")}
+              {(auth.nomeProprietario ?? dono?.nome ?? "MS").split(" ").map((n) => n[0]).slice(0, 2).join("")}
             </span>
             <div className="text-sm leading-tight">
-              <p className="font-semibold">{dono?.nome ?? "Usuário"}</p>
+              <p className="font-semibold">{auth.nomeProprietario ?? dono?.nome ?? "Usuário"}</p>
               <p className="text-xs text-muted-foreground">{dono?.papel ?? "Proprietário"}</p>
             </div>
+            <button
+              className="ml-1 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Sair"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
