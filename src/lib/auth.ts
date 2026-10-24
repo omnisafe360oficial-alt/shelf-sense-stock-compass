@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
+import { emitLojaChange } from "./loja-resolver";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthState = {
@@ -25,6 +26,7 @@ async function carregarLoja(userId: string) {
     .limit(1)
     .maybeSingle();
   set({ lojaId: data?.loja_id ?? null, nomeProprietario: data?.nome ?? null });
+  emitLojaChange(data?.loja_id ?? null);
 }
 
 // Inicializa ao importar o módulo
@@ -43,6 +45,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
     carregarLoja(session.user.id).then(() => set({ loading: false }));
   } else {
     set({ session: null, lojaId: null, nomeProprietario: null, loading: false });
+    emitLojaChange(null);
   }
 });
 
