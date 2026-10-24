@@ -21,9 +21,15 @@ let estado: Estado = { ...VAZIO };
 const ouvintes = new Set<() => void>();
 const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
 
-// ─── Carregamento ────────────────────────────────────────────────────────────
+// ─── Carregamento + Realtime ──────────────────────────────────────────────────
+
+let inconsChannel: ReturnType<typeof supabase.channel> | null = null;
 
 onLojaChange(async (lojaId) => {
+  if (inconsChannel) {
+    await supabase.removeChannel(inconsChannel);
+    inconsChannel = null;
+  }
   if (!lojaId) { emitir({ ...VAZIO }); return; }
 
   const [notasRes, inconsRes, confRes] = await Promise.all([
@@ -93,6 +99,27 @@ onLojaChange(async (lojaId) => {
   }));
 
   emitir({ notas, inconsistencias, conferencias });
+
+  inconsChannel = supabase
+    .channel(`incons-rt-${lojaId}`)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "inconsistencias", filter: `loja_id=eq.${lojaId}` }, (payload) => {
+      const r = payload.new as Record<string, unknown>;
+      const nova: Inconsistencia = {
+        id: r.id as string, data: (r.data as string) ?? "",
+        origem: (r.origem as Inconsistencia["origem"]) ?? "Recebimento",
+        produtoId: r.produto_id as string, sistema: (r.sistema as number) ?? 0,
+        contado: (r.contado as number) ?? 0, referencia: (r.referencia as string) ?? "",
+        usuario: (r.usuario_nome as string) ?? "", status: (r.status as Inconsistencia["status"]) ?? "aberta",
+      };
+      if (!estado.inconsistencias.find((i) => i.id === nova.id)) {
+        emitir({ ...estado, inconsistencias: [nova, ...estado.inconsistencias] });
+      }
+    })
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "inconsistencias", filter: `loja_id=eq.${lojaId}` }, (payload) => {
+      const r = payload.new as Record<string, unknown>;
+      emitir({ ...estado, inconsistencias: estado.inconsistencias.map((i) => i.id === r.id ? { ...i, status: r.status as Inconsistencia["status"] } : i) });
+    })
+    .subscribe();
 });
 
 // ─── Hook ────────────────────────────────────────────────────────────────────

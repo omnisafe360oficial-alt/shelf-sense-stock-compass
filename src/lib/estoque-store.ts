@@ -14,9 +14,15 @@ let estado: Estado = { ...VAZIO };
 const ouvintes = new Set<() => void>();
 const emitir = (novo: Estado) => { estado = novo; ouvintes.forEach((o) => o()); };
 
-// ─── Carregamento ────────────────────────────────────────────────────────────
+// ─── Carregamento + Realtime ──────────────────────────────────────────────────
+
+let gondolaChannel: ReturnType<typeof supabase.channel> | null = null;
 
 onLojaChange(async (lojaId) => {
+  if (gondolaChannel) {
+    await supabase.removeChannel(gondolaChannel);
+    gondolaChannel = null;
+  }
   if (!lojaId) { emitir({ ...VAZIO }); return; }
 
   const [lotesRes, gondolaRes, movsRes] = await Promise.all([
@@ -56,6 +62,16 @@ onLojaChange(async (lojaId) => {
   }));
 
   emitir({ lotes, gondola, movs });
+
+  gondolaChannel = supabase
+    .channel(`gondola-rt-${lojaId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "gondola", filter: `loja_id=eq.${lojaId}` }, (payload) => {
+      if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+        const row = payload.new as { produto_id: string; qtd_gondola: number };
+        emitir({ ...estado, gondola: { ...estado.gondola, [row.produto_id]: row.qtd_gondola } });
+      }
+    })
+    .subscribe();
 });
 
 // ─── Hook ────────────────────────────────────────────────────────────────────

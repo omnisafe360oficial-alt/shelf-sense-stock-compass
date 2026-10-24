@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, LayoutDashboard,
+  AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, ClipboardList, LayoutDashboard,
   LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Sun, Truck, Users, Warehouse, X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -22,7 +22,7 @@ const grupos = [
   { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const, exact: true }] },
   { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse, to: "/painel/deposito" as const }, { label: "Gôndola", icon: Boxes, to: "/painel/gondola" as const }, { label: "Movimentações", icon: ArrowRightLeft, to: "/painel/movimentacoes" as const }, { label: "Validades", icon: CalendarClock, to: "/painel/validades" as const }] },
-  { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }] },
+  { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }, { label: "Pedidos de Compra", icon: ClipboardList, to: "/painel/pedidos" as const }] },
   { titulo: "Gestão", itens: [{ label: "Relatórios", icon: BarChart3, to: "/painel/relatorios" as const }, { label: "Equipe", icon: Users, to: "/painel/equipe" as const }, { label: "Configurações", icon: Settings, to: "/painel/configuracoes" as const }] },
 ];
 
