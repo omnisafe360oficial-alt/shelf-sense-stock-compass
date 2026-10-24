@@ -10,6 +10,10 @@ export type Config = {
   sugestaoPromocao: boolean; bloquearVencido: boolean;
   avisoRepositor: boolean; avisoInconsistencias: boolean;
   resumoDiario: boolean; avisosWhatsApp: boolean;
+  alertaEstoqueZerado: boolean;
+  alertaVencimentos: boolean;
+  alertaPedidos: boolean;
+  diasAlertaPedido: number;
 };
 
 const PADRAO: Config = {
@@ -20,6 +24,10 @@ const PADRAO: Config = {
   sugestaoPromocao: true, bloquearVencido: true,
   avisoRepositor: true, avisoInconsistencias: true,
   resumoDiario: false, avisosWhatsApp: false,
+  alertaEstoqueZerado: true,
+  alertaVencimentos: true,
+  alertaPedidos: true,
+  diasAlertaPedido: 2,
 };
 
 let estado: Config = { ...PADRAO };

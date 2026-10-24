@@ -83,6 +83,30 @@ function Configuracoes() {
         <Aviso t="Resumo diário por e-mail" field="resumoDiario" f={f} onSet={onSet} />
         <Aviso t="Avisos por WhatsApp" field="avisosWhatsApp" f={f} onSet={onSet} />
       </Bloco>
+      <Bloco t="Alertas" d="Controle quais alertas aparecem no sino de notificações.">
+        <Aviso t="Alertar sobre produtos zerados no estoque" field="alertaEstoqueZerado" f={f} onSet={onSet} />
+        <Aviso t="Alertar sobre produtos abaixo do mínimo (gôndola)" field="avisoRepositor" f={f} onSet={onSet} />
+        <Aviso t="Alertar sobre lotes próximos ao vencimento" field="alertaVencimentos" f={f} onSet={onSet} />
+        <Aviso t="Alertar sobre inconsistências abertas" field="avisoInconsistencias" f={f} onSet={onSet} />
+        <Aviso t="Alertar sobre pedidos pendentes sem atualização" field="alertaPedidos" f={f} onSet={onSet} />
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>Dias para alertar pedido pendente</Label>
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              min={1}
+              max={30}
+              className="w-24"
+              value={f.diasAlertaPedido}
+              onChange={(e) => onSet("diasAlertaPedido", Math.max(1, Number(e.target.value)))}
+              disabled={!f.alertaPedidos}
+            />
+            <p className="text-sm text-muted-foreground">
+              Alertar quando um pedido em rascunho ou enviado não for atualizado por esse número de dias.
+            </p>
+          </div>
+        </div>
+      </Bloco>
       <div className="flex justify-end">
         <Button onClick={() => { salvarConfig(f); toast.success("Configurações salvas"); }}>Salvar alterações</Button>
       </div>

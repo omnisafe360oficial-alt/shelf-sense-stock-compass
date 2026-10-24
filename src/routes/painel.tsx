@@ -2,19 +2,20 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, ClipboardList, LayoutDashboard,
-  LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, Sun, Truck, Users, Warehouse, X,
+  LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, Sun, Truck, Users, Warehouse, X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
-import { abaixoDoMinimo, lotesVencendo } from "@/lib/computed";
+import { abaixoDoMinimo, lotesVencendo, HOJE } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
 import { useTema, alternarTema } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useAuth, signOut } from "@/lib/auth";
+import { usePedidos } from "@/lib/pedidos-store";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -36,6 +37,7 @@ function PainelLayout() {
   const equipe = useEquipe();
   const dono = equipe[0];
   const tema = useTema();
+  const { pedidos } = usePedidos();
 
   useEffect(() => {
     if (auth.loading) return;
@@ -62,11 +64,25 @@ function PainelLayout() {
   // --- Notificações ---
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const fecharNotif = () => setNotifOpen(false);
 
-  const abaixo = abaixoDoMinimo(est.gondola);
+  const abaixoTodos = abaixoDoMinimo(est.gondola);
+  const zerados = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) === 0);
+  const abaixo = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) > 0);
   const vencendo7 = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
   const inconsAbertas = op.inconsistencias.filter((i) => i.status === "aberta");
-  const totalAlertas = abaixo.length + vencendo7.length + inconsAbertas.length;
+  const pedidosAtencao = pedidos.filter((p) => {
+    if (!["rascunho", "enviado"].includes(p.status)) return false;
+    const dias = Math.floor((new Date(HOJE).getTime() - new Date(p.dataEmissao).getTime()) / 86_400_000);
+    return dias >= config.diasAlertaPedido;
+  });
+
+  const totalAlertas =
+    (config.alertaEstoqueZerado ? zerados.length : 0) +
+    (config.avisoRepositor ? abaixo.length : 0) +
+    (config.alertaVencimentos ? vencendo7.length : 0) +
+    (config.avisoInconsistencias ? inconsAbertas.length : 0) +
+    (config.alertaPedidos ? pedidosAtencao.length : 0);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -179,54 +195,78 @@ function PainelLayout() {
 
             {notifOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border bg-card p-4 shadow-xl">
-                  <div className="mb-3 flex items-center justify-between">
+                <div className="fixed inset-0 z-40" onClick={fecharNotif} />
+                <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border bg-card shadow-xl">
+                  <div className="flex items-center justify-between border-b px-4 py-3">
                     <p className="text-sm font-semibold">Alertas ativos</p>
-                    <button className="rounded p-0.5 hover:bg-muted" onClick={() => setNotifOpen(false)}>
+                    <button className="rounded p-0.5 hover:bg-muted" onClick={fecharNotif}>
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                   {totalAlertas === 0 ? (
-                    <p className="text-sm text-muted-foreground">Sem alertas no momento.</p>
+                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                      Nenhum alerta no momento.
+                    </div>
                   ) : (
-                    <div className="space-y-3 text-sm">
-                      {abaixo.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-warning">
-                            {abaixo.length} produto{abaixo.length > 1 ? "s" : ""} abaixo do mínimo
-                          </p>
+                    <div className="max-h-[70vh] overflow-y-auto divide-y text-sm">
+                      {config.alertaEstoqueZerado && zerados.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-destructive">
+                              🔴 {zerados.length} produto{zerados.length > 1 ? "s" : ""} zerado{zerados.length > 1 ? "s" : ""}
+                            </p>
+                            <Link to="/painel/gondola" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
+                          {zerados.slice(0, 4).map((p) => (
+                            <div key={p.id} className="flex justify-between border-b py-1.5 last:border-0">
+                              <span className="truncate font-medium">{p.nome}</span>
+                              <span className="ml-2 shrink-0 text-destructive font-semibold">0/{p.minimo}</span>
+                            </div>
+                          ))}
+                          {zerados.length > 4 && <p className="mt-1 text-xs text-muted-foreground">+{zerados.length - 4} outros</p>}
+                        </div>
+                      )}
+                      {config.avisoRepositor && abaixo.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-warning">
+                              🟡 {abaixo.length} abaixo do mínimo
+                            </p>
+                            <Link to="/painel/reposicao" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
                           {abaixo.slice(0, 3).map((p) => (
                             <div key={p.id} className="flex justify-between border-b py-1.5 last:border-0">
                               <span className="truncate">{p.nome}</span>
                               <span className="ml-2 shrink-0 text-muted-foreground">{est.gondola[p.id] ?? 0}/{p.minimo}</span>
                             </div>
                           ))}
-                          {abaixo.length > 3 && (
-                            <p className="mt-1 text-xs text-muted-foreground">+{abaixo.length - 3} outros</p>
-                          )}
+                          {abaixo.length > 3 && <p className="mt-1 text-xs text-muted-foreground">+{abaixo.length - 3} outros</p>}
                         </div>
                       )}
-                      {vencendo7.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-destructive">
-                            {vencendo7.length} lote{vencendo7.length > 1 ? "s" : ""} vencendo em 7 dias
-                          </p>
+                      {config.alertaVencimentos && vencendo7.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-destructive">
+                              🔴 {vencendo7.length} lote{vencendo7.length > 1 ? "s" : ""} vencendo
+                            </p>
+                            <Link to="/painel/validades" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
                           {vencendo7.slice(0, 3).map((l) => (
                             <div key={l.id} className="flex justify-between border-b py-1.5 last:border-0">
                               <span className="truncate">{l.produto.nome}</span>
-                              <span className="ml-2 shrink-0 text-muted-foreground">
-                                {l.faixa === "vencido" ? "Vencido" : `${l.dias}d`}
-                              </span>
+                              <span className="ml-2 shrink-0 text-muted-foreground">{l.faixa === "vencido" ? "Vencido" : `${l.dias}d`}</span>
                             </div>
                           ))}
                         </div>
                       )}
-                      {inconsAbertas.length > 0 && (
-                        <div>
-                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-warning">
-                            {inconsAbertas.length} inconsistência{inconsAbertas.length > 1 ? "s" : ""} aberta{inconsAbertas.length > 1 ? "s" : ""}
-                          </p>
+                      {config.avisoInconsistencias && inconsAbertas.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-warning">
+                              🟠 {inconsAbertas.length} inconsistência{inconsAbertas.length > 1 ? "s" : ""} aberta{inconsAbertas.length > 1 ? "s" : ""}
+                            </p>
+                            <Link to="/painel/inconsistencias" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
                           {inconsAbertas.slice(0, 3).map((i) => (
                             <div key={i.id} className="truncate border-b py-1.5 last:border-0">
                               {produtos.find((p) => p.id === i.produtoId)?.nome ?? "Produto"}
@@ -234,8 +274,29 @@ function PainelLayout() {
                           ))}
                         </div>
                       )}
+                      {config.alertaPedidos && pedidosAtencao.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-blue-500">
+                              🔵 {pedidosAtencao.length} pedido{pedidosAtencao.length > 1 ? "s" : ""} pendente{pedidosAtencao.length > 1 ? "s" : ""}
+                            </p>
+                            <Link to="/painel/pedidos" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
+                          {pedidosAtencao.slice(0, 3).map((p) => (
+                            <div key={p.id} className="flex justify-between border-b py-1.5 last:border-0">
+                              <span className="truncate font-medium">{p.numero}</span>
+                              <span className="ml-2 shrink-0 text-muted-foreground capitalize">{p.fornecedorNome || "—"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
+                  <div className="border-t px-4 py-2 text-right">
+                    <Link to="/painel/configuracoes" className="text-xs text-muted-foreground hover:text-foreground" onClick={fecharNotif}>
+                      Configurar alertas →
+                    </Link>
+                  </div>
                 </div>
               </>
             )}
