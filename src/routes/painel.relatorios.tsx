@@ -1,5 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, PackageX, TrendingDown, Trophy } from "lucide-react";
+import { BarChart3, Download, PackageX, TrendingDown, Trophy } from "lucide-react";
+
+function exportCsv(rows: string[][], filename: string) {
+  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
 import { brl } from "@/lib/mock-data";
 import { useEstoque, type Mov } from "@/lib/estoque-store";
 import { HOJE, diasSemVenda, vendasPorProduto } from "@/lib/computed";
@@ -46,9 +55,21 @@ function Relatorios() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Relatórios</h1>
-        <p className="text-sm text-muted-foreground">{new Date(HOJE).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })} · o que mais vende, o que está parado e o que se perdeu.</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Relatórios</h1>
+          <p className="text-sm text-muted-foreground">{new Date(HOJE).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })} · o que mais vende, o que está parado e o que se perdeu.</p>
+        </div>
+        <button
+          onClick={() => {
+            const cab = ["Classe", "Produto", "Código", "Categoria", "Faturamento (R$)", "% do Total"];
+            const linhas = abc.map((l) => [l.classe, l.p.nome, l.p.codigo, l.p.categoria, l.fat.toFixed(2), l.pct.toFixed(2)]);
+            exportCsv([cab, ...linhas], `curva-abc-${new Date().toISOString().slice(0, 7)}.csv`);
+          }}
+          className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
+        >
+          <Download className="h-4 w-4" /> Exportar Curva ABC
+        </button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {[

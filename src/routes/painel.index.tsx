@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, CalendarClock, DollarSign, PackageMinus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, CalendarClock, ClipboardList, DollarSign, PackageMinus, RefreshCw } from "lucide-react";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
 import { abaixoDoMinimo, HOJE, lotesVencendo, vendasHoje, vendasOntem, vendasPorHora } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
+import { useAuth } from "@/lib/auth";
+import { usePedidos } from "@/lib/pedidos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/")({
@@ -43,6 +45,8 @@ function Inicio() {
   const op = useOperacao();
   const config = useConfig();
   const equipe = useEquipe();
+  const auth = useAuth();
+  const pedidos = usePedidos();
   const dono = equipe[0];
 
   const hoje = vendasHoje(est.movs);
@@ -61,6 +65,9 @@ function Inicio() {
   const reposicao = abaixo.slice(0, 4);
   const validades = lotesVencendo(est.lotes, config.avisoVencimento1);
 
+  const pedidosPendentes = pedidos.filter((p) => p.status !== "recebido" && p.status !== "cancelado");
+  const totalPedidosPendentes = pedidosPendentes.reduce((s, p) => s + p.total, 0);
+
   const kpis = [
     { label: "Vendas hoje", valor: brl(hoje), extra: pctLabel, icon: DollarSign, tom: "primary" },
     { label: "Abaixo do mínimo", valor: String(abaixo.length), extra: `${abaixo.length} aguardam reposição`, icon: PackageMinus, tom: "warning" },
@@ -72,16 +79,17 @@ function Inicio() {
       tom: vencendoUrgente.length > 0 ? "destructive" : "primary",
     },
     { label: "Inconsistências", valor: String(inconsAbertas.length), extra: "aguardando análise", icon: AlertTriangle, tom: inconsAbertas.length > 0 ? "warning" : "primary" },
+    { label: "Pedidos de compra", valor: String(pedidosPendentes.length), extra: pedidosPendentes.length > 0 ? brl(totalPedidosPendentes) + " em aberto" : "nenhum pendente", icon: ClipboardList, tom: pedidosPendentes.length > 0 ? "warning" : "primary" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
         <p className="text-sm text-muted-foreground">{dataFormatada()}</p>
-        <h1 className="text-3xl font-bold">{saudacao()}, {dono?.nome.split(" ")[0] ?? "Maria"} 👋</h1>
+        <h1 className="text-3xl font-bold">{saudacao()}, {(auth.nomeProprietario ?? dono?.nome ?? "Gestor").split(" ")[0]} 👋</h1>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
         {kpis.map(({ label, valor, extra, icon: Icon, tom }) => (
           <div key={label} className="rounded-2xl border bg-card p-5 shadow-elegant">
             <div className="flex items-center justify-between">
