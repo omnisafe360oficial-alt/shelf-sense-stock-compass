@@ -69,3 +69,41 @@ export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {
     .filter((l) => l.dias <= limiar)
     .sort((a, b) => a.dias - b.dias);
 }
+
+export type SugestaoPedido = {
+  produto: Produto;
+  gondolaAtual: number;
+  mediaDiaria: number;
+  diasRestantes: number;
+  qtdSugerida: number;
+};
+
+export function sugestoesPedido(
+  movs: Mov[],
+  gondola: Record<string, number>,
+  diasLead = 7
+): SugestaoPedido[] {
+  const PERIODO = 30;
+  const SEGURANCA = 3;
+  const inicio = new Date(new Date(HOJE).getTime() - PERIODO * 86_400_000).toISOString().slice(0, 10);
+
+  const vendas: Record<string, number> = {};
+  for (const m of movs) {
+    if (m.tipo !== "venda") continue;
+    if (m.data.slice(0, 10) < inicio) continue;
+    vendas[m.produtoId] = (vendas[m.produtoId] ?? 0) + Math.abs(m.qtd);
+  }
+
+  return getProdutos()
+    .map((p) => {
+      const vendido = vendas[p.id] ?? 0;
+      const mediaDiaria = vendido / PERIODO;
+      const atual = gondola[p.id] ?? 0;
+      const diasRestantes = mediaDiaria > 0 ? Math.floor(atual / mediaDiaria) : 999;
+      const meta = Math.ceil((diasLead + SEGURANCA) * mediaDiaria);
+      const qtdSugerida = Math.max(0, meta - atual);
+      return { produto: p, gondolaAtual: atual, mediaDiaria, diasRestantes, qtdSugerida };
+    })
+    .filter((s) => s.qtdSugerida > 0)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes);
+}

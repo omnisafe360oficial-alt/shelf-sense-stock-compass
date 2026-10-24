@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, ShoppingCart } from "lucide-react";
+import { Lightbulb, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePedidos } from "@/lib/pedidos-store";
 import type { PedidoStatus } from "@/lib/pedidos-store";
@@ -40,9 +40,14 @@ function PedidosPage() {
           <h1 className="text-3xl font-bold">Pedidos de Compra</h1>
           <p className="text-muted-foreground">{pedidos.length} pedido{pedidos.length !== 1 ? "s" : ""} no sistema</p>
         </div>
-        <Link to="/painel/pedidos/novo">
-          <Button size="lg"><Plus className="mr-1 h-4 w-4" /> Novo pedido</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/painel/pedidos/sugerir">
+            <Button size="lg" variant="outline"><Lightbulb className="mr-1 h-4 w-4" /> Sugerir pedido</Button>
+          </Link>
+          <Link to="/painel/pedidos/novo">
+            <Button size="lg"><Plus className="mr-1 h-4 w-4" /> Novo pedido</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

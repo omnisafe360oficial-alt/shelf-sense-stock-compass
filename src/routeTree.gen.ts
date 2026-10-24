@@ -30,6 +30,7 @@ import { Route as PainelFornecedoresIdRouteImport } from './routes/painel.fornec
 import { Route as PainelPedidosIndexRouteImport } from './routes/painel.pedidos.index'
 import { Route as PainelPedidosIdRouteImport } from './routes/painel.pedidos.$id'
 import { Route as PainelPedidosNovoRouteImport } from './routes/painel.pedidos.novo'
+import { Route as PainelPedidosSugerirRouteImport } from './routes/painel.pedidos.sugerir'
 import { Route as PainelProdutosIndexRouteImport } from './routes/painel.produtos.index'
 import { Route as PainelProdutosIdRouteImport } from './routes/painel.produtos.$id'
 import { Route as PainelProdutosImportarRouteImport } from './routes/painel.produtos.importar'
@@ -140,6 +141,11 @@ const PainelPedidosNovoRoute = PainelPedidosNovoRouteImport.update({
   path: '/pedidos/novo',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelPedidosSugerirRoute = PainelPedidosSugerirRouteImport.update({
+  id: '/pedidos/sugerir',
+  path: '/pedidos/sugerir',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelProdutosIndexRoute = PainelProdutosIndexRouteImport.update({
   id: '/produtos/',
   path: '/produtos/',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
   '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
   '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
   '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/painel/fornecedores/$id'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
     | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/painel/fornecedores/$id'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
     | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/painel/fornecedores/$id'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
     | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
@@ -481,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelPedidosNovoRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/pedidos/sugerir': {
+      id: '/painel/pedidos/sugerir'
+      path: '/pedidos/sugerir'
+      fullPath: '/painel/pedidos/sugerir'
+      preLoaderRoute: typeof PainelPedidosSugerirRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/produtos/': {
       id: '/painel/produtos/'
       path: '/produtos'
@@ -528,6 +547,7 @@ interface PainelRouteChildren {
   PainelFornecedoresIdRoute: typeof PainelFornecedoresIdRoute
   PainelPedidosIdRoute: typeof PainelPedidosIdRoute
   PainelPedidosNovoRoute: typeof PainelPedidosNovoRoute
+  PainelPedidosSugerirRoute: typeof PainelPedidosSugerirRoute
   PainelProdutosIdRoute: typeof PainelProdutosIdRoute
   PainelProdutosImportarRoute: typeof PainelProdutosImportarRoute
   PainelProdutosNovoRoute: typeof PainelProdutosNovoRoute
@@ -552,6 +572,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelFornecedoresIdRoute: PainelFornecedoresIdRoute,
   PainelPedidosIdRoute: PainelPedidosIdRoute,
   PainelPedidosNovoRoute: PainelPedidosNovoRoute,
+  PainelPedidosSugerirRoute: PainelPedidosSugerirRoute,
   PainelProdutosIdRoute: PainelProdutosIdRoute,
   PainelProdutosImportarRoute: PainelProdutosImportarRoute,
   PainelProdutosNovoRoute: PainelProdutosNovoRoute,
