@@ -70,6 +70,28 @@ export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {
     .sort((a, b) => a.dias - b.dias);
 }
 
+export type DiaVenda = { data: string; valor: number; label: string };
+
+export function vendasPorDia(movs: Mov[], dias = 30): DiaVenda[] {
+  const resultado: DiaVenda[] = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const d = new Date(new Date(HOJE).getTime() - i * 86_400_000);
+    const ds = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const valor = movs
+      .filter((m) => m.tipo === "venda" && m.data.slice(0, 10) === ds)
+      .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    resultado.push({ data: ds, valor, label });
+  }
+  return resultado;
+}
+
+export function faturamentoMes(movs: Mov[], anoMes: string): number {
+  return movs
+    .filter((m) => m.tipo === "venda" && m.data.slice(0, 7) === anoMes)
+    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+}
+
 export type SugestaoPedido = {
   produto: Produto;
   gondolaAtual: number;
