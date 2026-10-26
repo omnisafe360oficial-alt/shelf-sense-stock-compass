@@ -40,8 +40,10 @@ const inicial = {
   fornecedorId: "", novoFornecedor: false, fNome: "", fCnpj: "", fContato: "",
   unidade: "un", embalagem: "Caixa", porEmbalagem: "12",
   custo: "", venda: "",
-  lote: "", validade: "", qtdDeposito: "", local: "",
+  lote: "", validade: "", qtdDeposito: "",
+  depRua: "", depPrateleira: "", depNivel: "",
   qtdGondola: "", minimo: "", maximo: "",
+  gondCorredor: "", gondGondola: "", gondNivel: "" as "" | "Alto" | "Médio" | "Baixo", gondPosicao: "",
 };
 
 function Campo({ label, children, dica }: { label: string; children: ReactNode; dica?: string }) {
@@ -84,6 +86,13 @@ function NovoProduto() {
     const qtdGond = num(f.qtdGondola);
     const total = qtdDep + qtdGond;
 
+    const localDeposito = f.depRua && f.depPrateleira && f.depNivel
+      ? { rua: f.depRua, prateleira: f.depPrateleira, nivel: Number(f.depNivel) }
+      : undefined;
+    const localGondola = f.gondCorredor && f.gondGondola && f.gondNivel && f.gondPosicao
+      ? { corredor: f.gondCorredor, gondola: f.gondGondola, nivel: f.gondNivel as "Alto" | "Médio" | "Baixo", posicao: Number(f.gondPosicao) }
+      : undefined;
+
     const id = cadastrarProduto({
       nome: f.nome.trim(),
       codigo: f.codigo,
@@ -94,6 +103,8 @@ function NovoProduto() {
       gondola: 0,
       minimo: num(f.minimo),
       validade: f.validade || undefined,
+      localDeposito,
+      localGondola,
     });
 
     inicializarProduto(id);
@@ -193,7 +204,14 @@ function NovoProduto() {
               <Campo label="Lote"><Input value={f.lote} onChange={set("lote")} placeholder="Ex.: L2310A" className="font-mono" /></Campo>
               <Campo label="Data de validade" dica="Você será avisado antes de vencer."><Input type="date" value={f.validade} onChange={set("validade")} /></Campo>
               <Campo label={`Quantidade no depósito (${f.unidade})`}><Input inputMode="numeric" value={f.qtdDeposito} onChange={set("qtdDeposito")} placeholder="0" /></Campo>
-              <Campo label="Local no depósito"><Input value={f.local} onChange={set("local")} placeholder="Corredor 3 · Prateleira B" /></Campo>
+              <div className="sm:col-span-2">
+                <p className="mb-3 text-sm font-semibold text-muted-foreground">Localização no depósito <span className="font-normal">(opcional)</span></p>
+                <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-3">
+                  <Campo label="Rua"><Input value={f.depRua} onChange={set("depRua")} placeholder="Ex.: A" /></Campo>
+                  <Campo label="Prateleira"><Input value={f.depPrateleira} onChange={set("depPrateleira")} placeholder="Ex.: B3" /></Campo>
+                  <Campo label="Nível (número)"><Input inputMode="numeric" value={f.depNivel} onChange={(e) => setF({ ...f, depNivel: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 2" /></Campo>
+                </div>
+              </div>
             </div>
           )}
 
@@ -209,16 +227,41 @@ function NovoProduto() {
                   Exemplo: com {num(f.qtdGondola) || 20} na gôndola, depois de vender {Math.max(0, (num(f.qtdGondola) || 20) - num(f.minimo))} unidades o PDV avisa o repositor para repor{num(f.maximo) ? ` até ${num(f.maximo)}` : ""}.
                 </div>
               )}
+              <div>
+                <p className="mb-3 text-sm font-semibold text-muted-foreground">Localização na gôndola <span className="font-normal">(opcional)</span></p>
+                <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-4">
+                  <Campo label="Corredor"><Input value={f.gondCorredor} onChange={set("gondCorredor")} placeholder="Ex.: 3" /></Campo>
+                  <Campo label="Gôndola"><Input value={f.gondGondola} onChange={set("gondGondola")} placeholder="Ex.: G2" /></Campo>
+                  <Campo label="Nível">
+                    <div className="flex gap-1.5">
+                      {(["Alto", "Médio", "Baixo"] as const).map((n) => (
+                        <button key={n} type="button" onClick={() => setF({ ...f, gondNivel: n })}
+                          className={cn("flex-1 rounded-lg border py-2 text-xs font-semibold", f.gondNivel === n ? "border-primary bg-primary text-primary-foreground" : "")}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </Campo>
+                  <Campo label="Posição"><Input inputMode="numeric" value={f.gondPosicao} onChange={(e) => setF({ ...f, gondPosicao: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 4" /></Campo>
+                </div>
+              </div>
             </div>
           )}
 
           {step === 6 && (
             <dl className="grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
               {[
-                ["Produto", `${f.nome} (${f.marca || "sem marca"})`], ["Código", f.codigo], ["Categoria", f.categoria],
-                ["Fornecedor", fornecedorNome], ["Conversão", `1 ${f.embalagem} = ${f.porEmbalagem} ${f.unidade}`],
-                ["Custo / venda", `${brl(custo)} → ${brl(venda)}`], ["Lote / validade", `${f.lote} · ${f.validade.split("-").reverse().join("/")}`],
-                ["Depósito", `${f.qtdDeposito} ${f.unidade} · ${f.local || "sem local"}`], ["Gôndola", `${f.qtdGondola} · mín. ${f.minimo}${f.maximo ? ` · máx. ${f.maximo}` : ""}`],
+                ["Produto", `${f.nome} (${f.marca || "sem marca"})`],
+                ["Código", f.codigo],
+                ["Categoria", f.categoria],
+                ["Fornecedor", fornecedorNome],
+                ["Conversão", `1 ${f.embalagem} = ${f.porEmbalagem} ${f.unidade}`],
+                ["Custo / venda", `${brl(custo)} → ${brl(venda)}`],
+                ["Lote / validade", `${f.lote} · ${f.validade.split("-").reverse().join("/")}`],
+                ["Depósito", `${f.qtdDeposito} ${f.unidade}`],
+                ["Local depósito", f.depRua ? `Rua ${f.depRua} · Prat. ${f.depPrateleira} · Nív. ${f.depNivel}` : "Não informado"],
+                ["Gôndola", `${f.qtdGondola} · mín. ${f.minimo}${f.maximo ? ` · máx. ${f.maximo}` : ""}`],
+                ["Local gôndola", f.gondCorredor ? `Corr. ${f.gondCorredor} · ${f.gondGondola} · ${f.gondNivel} · Pos. ${f.gondPosicao}` : "Não informado"],
               ].map(([k, v]) => (
                 <div key={k} className="border-b pb-3"><dt className="text-xs uppercase text-muted-foreground">{k}</dt><dd className="mt-1 font-semibold">{v}</dd></div>
               ))}

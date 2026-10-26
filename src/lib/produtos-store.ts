@@ -70,6 +70,8 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         fornecedor_nome: dados.fornecedor,
         preco_venda: dados.preco,
         minimo: dados.minimo,
+        local_deposito: dados.localDeposito ?? null,
+        local_gondola: dados.localGondola ?? null,
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar produto: " + error.message); });
   }
@@ -88,10 +90,25 @@ export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): 
     if (dados.fornecedor !== undefined) payload.fornecedor_nome = dados.fornecedor;
     if (dados.preco !== undefined) payload.preco_venda = dados.preco;
     if (dados.minimo !== undefined) payload.minimo = dados.minimo;
+    if ("localDeposito" in dados) payload.local_deposito = dados.localDeposito ?? null;
+    if ("localGondola" in dados) payload.local_gondola = dados.localGondola ?? null;
     supabase
       .from("produtos")
       .update(payload)
       .eq("id", id)
       .then(({ error }) => { if (error) toast.error("Erro ao atualizar produto: " + error.message); });
+  }
+}
+
+export function excluirProduto(id: string): void {
+  estado = estado.filter((p) => p.id !== id);
+  notificar();
+  const lojaId = getLojaId();
+  if (lojaId) {
+    supabase
+      .from("produtos")
+      .delete()
+      .eq("id", id)
+      .then(({ error }) => { if (error) toast.error("Erro ao excluir produto: " + error.message); });
   }
 }
