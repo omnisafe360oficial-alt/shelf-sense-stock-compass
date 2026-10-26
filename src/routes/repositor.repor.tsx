@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
-import { AlertTriangle, CheckCircle2, ChevronRight, MapPin, Package, ScanLine, Warehouse, X, ZoomIn } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, CheckCircle2, ChevronRight, MapPin, Package, ScanLine, Warehouse, ZoomIn } from "lucide-react";
 import {
   CATALOGO_REPOSITOR,
   LOCAIS_DEPOSITO,
@@ -9,6 +9,8 @@ import {
   getRepositorEstado,
   registrarReposicao,
 } from "@/lib/repositor-store";
+import { BarcodeScanner } from "@/components/barcode-scanner";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/repositor/repor")({
@@ -114,6 +116,7 @@ function LocalCard({ title, icon: Icon, items }: { title: string; icon: React.El
 function RepositorRepor() {
   const { tarefaId } = Route.useSearch();
   const navigate = useNavigate();
+  const auth = useAuth();
 
   const tarefa = tarefaId ? getRepositorEstado().tarefas.find((t) => t.id === tarefaId) : null;
   const produtoInicial: Produto | null = tarefa
@@ -132,8 +135,6 @@ function RepositorRepor() {
     scanModal: false,
     resultado: null,
   });
-
-  const scanInputRef = useRef<HTMLInputElement>(null);
 
   function up(patch: Partial<FluxoState>) {
     setS((prev) => ({ ...prev, ...patch }));
@@ -174,7 +175,7 @@ function RepositorRepor() {
       produtoId: s.produto.id,
       produtoNome: s.produto.nome,
       produtoCodigo: s.produto.codigo,
-      operador: "Pedro Rocha",
+      operador: auth.nomeProprietario ?? "Repositor",
       tarefaId: tarefaId,
       qtdSistema: s.resultado?.sistema ?? s.produto.gondola,
       qtdContada: s.qtdContada ?? 0,
@@ -190,85 +191,28 @@ function RepositorRepor() {
 
   // ── SCAN MODAL ──────────────────────────────────────────────────────────────
   if (s.scanModal) {
-    const scanProduto = s.scanInput.length >= 6 ? buscarPorCodigo(s.scanInput) : null;
     return (
-      <div className="flex h-full flex-col bg-background">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <button onClick={() => up({ scanModal: false, scanInput: "" })} className="text-muted-foreground">
-            <X className="h-5 w-5" />
-          </button>
-          <p className="font-display text-sm font-semibold text-foreground">Escanear produto</p>
-          <div className="w-5" />
-        </div>
-
-        {/* Viewfinder */}
-        <div className="relative mx-4 mt-5 overflow-hidden rounded-2xl bg-black" style={{ aspectRatio: "4/3" }}>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative h-48 w-64">
-              <div className="absolute left-0 top-0 h-8 w-8 border-l-4 border-t-4 border-primary rounded-tl-xl" />
-              <div className="absolute right-0 top-0 h-8 w-8 border-r-4 border-t-4 border-primary rounded-tr-xl" />
-              <div className="absolute bottom-0 left-0 h-8 w-8 border-b-4 border-l-4 border-primary rounded-bl-xl" />
-              <div className="absolute bottom-0 right-0 h-8 w-8 border-b-4 border-r-4 border-primary rounded-br-xl" />
-              <div className="absolute left-4 right-4 top-1/2 h-0.5 bg-primary/70 animate-pulse" />
-            </div>
-          </div>
-          <div className="absolute bottom-3 left-0 right-0 text-center text-xs text-white/60">
-            Simulação — use o campo abaixo
-          </div>
-        </div>
-
-        <div className="mt-5 px-4 space-y-4">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Código de barras (manual)</label>
-            <input
-              ref={scanInputRef}
-              type="text"
-              inputMode="numeric"
-              value={s.scanInput}
-              onChange={(e) => up({ scanInput: e.target.value })}
-              placeholder="7891150037410"
-              className="mt-1.5 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-primary"
-            />
-          </div>
-
-          {scanProduto ? (
-            <div className="rounded-xl border border-success/30 bg-success/10 p-3">
-              <p className="text-xs font-semibold text-success">Produto encontrado ✓</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">{scanProduto.nome}</p>
-              <p className="text-xs text-muted-foreground">{scanProduto.categoria}</p>
-            </div>
-          ) : s.scanInput.length >= 6 ? (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3">
-              <p className="text-xs font-semibold text-destructive">Produto não encontrado</p>
-              <p className="text-xs text-muted-foreground">Verifique o código e tente novamente</p>
-            </div>
-          ) : null}
-
-          <button
-            onClick={confirmarScan}
-            disabled={!scanProduto}
-            className="w-full rounded-xl py-3.5 text-sm font-semibold text-white disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg, oklch(0.24 0.06 230), oklch(0.45 0.1 215) 55%, oklch(0.72 0.14 180))" }}
-          >
-            Confirmar produto
-          </button>
-
-          <div className="pb-2 space-y-1">
-            <p className="text-[10px] text-muted-foreground text-center">Produtos para testar:</p>
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              {CATALOGO_REPOSITOR.slice(0, 5).map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => up({ scanInput: p.codigo })}
-                  className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-medium text-muted-foreground"
-                >
-                  {p.codigo.slice(-4)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <BarcodeScanner
+        titulo="Escanear produto"
+        onClose={() => up({ scanModal: false, scanInput: "" })}
+        onScan={(codigo) => {
+          const produto = buscarPorCodigo(codigo);
+          if (produto) {
+            const p: Produto = {
+              id: produto.id,
+              nome: produto.nome,
+              codigo: produto.codigo,
+              categoria: produto.categoria,
+              deposito: produto.deposito,
+              gondola: produto.gondola,
+              minimo: produto.minimo,
+            };
+            up({ produto: p, scanModal: false, scanInput: "", etapa: "gondola_loc" });
+          } else {
+            up({ scanInput: codigo });
+          }
+        }}
+      />
     );
   }
 

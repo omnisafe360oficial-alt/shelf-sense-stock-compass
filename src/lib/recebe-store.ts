@@ -1,4 +1,7 @@
 import { useSyncExternalStore } from "react";
+import { toast } from "sonner";
+import { supabase } from "./supabase";
+import { onLojaChange, getLojaId } from "./loja-resolver";
 import { produtos as CATALOGO } from "./mock-data";
 
 export { CATALOGO as CATALOGO_PRODUTOS };
@@ -74,6 +77,7 @@ export type Recebimento = {
 type Estado = {
   pedidos: PedidoMock[];
   recebimentos: Recebimento[];
+  carregando: boolean;
 };
 
 const PEDIDOS_INICIAIS: PedidoMock[] = [
@@ -112,40 +116,42 @@ const PEDIDOS_INICIAIS: PedidoMock[] = [
   },
 ];
 
-function carregarEstado(): Estado {
-  try {
-    const salvo = localStorage.getItem("omnisafe_recebe_v1");
-    if (salvo) {
-      const parsed = JSON.parse(salvo) as Partial<Estado>;
-      return {
-        pedidos: parsed.pedidos ?? PEDIDOS_INICIAIS,
-        recebimentos: parsed.recebimentos ?? [],
-      };
-    }
-  } catch {}
-  return { pedidos: PEDIDOS_INICIAIS, recebimentos: [] };
-}
-
-function salvarEstado(e: Estado) {
-  try {
-    localStorage.setItem("omnisafe_recebe_v1", JSON.stringify(e));
-  } catch {}
-}
-
-let estado: Estado = carregarEstado();
+let estado: Estado = { pedidos: PEDIDOS_INICIAIS, recebimentos: [], carregando: false };
 const ouvintes = new Set<() => void>();
-const emitir = (n: Estado) => {
-  estado = n;
-  salvarEstado(n);
-  ouvintes.forEach((o) => o());
-};
+const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
+
+function mapRecebimento(row: Record<string, unknown>): Recebimento {
+  return {
+    id: row.id as string,
+    data: row.data as string,
+    fornecedor: row.fornecedor as string,
+    pedidoId: (row.pedido_id as string) ?? undefined,
+    pedidoNumero: (row.pedido_numero as string) ?? undefined,
+    operador: row.operador as string,
+    itens: (row.itens as ItemRecebimento[]) ?? [],
+    observacaoGeral: (row.observacao_geral as string) ?? "",
+    totalDivergencias: (row.total_divergencias as number) ?? 0,
+  };
+}
+
+onLojaChange(async (lojaId) => {
+  if (!lojaId) {
+    emitir({ ...estado, recebimentos: [] });
+    return;
+  }
+  const { data, error } = await supabase
+    .from("recebimentos")
+    .select("*")
+    .eq("loja_id", lojaId)
+    .order("data", { ascending: false })
+    .limit(200);
+  if (error) toast.error("Erro ao carregar recebimentos");
+  emitir({ ...estado, recebimentos: (data ?? []).map(mapRecebimento), carregando: false });
+});
 
 export function useRecebeEstado() {
   return useSyncExternalStore(
-    (cb) => {
-      ouvintes.add(cb);
-      return () => ouvintes.delete(cb);
-    },
+    (cb) => { ouvintes.add(cb); return () => ouvintes.delete(cb); },
     () => estado,
     () => estado,
   );
@@ -156,11 +162,13 @@ export function getRecebeEstado() {
 }
 
 export function finalizarRecebimento(rec: Omit<Recebimento, "id" | "data">) {
+  const lojaId = getLojaId();
   const novo: Recebimento = {
     ...rec,
     id: crypto.randomUUID(),
     data: new Date().toISOString(),
   };
+
   let pedidos = estado.pedidos;
   if (rec.pedidoId) {
     pedidos = estado.pedidos.map((p) => {
@@ -176,6 +184,22 @@ export function finalizarRecebimento(rec: Omit<Recebimento, "id" | "data">) {
       return { ...p, itens: itensAtualizados, status: novoStatus };
     });
   }
-  emitir({ pedidos, recebimentos: [novo, ...estado.recebimentos] });
+  emitir({ ...estado, pedidos, recebimentos: [novo, ...estado.recebimentos] });
+
+  if (lojaId) {
+    supabase.from("recebimentos").insert({
+      id: novo.id,
+      loja_id: lojaId,
+      data: novo.data,
+      fornecedor: novo.fornecedor,
+      pedido_id: novo.pedidoId ?? null,
+      pedido_numero: novo.pedidoNumero ?? null,
+      operador: novo.operador,
+      itens: novo.itens,
+      observacao_geral: novo.observacaoGeral,
+      total_divergencias: novo.totalDivergencias,
+    }).then(({ error }) => { if (error) toast.error("Erro ao salvar recebimento: " + error.message); });
+  }
+
   return novo;
 }

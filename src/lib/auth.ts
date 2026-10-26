@@ -8,9 +8,10 @@ type AuthState = {
   session: Session | null;
   lojaId: string | null;
   nomeProprietario: string | null;
+  papel: string | null;
 };
 
-let state: AuthState = { loading: true, session: null, lojaId: null, nomeProprietario: null };
+let state: AuthState = { loading: true, session: null, lojaId: null, nomeProprietario: null, papel: null };
 const listeners = new Set<() => void>();
 
 function set(partial: Partial<AuthState>) {
@@ -21,15 +22,14 @@ function set(partial: Partial<AuthState>) {
 async function carregarLoja(userId: string) {
   const { data } = await supabase
     .from("membros")
-    .select("loja_id, nome")
+    .select("loja_id, nome, papel")
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
-  set({ lojaId: data?.loja_id ?? null, nomeProprietario: data?.nome ?? null });
+  set({ lojaId: data?.loja_id ?? null, nomeProprietario: data?.nome ?? null, papel: data?.papel ?? null });
   emitLojaChange(data?.loja_id ?? null);
 }
 
-// Inicializa ao importar o módulo
 supabase.auth.getSession().then(({ data }) => {
   if (data.session) {
     set({ session: data.session });
@@ -44,7 +44,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
     set({ session, loading: true });
     carregarLoja(session.user.id).then(() => set({ loading: false }));
   } else {
-    set({ session: null, lojaId: null, nomeProprietario: null, loading: false });
+    set({ session: null, lojaId: null, nomeProprietario: null, papel: null, loading: false });
     emitLojaChange(null);
   }
 });
