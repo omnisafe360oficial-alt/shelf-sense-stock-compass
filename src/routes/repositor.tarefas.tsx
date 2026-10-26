@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AlertTriangle, ChevronRight, ClipboardCheck, MapPin, Package, RefreshCw, Warehouse } from "lucide-react";
-import { LOCAIS_DEPOSITO, LOCAIS_GONDOLA, useRepositorEstado, resetarTarefas, type TarefaStatus, type TarefaPrioridade } from "@/lib/repositor-store";
+import { getLocaisDeposito, getLocaisGondola, useRepositorEstado, resetarTarefas, type TarefaStatus, type TarefaPrioridade } from "@/lib/repositor-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/repositor/tarefas")({ component: RepositorTarefas });
@@ -55,8 +55,8 @@ function RepositorTarefas() {
   const tarefa = detalheId ? tarefas.find((t) => t.id === detalheId) : null;
 
   if (tarefa) {
-    const locDep = LOCAIS_DEPOSITO[tarefa.produtoId];
-    const locGon = LOCAIS_GONDOLA[tarefa.produtoId];
+    const locDep = getLocaisDeposito()[tarefa.produtoId];
+    const locGon = getLocaisGondola()[tarefa.produtoId];
     const cfg = PRIORIDADE_CFG[tarefa.prioridade];
     const sCfg = STATUS_CFG[tarefa.status];
     const podeRepor = tarefa.status === "pendente" || tarefa.status === "em_andamento";
@@ -208,7 +208,7 @@ function RepositorTarefas() {
           filtradas.map((t) => {
             const pCfg = PRIORIDADE_CFG[t.prioridade];
             const sCfg = STATUS_CFG[t.status];
-            const locGon = LOCAIS_GONDOLA[t.produtoId];
+            const locGon = getLocaisGondola()[t.produtoId];
             const pct = Math.min(100, (t.qtdGondola / (t.qtdMinima * 3)) * 100);
 
             return (

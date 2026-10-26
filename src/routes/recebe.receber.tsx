@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,13 +15,14 @@ import {
   X,
 } from "lucide-react";
 import {
-  CATALOGO_PRODUTOS,
   UNIDADES_CONFIG,
   finalizarRecebimento,
   getRecebeEstado,
   type ItemRecebimento,
   type RecebeUnidade,
 } from "@/lib/recebe-store";
+import { getProdutos } from "@/lib/produtos-store";
+import { BarcodeScanner } from "@/components/barcode-scanner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/recebe/receber")({
@@ -161,12 +162,6 @@ function ReceberFluxo() {
   const [busca, setBusca] = useState("");
   const [showLista, setShowLista] = useState(false);
   const [scanModal, setScanModal] = useState(false);
-  const [scanInput, setScanInput] = useState("");
-  const scanRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (scanModal && scanRef.current) scanRef.current.focus();
-  }, [scanModal]);
 
   const up = (patch: Partial<FluxoState>) => setS((prev) => ({ ...prev, ...patch }));
 
@@ -266,17 +261,8 @@ function ReceberFluxo() {
     });
   }
 
-  function scanBuscar() {
-    const produto = CATALOGO_PRODUTOS.find((p) => p.codigo === scanInput.trim());
-    if (produto) {
-      setScanModal(false);
-      setScanInput("");
-      selecionarProduto({ id: produto.id, nome: produto.nome, codigo: produto.codigo, categoria: produto.categoria });
-    }
-  }
-
   const buscaFiltrada = busca.length >= 2
-    ? CATALOGO_PRODUTOS.filter(
+    ? getProdutos().filter(
         (p) =>
           p.nome.toLowerCase().includes(busca.toLowerCase()) ||
           p.codigo.includes(busca),
@@ -528,61 +514,18 @@ function ReceberFluxo() {
 
         {/* Modal scan */}
         {scanModal && (
-          <div className="fixed inset-0 z-50 flex flex-col bg-black/90">
-            <div className="flex items-center justify-between px-4 py-4">
-              <p className="font-display text-base font-semibold text-white">Escanear produto</p>
-              <button onClick={() => { setScanModal(false); setScanInput(""); }} className="text-white/70">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="mx-4 my-4 flex aspect-square items-center justify-center rounded-2xl border-2 border-primary/40 bg-white/5">
-              <div className="relative h-48 w-48">
-                <div className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-primary" />
-                <div className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-primary" />
-                <div className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-primary" />
-                <div className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-primary" />
-                <div className="absolute inset-x-0 top-1/2 h-0.5 bg-primary/50 animate-pulse" />
-              </div>
-            </div>
-            <div className="px-4 pb-8 space-y-3">
-              <p className="text-center text-sm text-white/60">Ou digite o código manualmente:</p>
-              <input
-                ref={scanRef}
-                type="text"
-                placeholder="Ex: 7893500020110"
-                value={scanInput}
-                onChange={(e) => setScanInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && scanBuscar()}
-                className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-center font-mono text-white placeholder-white/30 outline-none focus:border-primary"
-              />
-              <button
-                onClick={scanBuscar}
-                disabled={!scanInput.trim()}
-                className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-white disabled:opacity-40"
-              >
-                Buscar produto
-              </button>
-              {scanInput && !CATALOGO_PRODUTOS.find((p) => p.codigo === scanInput.trim()) && (
-                <p className="text-center text-xs text-destructive">
-                  Produto não encontrado.{" "}
-                  <button
-                    className="underline"
-                    onClick={() => {
-                      setScanModal(false);
-                      selecionarProduto({
-                        id: crypto.randomUUID(),
-                        nome: "Produto não cadastrado",
-                        codigo: scanInput.trim(),
-                        categoria: "Avulso",
-                      });
-                      setScanInput("");
-                    }}
-                  >
-                    Adicionar manualmente
-                  </button>
-                </p>
-              )}
-            </div>
+          <div className="fixed inset-0 z-50">
+            <BarcodeScanner
+              titulo="Escanear produto"
+              onClose={() => setScanModal(false)}
+              onScan={(codigo) => {
+                const produto = getProdutos().find((p) => p.codigo === codigo.trim());
+                if (produto) {
+                  setScanModal(false);
+                  selecionarProduto({ id: produto.id, nome: produto.nome, codigo: produto.codigo, categoria: produto.categoria });
+                }
+              }}
+            />
           </div>
         )}
 

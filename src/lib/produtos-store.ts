@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { Produto } from "./mock-data";
+
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
 
@@ -22,6 +23,8 @@ function mapDoBanco(row: Record<string, unknown>): Produto {
     gondola: gondola[0]?.qtd_gondola ?? 0,
     minimo: (row.minimo as number) ?? 0,
     validade: (row.validade_padrao_dias as unknown as string) ?? undefined,
+    localDeposito: (row.local_deposito as Produto["localDeposito"]) ?? undefined,
+    localGondola: (row.local_gondola as Produto["localGondola"]) ?? undefined,
   };
 }
 
@@ -33,7 +36,7 @@ onLojaChange(async (lojaId) => {
   }
   const { data, error } = await supabase
     .from("produtos")
-    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, validade_padrao_dias, lotes(qtd), gondola(qtd_gondola)")
+    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, validade_padrao_dias, local_deposito, local_gondola, lotes(qtd), gondola(qtd_gondola)")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar produtos"); return; }

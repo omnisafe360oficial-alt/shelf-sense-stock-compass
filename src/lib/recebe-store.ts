@@ -2,9 +2,6 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
-import { produtos as CATALOGO } from "./mock-data";
-
-export { CATALOGO as CATALOGO_PRODUTOS };
 
 export type RecebeUnidade = "UN" | "CX" | "FD" | "PCT" | "SC" | "DZ" | "BD" | "KG" | "GR" | "L" | "ML" | "GF";
 
@@ -80,43 +77,7 @@ type Estado = {
   carregando: boolean;
 };
 
-const PEDIDOS_INICIAIS: PedidoMock[] = [
-  {
-    id: "pc1",
-    numero: "PC-20241001",
-    fornecedor: "Distribuidora Camil",
-    status: "enviado",
-    dataPrevista: "Hoje",
-    itens: [
-      { produtoId: "3", qtdSolicitada: 40, unidade: "UN", qtdRecebida: 0 },
-      { produtoId: "7", qtdSolicitada: 60, unidade: "UN", qtdRecebida: 0 },
-    ],
-  },
-  {
-    id: "pc2",
-    numero: "PC-20241002",
-    fornecedor: "Unilever Brasil",
-    status: "confirmado",
-    dataPrevista: "Hoje",
-    itens: [
-      { produtoId: "4", qtdSolicitada: 48, unidade: "UN", qtdRecebida: 0 },
-      { produtoId: "6", qtdSolicitada: 36, unidade: "UN", qtdRecebida: 0 },
-    ],
-  },
-  {
-    id: "pc3",
-    numero: "PC-20241003",
-    fornecedor: "Laticínios Serra Verde",
-    status: "enviado",
-    dataPrevista: "Amanhã",
-    itens: [
-      { produtoId: "2", qtdSolicitada: 120, unidade: "UN", qtdRecebida: 0 },
-      { produtoId: "5", qtdSolicitada: 72, unidade: "UN", qtdRecebida: 0 },
-    ],
-  },
-];
-
-let estado: Estado = { pedidos: PEDIDOS_INICIAIS, recebimentos: [], carregando: false };
+let estado: Estado = { pedidos: [], recebimentos: [], carregando: false };
 const ouvintes = new Set<() => void>();
 const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
 
@@ -134,19 +95,55 @@ function mapRecebimento(row: Record<string, unknown>): Recebimento {
   };
 }
 
+function mapPedidoMock(row: Record<string, unknown>): PedidoMock {
+  const itensRaw = (row.itens_pedido as unknown[]) ?? [];
+  return {
+    id: row.id as string,
+    numero: (row.numero as string) ?? "",
+    fornecedor: (row.fornecedor_nome as string) ?? "",
+    status: (row.status as PedidoStatus) ?? "enviado",
+    dataPrevista: (row.data_prevista as string) ?? "",
+    itens: itensRaw.map((i) => {
+      const item = i as Record<string, unknown>;
+      return {
+        produtoId: (item.produto_id as string) ?? "",
+        qtdSolicitada: (item.qtd_solicitada as number) ?? 0,
+        unidade: (item.unidade as string) ?? "UN",
+        qtdRecebida: (item.qtd_recebida as number) ?? 0,
+      };
+    }),
+  };
+}
+
 onLojaChange(async (lojaId) => {
   if (!lojaId) {
-    emitir({ ...estado, recebimentos: [] });
+    emitir({ pedidos: [], recebimentos: [], carregando: false });
     return;
   }
-  const { data, error } = await supabase
-    .from("recebimentos")
-    .select("*")
-    .eq("loja_id", lojaId)
-    .order("data", { ascending: false })
-    .limit(200);
-  if (error) toast.error("Erro ao carregar recebimentos");
-  emitir({ ...estado, recebimentos: (data ?? []).map(mapRecebimento), carregando: false });
+
+  const [pedidosRes, recebimentosRes] = await Promise.all([
+    supabase
+      .from("pedidos_compra")
+      .select("id, numero, fornecedor_nome, status, data_prevista, itens_pedido(produto_id, qtd_solicitada, unidade, qtd_recebida)")
+      .eq("loja_id", lojaId)
+      .neq("status", "rascunho")
+      .order("data_emissao", { ascending: false }),
+    supabase
+      .from("recebimentos")
+      .select("*")
+      .eq("loja_id", lojaId)
+      .order("data", { ascending: false })
+      .limit(200),
+  ]);
+
+  if (pedidosRes.error) toast.error("Erro ao carregar pedidos");
+  if (recebimentosRes.error) toast.error("Erro ao carregar recebimentos");
+
+  emitir({
+    pedidos: (pedidosRes.data ?? []).map((r) => mapPedidoMock(r as Record<string, unknown>)),
+    recebimentos: (recebimentosRes.data ?? []).map(mapRecebimento),
+    carregando: false,
+  });
 });
 
 export function useRecebeEstado() {

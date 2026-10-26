@@ -2,10 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronRight, MapPin, Package, ScanLine, Warehouse, ZoomIn } from "lucide-react";
 import {
-  CATALOGO_REPOSITOR,
-  LOCAIS_DEPOSITO,
-  LOCAIS_GONDOLA,
   buscarPorCodigo,
+  buscarPorId,
   getRepositorEstado,
   registrarReposicao,
 } from "@/lib/repositor-store";
@@ -28,7 +26,7 @@ type Etapa =
   | "repor_qtd"
   | "sucesso";
 
-type Produto = { id: string; nome: string; codigo: string; categoria: string; deposito: number; gondola: number; minimo: number };
+type Produto = { id: string; nome: string; codigo: string; categoria: string; deposito: number; gondola: number; minimo: number; localDeposito?: import("@/lib/mock-data").LocalDeposito; localGondola?: import("@/lib/mock-data").LocalGondola };
 
 type FluxoState = {
   etapa: Etapa;
@@ -120,7 +118,12 @@ function RepositorRepor() {
 
   const tarefa = tarefaId ? getRepositorEstado().tarefas.find((t) => t.id === tarefaId) : null;
   const produtoInicial: Produto | null = tarefa
-    ? (CATALOGO_REPOSITOR.find((p) => p.id === tarefa.produtoId) ?? null)
+    ? (() => {
+        const p = buscarPorId(tarefa.produtoId);
+        return p
+          ? { id: p.id, nome: p.nome, codigo: p.codigo, categoria: p.categoria, deposito: p.deposito, gondola: p.gondola, minimo: p.minimo, localDeposito: p.localDeposito, localGondola: p.localGondola }
+          : { id: tarefa.produtoId, nome: tarefa.produtoNome, codigo: tarefa.produtoCodigo, categoria: tarefa.categoria, deposito: tarefa.qtdDeposito, gondola: tarefa.qtdGondola, minimo: tarefa.qtdMinima };
+      })()
     : null;
 
   const etapaInicial: Etapa = tarefa ? "inicio" : "scan";
@@ -152,7 +155,7 @@ function RepositorRepor() {
   function confirmarScan() {
     const produto = buscarPorCodigo(s.scanInput);
     if (!produto) return;
-    const p: Produto = { id: produto.id, nome: produto.nome, codigo: produto.codigo, categoria: produto.categoria, deposito: produto.deposito, gondola: produto.gondola, minimo: produto.minimo };
+    const p: Produto = { id: produto.id, nome: produto.nome, codigo: produto.codigo, categoria: produto.categoria, deposito: produto.deposito, gondola: produto.gondola, minimo: produto.minimo, localDeposito: produto.localDeposito, localGondola: produto.localGondola };
     up({ produto: p, scanModal: false, scanInput: "", etapa: "gondola_loc" });
   }
 
@@ -186,8 +189,8 @@ function RepositorRepor() {
     up({ etapa: "sucesso" });
   }
 
-  const locDep = s.produto ? LOCAIS_DEPOSITO[s.produto.id] : null;
-  const locGon = s.produto ? LOCAIS_GONDOLA[s.produto.id] : null;
+  const locDep = s.produto?.localDeposito ?? null;
+  const locGon = s.produto?.localGondola ?? null;
 
   // ── SCAN MODAL ──────────────────────────────────────────────────────────────
   if (s.scanModal) {
@@ -206,6 +209,8 @@ function RepositorRepor() {
               deposito: produto.deposito,
               gondola: produto.gondola,
               minimo: produto.minimo,
+              localDeposito: produto.localDeposito,
+              localGondola: produto.localGondola,
             };
             up({ produto: p, scanModal: false, scanInput: "", etapa: "gondola_loc" });
           } else {

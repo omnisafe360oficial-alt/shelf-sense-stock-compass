@@ -2,42 +2,27 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
-import { produtos as CATALOGO } from "./mock-data";
+import type { Produto, LocalDeposito, LocalGondola } from "./mock-data";
 
-export { CATALOGO as CATALOGO_REPOSITOR };
+export type { LocalDeposito, LocalGondola };
 
-export type LocalDeposito = {
-  rua: string;
-  prateleira: string;
-  nivel: number;
-};
+let produtosCache: Produto[] = [];
 
-export type LocalGondola = {
-  corredor: string;
-  gondola: string;
-  nivel: "Alto" | "Médio" | "Baixo";
-  posicao: number;
-};
+export function getLocaisDeposito(): Record<string, LocalDeposito> {
+  const result: Record<string, LocalDeposito> = {};
+  for (const p of produtosCache) {
+    if (p.localDeposito) result[p.id] = p.localDeposito;
+  }
+  return result;
+}
 
-export const LOCAIS_DEPOSITO: Record<string, LocalDeposito> = {
-  "1": { rua: "R2", prateleira: "P3", nivel: 2 },
-  "2": { rua: "R1", prateleira: "P1", nivel: 1 },
-  "3": { rua: "R3", prateleira: "P2", nivel: 3 },
-  "4": { rua: "R2", prateleira: "P4", nivel: 1 },
-  "5": { rua: "R1", prateleira: "P2", nivel: 1 },
-  "6": { rua: "R2", prateleira: "P3", nivel: 3 },
-  "7": { rua: "R3", prateleira: "P1", nivel: 2 },
-};
-
-export const LOCAIS_GONDOLA: Record<string, LocalGondola> = {
-  "1": { corredor: "A", gondola: "G2", nivel: "Médio", posicao: 3 },
-  "2": { corredor: "B", gondola: "G1", nivel: "Baixo", posicao: 1 },
-  "3": { corredor: "C", gondola: "G3", nivel: "Médio", posicao: 2 },
-  "4": { corredor: "A", gondola: "G1", nivel: "Baixo", posicao: 4 },
-  "5": { corredor: "B", gondola: "G2", nivel: "Baixo", posicao: 2 },
-  "6": { corredor: "A", gondola: "G2", nivel: "Alto", posicao: 1 },
-  "7": { corredor: "C", gondola: "G3", nivel: "Médio", posicao: 1 },
-};
+export function getLocaisGondola(): Record<string, LocalGondola> {
+  const result: Record<string, LocalGondola> = {};
+  for (const p of produtosCache) {
+    if (p.localGondola) result[p.id] = p.localGondola;
+  }
+  return result;
+}
 
 export type TarefaStatus = "pendente" | "em_andamento" | "concluida" | "inconsistencia";
 export type TarefaPrioridade = "urgente" | "alta" | "normal";
@@ -79,14 +64,13 @@ type Estado = {
 };
 
 const VAZIO: Estado = { tarefas: [], reposicoes: [], carregando: false };
-
 let estado: Estado = { ...VAZIO, carregando: true };
 const ouvintes = new Set<() => void>();
 const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
 
 function gerarTarefasIniciais(): TarefaReposicao[] {
   const agora = new Date().toISOString();
-  return CATALOGO.filter((p) => p.gondola <= p.minimo).map((p) => {
+  return produtosCache.filter((p) => p.gondola <= p.minimo).map((p) => {
     const falta = p.minimo * 3 - p.gondola;
     const sugerida = Math.min(p.deposito, falta);
     const sem = p.deposito === 0;
@@ -107,6 +91,10 @@ function gerarTarefasIniciais(): TarefaReposicao[] {
       criadaEm: agora,
     };
   });
+}
+
+function isUUID(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
 
 function mapTarefa(row: Record<string, unknown>): TarefaReposicao {
@@ -144,8 +132,39 @@ function mapReposicao(row: Record<string, unknown>): Reposicao {
 }
 
 onLojaChange(async (lojaId) => {
-  if (!lojaId) { emitir({ ...VAZIO }); return; }
+  if (!lojaId) {
+    produtosCache = [];
+    emitir({ ...VAZIO });
+    return;
+  }
   emitir({ ...estado, carregando: true });
+
+  const { data: prodsData } = await supabase
+    .from("produtos")
+    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, validade_padrao_dias, local_deposito, local_gondola, lotes(qtd), gondola(qtd_gondola)")
+    .eq("loja_id", lojaId)
+    .order("nome");
+  if (prodsData) {
+    produtosCache = prodsData.map((row) => {
+      const r = row as Record<string, unknown>;
+      const lotes = (r.lotes as { qtd: number }[] | null) ?? [];
+      const gon = (r.gondola as { qtd_gondola: number }[] | null) ?? [];
+      return {
+        id: r.id as string,
+        nome: (r.nome as string) ?? "",
+        codigo: (r.codigo as string) ?? "",
+        categoria: (r.categoria as string) ?? "",
+        fornecedor: (r.fornecedor_nome as string) ?? "",
+        preco: (r.preco_venda as number) ?? 0,
+        deposito: lotes.reduce((s, l) => s + (l.qtd ?? 0), 0),
+        gondola: gon[0]?.qtd_gondola ?? 0,
+        minimo: (r.minimo as number) ?? 0,
+        validade: (r.validade_padrao_dias as unknown as string) ?? undefined,
+        localDeposito: (r.local_deposito as Produto["localDeposito"]) ?? undefined,
+        localGondola: (r.local_gondola as Produto["localGondola"]) ?? undefined,
+      };
+    });
+  }
 
   const [tarefasRes, reposicoesRes] = await Promise.all([
     supabase.from("tarefas_reposicao").select("*").eq("loja_id", lojaId).order("criada_em"),
@@ -158,31 +177,40 @@ onLojaChange(async (lojaId) => {
   let tarefas = (tarefasRes.data ?? []).map(mapTarefa);
   const reposicoes = (reposicoesRes.data ?? []).map(mapReposicao);
 
-  if (tarefas.length === 0) {
+  const temTarefasStale = tarefas.length > 0 && tarefas.some((t) => !isUUID(t.produtoId));
+
+  if (tarefas.length === 0 || temTarefasStale) {
+    if (temTarefasStale) {
+      await supabase.from("tarefas_reposicao").delete().eq("loja_id", lojaId);
+    }
     const iniciais = gerarTarefasIniciais();
-    const rows = iniciais.map((t) => ({
-      id: t.id,
-      loja_id: lojaId,
-      produto_id: t.produtoId,
-      produto_nome: t.produtoNome,
-      produto_codigo: t.produtoCodigo,
-      categoria: t.categoria,
-      qtd_gondola: t.qtdGondola,
-      qtd_deposito: t.qtdDeposito,
-      qtd_minima: t.qtdMinima,
-      qtd_sugerida: t.qtdSugerida,
-      status: t.status,
-      prioridade: t.prioridade,
-    }));
-    const { data: inseridas, error: errIns } = await supabase
-      .from("tarefas_reposicao")
-      .insert(rows)
-      .select("*");
-    if (errIns) {
-      toast.error("Erro ao criar tarefas iniciais");
-      tarefas = iniciais;
+    if (iniciais.length > 0) {
+      const rows = iniciais.map((t) => ({
+        id: t.id,
+        loja_id: lojaId,
+        produto_id: t.produtoId,
+        produto_nome: t.produtoNome,
+        produto_codigo: t.produtoCodigo,
+        categoria: t.categoria,
+        qtd_gondola: t.qtdGondola,
+        qtd_deposito: t.qtdDeposito,
+        qtd_minima: t.qtdMinima,
+        qtd_sugerida: t.qtdSugerida,
+        status: t.status,
+        prioridade: t.prioridade,
+      }));
+      const { data: inseridas, error: errIns } = await supabase
+        .from("tarefas_reposicao")
+        .insert(rows)
+        .select("*");
+      if (errIns) {
+        toast.error("Erro ao criar tarefas iniciais");
+        tarefas = iniciais;
+      } else {
+        tarefas = (inseridas ?? []).map(mapTarefa);
+      }
     } else {
-      tarefas = (inseridas ?? []).map(mapTarefa);
+      tarefas = [];
     }
   }
 
@@ -256,8 +284,12 @@ export function registrarReposicao(rep: Omit<Reposicao, "id" | "data">): Reposic
   return nova;
 }
 
-export function buscarPorCodigo(codigo: string) {
-  return CATALOGO.find((p) => p.codigo === codigo.trim()) ?? null;
+export function buscarPorCodigo(codigo: string): Produto | null {
+  return produtosCache.find((p) => p.codigo === codigo.trim()) ?? null;
+}
+
+export function buscarPorId(id: string): Produto | null {
+  return produtosCache.find((p) => p.id === id) ?? null;
 }
 
 export async function resetarTarefas() {
@@ -265,6 +297,7 @@ export async function resetarTarefas() {
   if (lojaId) {
     await supabase.from("tarefas_reposicao").delete().eq("loja_id", lojaId);
     const iniciais = gerarTarefasIniciais();
+    if (iniciais.length === 0) { emitir({ ...estado, tarefas: [] }); return; }
     const rows = iniciais.map((t) => ({
       id: t.id,
       loja_id: lojaId,

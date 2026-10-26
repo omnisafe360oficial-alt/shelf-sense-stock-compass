@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronRight, ClipboardList } from "lucide-react";
-import { useRecebeEstado, CATALOGO_PRODUTOS, type PedidoStatus } from "@/lib/recebe-store";
+import { useRecebeEstado, type PedidoStatus } from "@/lib/recebe-store";
+import { getProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/recebe/pedidos")({ component: RecebePedidos });
@@ -67,7 +68,7 @@ function RecebePedidos() {
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Itens do pedido</p>
             {pedidoDetalhe.itens.map((item) => {
-              const produto = CATALOGO_PRODUTOS.find((p) => p.id === item.produtoId);
+              const produto = getProdutos().find((p) => p.id === item.produtoId);
               const pctItem = item.qtdSolicitada > 0 ? Math.round((item.qtdRecebida / item.qtdSolicitada) * 100) : 0;
               const cor = pctItem >= 100 ? "bg-success" : pctItem > 0 ? "bg-warning" : "bg-border";
 
