@@ -35,7 +35,16 @@ supabase.auth.getSession().then(({ data }) => {
     set({ session: data.session });
     carregarLoja(data.session.user.id).then(() => set({ loading: false }));
   } else {
-    set({ loading: false });
+    // Se há um code PKCE ou token implícito na URL, o onAuthStateChange
+    // vai disparar com SIGNED_IN assim que o exchange completar.
+    // Mantemos loading: true para não redirecionar antes disso.
+    const pendingOAuth =
+      typeof window !== "undefined" &&
+      (new URLSearchParams(window.location.search).has("code") ||
+        window.location.hash.includes("access_token"));
+    if (!pendingOAuth) {
+      set({ loading: false });
+    }
   }
 });
 

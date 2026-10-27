@@ -56,7 +56,7 @@ function Cadastro() {
   async function handleGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/configurar-loja` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) toast.error(error.message);
   }

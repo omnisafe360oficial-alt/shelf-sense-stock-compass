@@ -55,12 +55,8 @@ function ConfigurarLoja() {
 
   useEffect(() => {
     if (auth.loading) return;
-    if (!auth.session) {
-      navigate({ to: "/" });
-    }
-    if (auth.lojaId) {
-      navigate({ to: "/painel" });
-    }
+    if (!auth.session) navigate({ to: "/" });
+    else if (auth.lojaId) navigate({ to: "/painel" });
   }, [auth.loading, auth.session, auth.lojaId, navigate]);
 
   const next = async () => {
