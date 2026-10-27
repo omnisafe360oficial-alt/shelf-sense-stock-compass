@@ -148,6 +148,64 @@ export function criarPedido(dados: {
   return id;
 }
 
+// ─── Editar pedido ────────────────────────────────────────────────────────────
+
+export function editarPedido(id: string, dados: {
+  fornecedorId?: string | null;
+  fornecedorNome: string;
+  dataPrevista: string;
+  observacao: string;
+  itens: Omit<ItemPedido, "id" | "qtdRecebida">[];
+}): void {
+  const total = dados.itens.reduce((s, i) => s + i.qtdSolicitada * i.precoUnitario, 0);
+  const novosItens: ItemPedido[] = dados.itens.map((i) => ({ ...i, id: crypto.randomUUID(), qtdRecebida: 0 }));
+
+  emitir({
+    pedidos: estado.pedidos.map((p) =>
+      p.id !== id ? p : {
+        ...p,
+        fornecedorId: dados.fornecedorId ?? null,
+        fornecedorNome: dados.fornecedorNome,
+        dataPrevista: dados.dataPrevista,
+        observacao: dados.observacao,
+        total,
+        itens: novosItens,
+      }
+    ),
+  });
+
+  supabase.from("pedidos_compra").update({
+    fornecedor_id: dados.fornecedorId ?? null,
+    fornecedor_nome: dados.fornecedorNome,
+    data_prevista: dados.dataPrevista || null,
+    observacao: dados.observacao || null,
+    total,
+  }).eq("id", id)
+    .then(({ error }) => { if (error) toast.error("Erro ao atualizar pedido: " + error.message); });
+
+  supabase.from("itens_pedido").delete().eq("pedido_id", id).then(({ error }) => {
+    if (error) { toast.error("Erro ao atualizar itens: " + error.message); return; }
+    for (const item of novosItens) {
+      supabase.from("itens_pedido").insert({
+        id: item.id, pedido_id: id, produto_id: item.produtoId,
+        qtd_solicitada: item.qtdSolicitada, qtd_recebida: 0,
+        preco_unitario: item.precoUnitario, unidade: item.unidade,
+      }).then(({ error: e }) => { if (e) toast.error("Erro ao salvar item: " + e.message); });
+    }
+  });
+}
+
+// ─── Excluir pedido ───────────────────────────────────────────────────────────
+
+export function excluirPedido(id: string): void {
+  emitir({ pedidos: estado.pedidos.filter((p) => p.id !== id) });
+  supabase.from("itens_pedido").delete().eq("pedido_id", id).then(({ error }) => {
+    if (error) { toast.error("Erro ao excluir itens: " + error.message); return; }
+    supabase.from("pedidos_compra").delete().eq("id", id)
+      .then(({ error: e }) => { if (e) toast.error("Erro ao excluir pedido: " + e.message); });
+  });
+}
+
 // ─── Atualizar status ─────────────────────────────────────────────────────────
 
 export function atualizarStatusPedido(id: string, status: PedidoStatus): void {
