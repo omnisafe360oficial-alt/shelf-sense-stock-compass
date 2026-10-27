@@ -373,7 +373,7 @@ function ProdutoDetalhe() {
                 lotesDoProduto.map((l) => {
                   const dias = diasAte(l.validade);
                   const faixa = faixaValidade(dias);
-                  const corVal = faixa === "vencido" ? "text-destructive" : faixa === "critico" ? "text-destructive" : faixa === "atencao" ? "text-warning" : "text-foreground";
+                  const corVal = faixa === "vencido" ? "text-destructive" : faixa === "7" ? "text-destructive" : faixa === "15" ? "text-warning" : "text-foreground";
                   return (
                     <>
                       <tr key={l.id}>

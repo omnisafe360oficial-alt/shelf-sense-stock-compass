@@ -60,7 +60,7 @@ export function BarcodeScanner({ onScan, onClose, titulo = "Escanear código" }:
 
     return () => {
       stopped = true;
-      try { readerRef.current?.reset(); } catch {}
+      try { (readerRef.current as unknown as { reset?: () => void } | null)?.reset?.(); } catch {}
     };
   }, [onScan]);
 
