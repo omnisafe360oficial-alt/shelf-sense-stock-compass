@@ -29,6 +29,7 @@ export const Route = createFileRoute("/painel/produtos/importar")({
 type Linha = {
   codigo: string; nome: string; existente: boolean; unidadeCompra: string; qtdCompra: number;
   porEmbalagem: number; custoUnit: number; venda: string; minimo: string; lote: string; validade: string;
+  semValidade: boolean; loteAuto: boolean;
 };
 
 function Importar() {
@@ -42,7 +43,7 @@ function Importar() {
     try {
       const n = lerNfe(xml);
       setNota(n);
-      setLinhas(n.itens.map((i) => {
+      setLinhas(n.itens.map((i, idx) => {
         const conv = sugerirConversao(i.nome, i.unidadeCompra);
         const custoUnit = i.custoUnitCompra / conv;
         const ex = getProdutos().find((p) => p.codigo === i.codigo);
@@ -50,12 +51,16 @@ function Importar() {
         const vendaSugerida = custoUnit > 0
           ? (custoUnit * (1 + cfg.margemPadrao / 100)).toFixed(2)
           : "";
+        const semRastro = !i.lote && !i.validade;
         return {
           codigo: i.codigo, nome: ex?.nome ?? i.nome, existente: !!ex, unidadeCompra: i.unidadeCompra, qtdCompra: i.qtdCompra,
           porEmbalagem: conv, custoUnit,
           venda: ex ? ex.preco.toFixed(2) : vendaSugerida,
           minimo: ex ? String(ex.minimo) : String(cfg.minimoPadrao),
-          lote: i.lote ?? "", validade: i.validade ?? "",
+          lote: i.lote ?? `NF-${n.numero}-${idx + 1}`,
+          validade: i.validade ?? "2099-12-31",
+          semValidade: semRastro,
+          loteAuto: !i.lote,
         };
       }));
     } catch (e) {
@@ -63,7 +68,7 @@ function Importar() {
     }
   };
   const lerArquivo = (f?: File) => f && f.text().then(carregar);
-  const upd = (i: number, k: keyof Linha, v: string | number) => setLinhas((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
+  const upd = (i: number, k: keyof Linha, v: string | number | boolean) => setLinhas((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
 
   const fornecedorExiste = nota && getFornecedores().some((f) => f.cnpj === nota.fornecedor.cnpj);
   const pendentes = linhas.filter((l) => !l.minimo || !l.venda || Number(l.venda) <= 0).length;
@@ -111,15 +116,15 @@ function Importar() {
               const qtdTotal = l.qtdCompra * l.porEmbalagem;
               if (l.existente) {
                 const p = getProdutos().find((x) => x.codigo === l.codigo);
-                if (p && qtdTotal > 0 && l.lote && l.validade) {
+                if (p && qtdTotal > 0) {
                   registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
                 }
               } else {
                 const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0 };
-                if (l.validade) novoProd.validade = l.validade;
+                if (!l.semValidade && l.validade) novoProd.validade = l.validade;
                 const id = cadastrarProduto(novoProd);
                 inicializarProduto(id);
-                if (qtdTotal > 0 && l.lote && l.validade) {
+                if (qtdTotal > 0) {
                   registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
                 }
               }
@@ -173,9 +178,21 @@ function Importar() {
                 <td className="px-4 py-3"><Input className={cn("h-8 w-24", !l.venda && "border-warning")} value={l.venda} onChange={(e) => upd(i, "venda", e.target.value)} /></td>
                 <td className="px-4 py-3"><Input className={cn("h-8 w-20", !l.minimo && "border-warning")} placeholder="?" value={l.minimo} onChange={(e) => upd(i, "minimo", e.target.value.replace(/\D/g, ""))} /></td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
+                  {(l.loteAuto || l.semValidade) && (
+                    <span className="mb-1.5 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+                      {l.semValidade ? "Sem lote/validade · auto" : "Lote automático"}
+                    </span>
+                  )}
+                  <div className="flex flex-col gap-1.5">
                     <Input className="h-8 w-24 font-mono text-xs" placeholder="Lote" value={l.lote} onChange={(e) => upd(i, "lote", e.target.value)} />
-                    <Input className="h-8 w-36" type="date" value={l.validade} onChange={(e) => upd(i, "validade", e.target.value)} />
+                    {l.semValidade ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Sem validade</span>
+                        <button type="button" className="text-[10px] text-primary underline" onClick={() => { upd(i, "semValidade", false); upd(i, "validade", ""); }}>Definir</button>
+                      </div>
+                    ) : (
+                      <Input className="h-8 w-36" type="date" value={l.validade} onChange={(e) => upd(i, "validade", e.target.value)} />
+                    )}
                   </div>
                 </td>
               </tr>
