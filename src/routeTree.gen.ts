@@ -30,6 +30,8 @@ import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios
 import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
 import { Route as PainelEtiquetasRouteImport } from './routes/painel.etiquetas'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
+import { Route as PainelAlertasRouteImport } from './routes/painel.alertas'
+import { Route as PainelInventarioRouteImport } from './routes/painel.inventario'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -154,6 +156,16 @@ const PainelValidadesRoute = PainelValidadesRouteImport.update({
   path: '/validades',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelAlertasRoute = PainelAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelInventarioRoute = PainelInventarioRouteImport.update({
+  id: '/inventario',
+  path: '/inventario',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -257,9 +269,11 @@ export interface FileRoutesByFullPath {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/alertas': typeof PainelAlertasRoute
   '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inventario': typeof PainelInventarioRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
@@ -295,9 +309,11 @@ export interface FileRoutesByTo {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/alertas': typeof PainelAlertasRoute
   '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inventario': typeof PainelInventarioRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
@@ -337,9 +353,11 @@ export interface FileRoutesById {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/alertas': typeof PainelAlertasRoute
   '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inventario': typeof PainelInventarioRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
@@ -380,9 +398,11 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/alertas'
     | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
+    | '/painel/inventario'
     | '/painel/movimentacoes'
     | '/painel/pdv'
     | '/painel/recebimentos'
@@ -418,9 +438,11 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/alertas'
     | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
+    | '/painel/inventario'
     | '/painel/movimentacoes'
     | '/painel/pdv'
     | '/painel/recebimentos'
@@ -459,9 +481,11 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/alertas'
     | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
+    | '/painel/inventario'
     | '/painel/movimentacoes'
     | '/painel/pdv'
     | '/painel/recebimentos'
@@ -634,11 +658,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelReposicaoRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/alertas': {
+      id: '/painel/alertas'
+      path: '/alertas'
+      fullPath: '/painel/alertas'
+      preLoaderRoute: typeof PainelAlertasRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/etiquetas': {
       id: '/painel/etiquetas'
       path: '/etiquetas'
       fullPath: '/painel/etiquetas'
       preLoaderRoute: typeof PainelEtiquetasRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/inventario': {
+      id: '/painel/inventario'
+      path: '/inventario'
+      fullPath: '/painel/inventario'
+      preLoaderRoute: typeof PainelInventarioRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/validades': {
@@ -778,6 +816,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface PainelRouteChildren {
+  PainelAlertasRoute: typeof PainelAlertasRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -785,6 +824,7 @@ interface PainelRouteChildren {
   PainelEtiquetasRoute: typeof PainelEtiquetasRoute
   PainelGondolaRoute: typeof PainelGondolaRoute
   PainelInconsistenciasRoute: typeof PainelInconsistenciasRoute
+  PainelInventarioRoute: typeof PainelInventarioRoute
   PainelMovimentacoesRoute: typeof PainelMovimentacoesRoute
   PainelPdvRoute: typeof PainelPdvRoute
   PainelRecebimentosRoute: typeof PainelRecebimentosRoute
@@ -805,6 +845,7 @@ interface PainelRouteChildren {
 }
 
 const PainelRouteChildren: PainelRouteChildren = {
+  PainelAlertasRoute: PainelAlertasRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
@@ -812,6 +853,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelEtiquetasRoute: PainelEtiquetasRoute,
   PainelGondolaRoute: PainelGondolaRoute,
   PainelInconsistenciasRoute: PainelInconsistenciasRoute,
+  PainelInventarioRoute: PainelInventarioRoute,
   PainelMovimentacoesRoute: PainelMovimentacoesRoute,
   PainelPdvRoute: PainelPdvRoute,
   PainelRecebimentosRoute: PainelRecebimentosRoute,

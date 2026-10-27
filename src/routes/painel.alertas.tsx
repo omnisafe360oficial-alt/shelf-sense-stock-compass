@@ -1,0 +1,233 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import {
+  AlertTriangle, Bell, CheckCircle2, Clock, Download,
+  Package, PackageX, ShoppingCart, Timer,
+} from "lucide-react";
+import { useEstoque } from "@/lib/estoque-store";
+import { useOperacao } from "@/lib/operacao-store";
+import { useProdutos } from "@/lib/produtos-store";
+import { useConfig } from "@/lib/config-store";
+import { usePedidos } from "@/lib/pedidos-store";
+import {
+  abaixoDoMinimo, diasSemVenda, lotesVencendo, vendasPorProduto, HOJE,
+} from "@/lib/computed";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/painel/alertas")({
+  head: () => ({
+    meta: [{ title: "Central de Alertas — OmniSafe 360" }],
+  }),
+  component: Alertas,
+});
+
+const DIAS_PARADO = 30;
+const DIAS_INCONS_ANTIGA = 3;
+
+type Categoria = {
+  id: string;
+  titulo: string;
+  cor: string;
+  icone: React.ReactNode;
+  link: string;
+  itens: { label: string; detalhe: string }[];
+};
+
+function Alertas() {
+  const est = useEstoque();
+  const op = useOperacao();
+  const produtos = useProdutos();
+  const config = useConfig();
+  const { pedidos } = usePedidos();
+
+  const categorias = useMemo<Categoria[]>(() => {
+    const abaixoTodos = abaixoDoMinimo(est.gondola);
+    const zerados = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) === 0);
+    const abaixo = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) > 0);
+    const vencendo = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
+    const inconsAntigas = op.inconsistencias.filter((i) => {
+      if (i.status !== "aberta") return false;
+      const dias = Math.floor((new Date(HOJE).getTime() - new Date(i.data).getTime()) / 86_400_000);
+      return dias >= DIAS_INCONS_ANTIGA;
+    });
+    const pedidosAtencao = pedidos.filter((p) => {
+      if (!["rascunho", "enviado"].includes(p.status)) return false;
+      const dias = Math.floor((new Date(HOJE).getTime() - new Date(p.dataEmissao).getTime()) / 86_400_000);
+      return dias >= config.diasAlertaPedido;
+    });
+    const vendasMap = vendasPorProduto(est.movs);
+    const parados = produtos.filter((p) => diasSemVenda(vendasMap[p.id]?.ultimaData ?? null) >= DIAS_PARADO);
+
+    return [
+      {
+        id: "zerado",
+        titulo: "Estoque zerado na gôndola",
+        cor: "text-destructive",
+        icone: <PackageX className="h-4 w-4" />,
+        link: "/painel/gondola",
+        itens: zerados.map((p) => ({
+          label: p.nome,
+          detalhe: `Mínimo: ${p.minimo} un`,
+        })),
+      },
+      {
+        id: "abaixo",
+        titulo: "Abaixo do mínimo",
+        cor: "text-orange-500",
+        icone: <AlertTriangle className="h-4 w-4" />,
+        link: "/painel/reposicao",
+        itens: abaixo.map((p) => ({
+          label: p.nome,
+          detalhe: `${est.gondola[p.id] ?? 0} / ${p.minimo} un`,
+        })),
+      },
+      {
+        id: "vencendo",
+        titulo: "Lotes vencendo em breve",
+        cor: "text-destructive",
+        icone: <Timer className="h-4 w-4" />,
+        link: "/painel/validades",
+        itens: vencendo.map((l) => ({
+          label: l.produto.nome,
+          detalhe: l.faixa === "vencido" ? "Vencido · lote " + l.lote : `${l.dias}d restantes · lote ${l.lote}`,
+        })),
+      },
+      {
+        id: "incons",
+        titulo: `Inconsistências abertas há +${DIAS_INCONS_ANTIGA}d`,
+        cor: "text-orange-500",
+        icone: <AlertTriangle className="h-4 w-4" />,
+        link: "/painel/inconsistencias",
+        itens: inconsAntigas.map((i) => {
+          const p = produtos.find((x) => x.id === i.produtoId);
+          const dias = Math.floor((new Date(HOJE).getTime() - new Date(i.data).getTime()) / 86_400_000);
+          return { label: p?.nome ?? "Produto desconhecido", detalhe: `${i.origem} · ${dias}d aberta` };
+        }),
+      },
+      {
+        id: "pedidos",
+        titulo: `Pedidos parados há +${config.diasAlertaPedido}d`,
+        cor: "text-blue-500",
+        icone: <ShoppingCart className="h-4 w-4" />,
+        link: "/painel/pedidos",
+        itens: pedidosAtencao.map((p) => {
+          const dias = Math.floor((new Date(HOJE).getTime() - new Date(p.dataEmissao).getTime()) / 86_400_000);
+          return { label: p.numero, detalhe: `${p.fornecedorNome || "—"} · ${dias}d · ${p.status}` };
+        }),
+      },
+      {
+        id: "parado",
+        titulo: `Produtos sem venda há +${DIAS_PARADO}d`,
+        cor: "text-muted-foreground",
+        icone: <Clock className="h-4 w-4" />,
+        link: "/painel/relatorios",
+        itens: parados.map((p) => {
+          const dsv = diasSemVenda(vendasPorProduto(est.movs)[p.id]?.ultimaData ?? null);
+          return { label: p.nome, detalhe: dsv >= 999 ? "Sem vendas registradas" : `${dsv}d sem venda` };
+        }),
+      },
+    ].filter((c) => c.itens.length > 0);
+  }, [est, op, produtos, config, pedidos]);
+
+  const total = categorias.reduce((s, c) => s + c.itens.length, 0);
+
+  function exportarCSV() {
+    const rows = ["Categoria,Produto / Referência,Detalhe"];
+    for (const cat of categorias) {
+      for (const item of cat.itens) {
+        rows.push(`"${cat.titulo}","${item.label.replace(/"/g, '""')}","${item.detalhe.replace(/"/g, '""')}"`);
+      }
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `alertas-${HOJE}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <Bell className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Central de Alertas</h1>
+            <p className="text-sm text-muted-foreground">
+              {total > 0
+                ? `${total} alerta${total !== 1 ? "s" : ""} ativo${total !== 1 ? "s" : ""}`
+                : "Nenhum alerta ativo no momento"}
+            </p>
+          </div>
+        </div>
+        {total > 0 && (
+          <button
+            onClick={exportarCSV}
+            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" /> Exportar CSV
+          </button>
+        )}
+      </div>
+
+      {/* Tudo ok */}
+      {total === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-xl border bg-card py-16 text-center">
+          <CheckCircle2 className="h-12 w-12 text-green-500" />
+          <p className="text-lg font-semibold">Tudo em ordem!</p>
+          <p className="text-sm text-muted-foreground">
+            Não há alertas ativos no momento.
+          </p>
+          <Link to="/painel/configuracoes" className="mt-2 text-xs text-primary hover:underline">
+            Configurar limiares de alerta →
+          </Link>
+        </div>
+      )}
+
+      {/* Categorias */}
+      {categorias.map((cat) => (
+        <div key={cat.id} className="overflow-hidden rounded-xl border bg-card">
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <div className={cn("flex items-center gap-2 font-semibold text-sm", cat.cor)}>
+              {cat.icone}
+              <span>{cat.titulo}</span>
+              <span className="ml-1 rounded-full bg-current/10 px-2 py-0.5 text-xs font-bold">
+                {cat.itens.length}
+              </span>
+            </div>
+            <Link
+              to={cat.link as "/painel/gondola"}
+              className="text-xs text-primary hover:underline"
+            >
+              Ver →
+            </Link>
+          </div>
+          <div className="divide-y text-sm">
+            {cat.itens.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between px-4 py-2.5">
+                <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                <span className="ml-4 shrink-0 text-xs text-muted-foreground">{item.detalhe}</span>
+              </div>
+            ))}
+          </div>
+          {cat.itens.length > 10 && (
+            <div className="border-t px-4 py-2 text-center text-xs text-muted-foreground">
+              Mostrando todos os {cat.itens.length} itens · exporte o CSV para ver fora da tela
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Link configurações */}
+      <div className="text-center text-xs text-muted-foreground">
+        <Link to="/painel/configuracoes" className="hover:text-foreground hover:underline">
+          Configurar limiares de alerta →
+        </Link>
+      </div>
+    </div>
+  );
+}
