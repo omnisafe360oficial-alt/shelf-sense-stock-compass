@@ -92,6 +92,12 @@ export function faturamentoMes(movs: Mov[], anoMes: string): number {
     .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
+export function vendasPeriodo(movs: Mov[], inicio: string, fim: string): number {
+  return movs
+    .filter((m) => m.tipo === "venda" && m.data.slice(0, 10) >= inicio && m.data.slice(0, 10) <= fim)
+    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+}
+
 export type SugestaoPedido = {
   produto: Produto;
   gondolaAtual: number;

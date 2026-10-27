@@ -12,6 +12,8 @@ import { fecharVenda, useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { promocaoAtivaParaProduto, usePromocoes } from "@/lib/promocoes-store";
+import { HOJE } from "@/lib/computed";
 
 export const Route = createFileRoute("/painel/pdv")({
   head: () => ({
@@ -49,6 +51,7 @@ function Pdv() {
   const produtos = useProdutos();
   const auth = useAuth();
   const operador = auth.nomeProprietario ?? "Caixa";
+  const promoEstado = usePromocoes();
 
   const minimos = useMemo(
     () => Object.fromEntries(produtos.map((p) => [p.id, p.minimo])),
@@ -139,11 +142,22 @@ function Pdv() {
       if (editDescId === produtoId) setEditDescId(null);
       return;
     }
+    const isNovo = !ex;
     setItens((prev) =>
       ex
         ? prev.map((i) => (i.produtoId === produtoId ? { ...i, qtd: nova } : i))
         : [...prev, { produtoId, qtd: nova }],
     );
+    if (isNovo && !descontoItens[produtoId]) {
+      const promo = promocaoAtivaParaProduto(promoEstado.promocoes, produtoId, HOJE);
+      if (promo) {
+        setDescontoItens((prev) => ({
+          ...prev,
+          [produtoId]: { val: String(promo.valor), modo: promo.tipo === "pct" ? "%" : "R$" },
+        }));
+        toast.success(`Promoção "${promo.nome}" aplicada`);
+      }
+    }
   }
 
   function setQty(produtoId: string, qtd: number) {

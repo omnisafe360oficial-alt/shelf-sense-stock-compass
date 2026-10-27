@@ -20,6 +20,7 @@ import {
   vendasHoje, vendasOntem, vendasPorDia,
   vendasPorHora, vendasPorProduto,
 } from "@/lib/computed";
+import { useMetas } from "@/lib/metas-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +80,7 @@ function Inicio() {
   const auth        = useAuth();
   const produtos    = useProdutos();
   const fornecedores = useFornecedores();
+  const metas     = useMetas();
 
   // ── Vendas ───────────────────────────────────────────────────────────────
   const hoje    = vendasHoje(est.movs);
@@ -262,19 +264,59 @@ function Inicio() {
           </div>
         </Link>
 
-        {/* Ticket médio */}
-        <div className="rounded-2xl border bg-card p-5 shadow-elegant">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ticket médio</p>
-            <span className="rounded-lg bg-primary/10 p-2 text-primary">
-              <TrendingUp className="h-4 w-4" />
-            </span>
+        {/* Meta do dia / Ticket médio */}
+        {metas.metaDiaria > 0 ? (
+          <Link
+            to="/painel/metas"
+            className={cn(
+              "group rounded-2xl border p-5 shadow-elegant transition hover:shadow-lg",
+              hoje >= metas.metaDiaria
+                ? "border-success/30 bg-success/5 hover:border-success/50"
+                : "bg-card hover:border-primary/40",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Meta do dia</p>
+              <span className={cn(
+                "rounded-lg p-2 transition group-hover:scale-110",
+                hoje >= metas.metaDiaria ? "bg-success/10 text-success" : "bg-primary/10 text-primary",
+              )}>
+                <TrendingUp className="h-4 w-4" />
+              </span>
+            </div>
+            <p className={cn(
+              "mt-3 font-display text-3xl font-bold",
+              hoje >= metas.metaDiaria && "text-success",
+            )}>
+              {Math.min(100, Math.round((hoje / metas.metaDiaria) * 100))}%
+            </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  hoje >= metas.metaDiaria ? "bg-success" : "bg-primary",
+                )}
+                style={{ width: `${Math.min(100, Math.round((hoje / metas.metaDiaria) * 100))}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {brl(hoje)} de {brl(metas.metaDiaria)}
+            </p>
+          </Link>
+        ) : (
+          <div className="rounded-2xl border bg-card p-5 shadow-elegant">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ticket médio</p>
+              <span className="rounded-lg bg-primary/10 p-2 text-primary">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-3 font-display text-3xl font-bold">{brl(ticketMedio)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {transoesHoje} venda{transoesHoje !== 1 ? "s" : ""} hoje
+            </p>
           </div>
-          <p className="mt-3 font-display text-3xl font-bold">{brl(ticketMedio)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {transoesHoje} venda{transoesHoje !== 1 ? "s" : ""} hoje
-          </p>
-        </div>
+        )}
 
         {/* Recebimentos */}
         <Link

@@ -32,6 +32,8 @@ import { Route as PainelEtiquetasRouteImport } from './routes/painel.etiquetas'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as PainelAlertasRouteImport } from './routes/painel.alertas'
 import { Route as PainelInventarioRouteImport } from './routes/painel.inventario'
+import { Route as PainelPromocoesRouteImport } from './routes/painel.promocoes'
+import { Route as PainelMetasRouteImport } from './routes/painel.metas'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -166,6 +168,16 @@ const PainelInventarioRoute = PainelInventarioRouteImport.update({
   path: '/inventario',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelPromocoesRoute = PainelPromocoesRouteImport.update({
+  id: '/promocoes',
+  path: '/promocoes',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelMetasRoute = PainelMetasRouteImport.update({
+  id: '/metas',
+  path: '/metas',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -274,8 +286,10 @@ export interface FileRoutesByFullPath {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/inventario': typeof PainelInventarioRoute
+  '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
+  '/painel/promocoes': typeof PainelPromocoesRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
@@ -314,8 +328,10 @@ export interface FileRoutesByTo {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/inventario': typeof PainelInventarioRoute
+  '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
+  '/painel/promocoes': typeof PainelPromocoesRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
@@ -358,8 +374,10 @@ export interface FileRoutesById {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/inventario': typeof PainelInventarioRoute
+  '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
   '/painel/pdv': typeof PainelPdvRoute
+  '/painel/promocoes': typeof PainelPromocoesRoute
   '/painel/recebimentos': typeof PainelRecebimentosRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
@@ -403,8 +421,10 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/inventario'
+    | '/painel/metas'
     | '/painel/movimentacoes'
     | '/painel/pdv'
+    | '/painel/promocoes'
     | '/painel/recebimentos'
     | '/painel/relatorios'
     | '/painel/reposicao'
@@ -443,8 +463,10 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/inventario'
+    | '/painel/metas'
     | '/painel/movimentacoes'
     | '/painel/pdv'
+    | '/painel/promocoes'
     | '/painel/recebimentos'
     | '/painel/relatorios'
     | '/painel/reposicao'
@@ -486,8 +508,10 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/inventario'
+    | '/painel/metas'
     | '/painel/movimentacoes'
     | '/painel/pdv'
+    | '/painel/promocoes'
     | '/painel/recebimentos'
     | '/painel/relatorios'
     | '/painel/reposicao'
@@ -679,6 +703,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelInventarioRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/promocoes': {
+      id: '/painel/promocoes'
+      path: '/promocoes'
+      fullPath: '/painel/promocoes'
+      preLoaderRoute: typeof PainelPromocoesRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/metas': {
+      id: '/painel/metas'
+      path: '/metas'
+      fullPath: '/painel/metas'
+      preLoaderRoute: typeof PainelMetasRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/validades': {
       id: '/painel/validades'
       path: '/validades'
@@ -817,6 +855,8 @@ declare module '@tanstack/react-router' {
 
 interface PainelRouteChildren {
   PainelAlertasRoute: typeof PainelAlertasRoute
+  PainelMetasRoute: typeof PainelMetasRoute
+  PainelPromocoesRoute: typeof PainelPromocoesRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -846,6 +886,8 @@ interface PainelRouteChildren {
 
 const PainelRouteChildren: PainelRouteChildren = {
   PainelAlertasRoute: PainelAlertasRoute,
+  PainelMetasRoute: PainelMetasRoute,
+  PainelPromocoesRoute: PainelPromocoesRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
