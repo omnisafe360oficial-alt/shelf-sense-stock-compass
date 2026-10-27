@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, FileCode2, FileUp, MapPin, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
 import { getConfig } from "@/lib/config-store";
-import { getProdutos, cadastrarProduto } from "@/lib/produtos-store";
+import { getProdutos, cadastrarProduto, editarProduto } from "@/lib/produtos-store";
 import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada } from "@/lib/estoque-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
@@ -38,6 +38,7 @@ function Importar() {
   const [nota, setNota] = useState<Nfe | null>(null);
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [arrastando, setArrastando] = useState(false);
+  const [localDeposito, setLocalDeposito] = useState("Depósito");
 
   const carregar = (xml: string) => {
     try {
@@ -117,15 +118,16 @@ function Importar() {
               if (l.existente) {
                 const p = getProdutos().find((x) => x.codigo === l.codigo);
                 if (p && qtdTotal > 0) {
-                  registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit });
+                  registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
                 }
               } else {
-                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0 };
+                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, custoUltimaCompra: l.custoUnit };
                 if (!l.semValidade && l.validade) novoProd.validade = l.validade;
                 const id = cadastrarProduto(novoProd);
                 inicializarProduto(id);
                 if (qtdTotal > 0) {
-                  registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+                  registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
                 }
               }
             });
@@ -149,6 +151,13 @@ function Importar() {
         </div>
         <div className="rounded-2xl border bg-card p-5"><p className="text-xs uppercase text-muted-foreground">Novos / existentes</p><p className="font-display text-2xl font-bold">{linhas.filter((l) => !l.existente).length} / {linhas.filter((l) => l.existente).length}</p></div>
         <div className={cn("rounded-2xl border p-5", pendentes ? "bg-warning/15" : "bg-success/12")}><p className="text-xs uppercase text-muted-foreground">Faltando completar</p><p className="font-display text-2xl font-bold">{pendentes ? `${pendentes} itens` : "Tudo pronto"}</p></div>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-2xl border bg-card p-4">
+        <MapPin className="h-4 w-4 shrink-0 text-primary" />
+        <span className="whitespace-nowrap text-sm font-medium">Local no depósito</span>
+        <Input className="h-8 max-w-56" placeholder="Ex: Prateleira A-3, Câmara Fria" value={localDeposito} onChange={(e) => setLocalDeposito(e.target.value)} />
+        <p className="text-xs text-muted-foreground">Onde esses produtos serão guardados (aplica a todos os lotes desta nota)</p>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border bg-card">

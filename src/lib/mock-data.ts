@@ -21,6 +21,7 @@ export type Produto = {
   deposito: number;
   gondola: number;
   minimo: number;
+  custoUltimaCompra?: number;
   validade?: string;
   localDeposito?: LocalDeposito;
   localGondola?: LocalGondola;

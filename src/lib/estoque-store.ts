@@ -216,9 +216,9 @@ export function fecharVenda(itens: ItemVenda[], caixa: string, minimos: Record<s
 
 // ─── Entrada ─────────────────────────────────────────────────────────────────
 
-export function registrarEntrada(produtoId: string, qtd: number, lote: string, validade: string, origem: string, usuario: string) {
+export function registrarEntrada(produtoId: string, qtd: number, lote: string, validade: string, origem: string, usuario: string, local = "Depósito") {
   if (qtd <= 0) return;
-  const novoLote: Lote = { id: crypto.randomUUID(), produtoId, lote, validade, qtd, local: "Doca de recebimento" };
+  const novoLote: Lote = { id: crypto.randomUUID(), produtoId, lote, validade, qtd, local };
   const mov: Mov = { id: crypto.randomUUID(), data: new Date().toISOString().slice(0, 16), tipo: "entrada", produtoId, lote, qtd, origem, destino: "Depósito", usuario };
   emitir({ ...estado, lotes: [...estado.lotes, novoLote], movs: [mov, ...estado.movs] });
   const lojaId = getLojaId();
