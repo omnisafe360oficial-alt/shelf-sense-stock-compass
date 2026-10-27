@@ -129,12 +129,12 @@ function ConfigurarLoja() {
       "Proprietário";
 
     const { error } = await supabase.rpc("criar_loja", {
-      p_nome_loja: nome,
-      p_cnpj: doc,
-      p_cidade: cidade,
+      p_nome_loja: nome.trim(),
+      p_cnpj: doc.replace(/\D/g, ""),
+      p_cidade: cidade.trim(),
       p_uf: uf,
       p_tipo_comercio: tipo,
-      p_nome_proprietario: nomeProprietario,
+      p_nome_proprietario: nomeProprietario.trim(),
     });
 
     setLoading(false);
