@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, Check, FileCode2, FileUp, MapPin, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
 import { getConfig } from "@/lib/config-store";
@@ -30,6 +31,7 @@ type Linha = {
   codigo: string; nome: string; existente: boolean; unidadeCompra: string; qtdCompra: number;
   porEmbalagem: number; custoUnit: number; venda: string; minimo: string; lote: string; validade: string;
   semValidade: boolean; loteAuto: boolean;
+  custoAnterior: number; atualizarVenda: boolean; vendaAnterior: string;
 };
 
 function Importar() {
@@ -52,12 +54,18 @@ function Importar() {
         const vendaSugerida = custoUnit > 0
           ? (custoUnit * (1 + cfg.margemPadrao / 100)).toFixed(2)
           : "";
+        const custoAnterior = ex?.custoUltimaCompra ?? 0;
+        const custoAlterou = !!ex && custoAnterior > 0 && Math.abs(custoUnit - custoAnterior) / custoAnterior > 0.005;
+        const vendaAtual = ex ? ex.preco.toFixed(2) : vendaSugerida;
+        const atualizarVenda = custoAlterou && custoUnit > custoAnterior;
         const semRastro = !i.lote && !i.validade;
         return {
           codigo: i.codigo, nome: ex?.nome ?? i.nome, existente: !!ex, unidadeCompra: i.unidadeCompra, qtdCompra: i.qtdCompra,
           porEmbalagem: conv, custoUnit,
-          venda: ex ? ex.preco.toFixed(2) : vendaSugerida,
+          venda: atualizarVenda ? vendaSugerida : vendaAtual,
+          vendaAnterior: vendaAtual,
           minimo: ex ? String(ex.minimo) : String(cfg.minimoPadrao),
+          custoAnterior, atualizarVenda,
           lote: i.lote ?? `NF-${n.numero}-${idx + 1}`,
           validade: i.validade ?? "2099-12-31",
           semValidade: semRastro,
@@ -71,8 +79,12 @@ function Importar() {
   const lerArquivo = (f?: File) => f && f.text().then(carregar);
   const upd = (i: number, k: keyof Linha, v: string | number | boolean) => setLinhas((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
 
+  const custoMudou = (l: Linha) =>
+    l.existente && l.custoAnterior > 0 && Math.abs(l.custoUnit - l.custoAnterior) / l.custoAnterior > 0.005;
+
   const fornecedorExiste = nota && getFornecedores().some((f) => f.cnpj === nota.fornecedor.cnpj);
   const pendentes = linhas.filter((l) => !l.minimo || !l.venda || Number(l.venda) <= 0).length;
+  const custosAlterados = linhas.filter(custoMudou).length;
 
   if (!nota) {
     return (
@@ -102,6 +114,12 @@ function Importar() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold">Conferir importação</h1><p className="text-muted-foreground">NF-e nº {nota.numero} · emitida em {nota.emissao.split("-").reverse().join("/")}</p></div>
         <div className="flex flex-col items-end gap-2">
+          {custosAlterados > 0 && (
+            <p className="flex items-center gap-1.5 text-xs text-warning">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {custosAlterados} {custosAlterados === 1 ? "produto com custo alterado" : "produtos com custo alterado"} — confira os preços
+            </p>
+          )}
           {pendentes > 0 && (
             <p className="flex items-center gap-1.5 text-xs text-warning">
               <AlertTriangle className="h-3.5 w-3.5" />
@@ -118,7 +136,7 @@ function Importar() {
               if (l.existente) {
                 const p = getProdutos().find((x) => x.codigo === l.codigo);
                 if (p && qtdTotal > 0) {
-                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit });
+                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit, ...(l.atualizarVenda ? { preco: Number(l.venda) } : {}) });
                   registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
                 }
               } else {
@@ -174,6 +192,11 @@ function Importar() {
                     {(!l.venda || !l.minimo) && (
                       <span className="inline-block rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">Completar dados</span>
                     )}
+                    {custoMudou(l) && (
+                      <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", l.custoUnit > l.custoAnterior ? "bg-warning/20 text-warning" : "bg-primary/10 text-primary")}>
+                        {l.custoUnit > l.custoAnterior ? "↑" : "↓"} custo {Math.round(Math.abs(l.custoUnit - l.custoAnterior) / l.custoAnterior * 100)}%
+                      </span>
+                    )}
                   </div>
                   <p className="font-semibold">{l.nome}</p><p className="font-mono text-xs text-muted-foreground">{l.codigo}</p>
                 </td>
@@ -184,7 +207,19 @@ function Importar() {
                   <p className="mt-1 text-xs font-semibold text-primary">= {l.qtdCompra * l.porEmbalagem} un no depósito</p>
                 </td>
                 <td className="px-4 py-3 font-medium">{brl(l.custoUnit)}</td>
-                <td className="px-4 py-3"><Input className={cn("h-8 w-24", !l.venda && "border-warning")} value={l.venda} onChange={(e) => upd(i, "venda", e.target.value)} /></td>
+                <td className="px-4 py-3">
+                  <Input className={cn("h-8 w-24", !l.venda && "border-warning")} value={l.venda} onChange={(e) => upd(i, "venda", e.target.value)} />
+                  {custoMudou(l) && (
+                    <label className="mt-1.5 flex cursor-pointer items-center gap-1.5">
+                      <Checkbox id={`atualizar-${i}`} checked={l.atualizarVenda} onCheckedChange={(v) => {
+                        const checked = v === true;
+                        upd(i, "atualizarVenda", checked);
+                        upd(i, "venda", checked ? (l.custoUnit * (1 + getConfig().margemPadrao / 100)).toFixed(2) : l.vendaAnterior);
+                      }} />
+                      <span className="text-[10px] text-muted-foreground">Atualizar preço</span>
+                    </label>
+                  )}
+                </td>
                 <td className="px-4 py-3"><Input className={cn("h-8 w-20", !l.minimo && "border-warning")} placeholder="?" value={l.minimo} onChange={(e) => upd(i, "minimo", e.target.value.replace(/\D/g, ""))} /></td>
                 <td className="px-4 py-3">
                   {(l.loteAuto || l.semValidade) && (
