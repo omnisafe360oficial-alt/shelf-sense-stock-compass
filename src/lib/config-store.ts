@@ -10,6 +10,7 @@ export type Config = {
   sugestaoPromocao: boolean; bloquearVencido: boolean;
   avisoRepositor: boolean; avisoInconsistencias: boolean;
   resumoDiario: boolean; avisosWhatsApp: boolean;
+  emailNotificacoes: string; telefoneWhatsApp: string;
   alertaEstoqueZerado: boolean;
   alertaVencimentos: boolean;
   alertaPedidos: boolean;
@@ -24,6 +25,7 @@ const PADRAO: Config = {
   sugestaoPromocao: true, bloquearVencido: true,
   avisoRepositor: true, avisoInconsistencias: true,
   resumoDiario: false, avisosWhatsApp: false,
+  emailNotificacoes: "", telefoneWhatsApp: "",
   alertaEstoqueZerado: true,
   alertaVencimentos: true,
   alertaPedidos: true,
@@ -42,7 +44,7 @@ onLojaChange(async (lojaId) => {
   }
   const { data } = await supabase
     .from("lojas")
-    .select("nome_loja, cnpj, cidade, uf, aviso_vencimento_1, aviso_vencimento_urgente, estoque_minimo_padrao")
+    .select("nome_loja, cnpj, cidade, uf, aviso_vencimento_1, aviso_vencimento_urgente, estoque_minimo_padrao, email_notificacoes, telefone_whatsapp, resumo_diario, avisos_whatsapp, margem_padrao, tolerancia_conferencia, locais_deposito, sugestao_promocao, bloquear_vencido, aviso_repositor, aviso_inconsistencias, alerta_estoque_zerado, alerta_vencimentos, alerta_pedidos, dias_alerta_pedido")
     .eq("id", lojaId)
     .single();
   if (data) {
@@ -55,6 +57,21 @@ onLojaChange(async (lojaId) => {
       avisoVencimento1: data.aviso_vencimento_1 ?? 30,
       avisoVencimentoUrgente: data.aviso_vencimento_urgente ?? 7,
       minimoPadrao: data.estoque_minimo_padrao ?? 10,
+      emailNotificacoes: data.email_notificacoes ?? "",
+      telefoneWhatsApp: data.telefone_whatsapp ?? "",
+      resumoDiario: data.resumo_diario ?? false,
+      avisosWhatsApp: data.avisos_whatsapp ?? false,
+      margemPadrao: data.margem_padrao ?? 45,
+      toleranciaConferencia: data.tolerancia_conferencia ?? 0,
+      locaisDeposito: data.locais_deposito ?? "C1, C2, C3, C4, Câmara fria",
+      sugestaoPromocao: data.sugestao_promocao ?? true,
+      bloquearVencido: data.bloquear_vencido ?? true,
+      avisoRepositor: data.aviso_repositor ?? true,
+      avisoInconsistencias: data.aviso_inconsistencias ?? true,
+      alertaEstoqueZerado: data.alerta_estoque_zerado ?? true,
+      alertaVencimentos: data.alerta_vencimentos ?? true,
+      alertaPedidos: data.alerta_pedidos ?? true,
+      diasAlertaPedido: data.dias_alerta_pedido ?? 2,
     };
     notificar();
   }
@@ -84,6 +101,21 @@ export function salvarConfig(parcial: Partial<Config>): void {
       aviso_vencimento_1: estado.avisoVencimento1,
       aviso_vencimento_urgente: estado.avisoVencimentoUrgente,
       estoque_minimo_padrao: estado.minimoPadrao,
+      email_notificacoes: estado.emailNotificacoes,
+      telefone_whatsapp: estado.telefoneWhatsApp,
+      resumo_diario: estado.resumoDiario,
+      avisos_whatsapp: estado.avisosWhatsApp,
+      margem_padrao: estado.margemPadrao,
+      tolerancia_conferencia: estado.toleranciaConferencia,
+      locais_deposito: estado.locaisDeposito,
+      sugestao_promocao: estado.sugestaoPromocao,
+      bloquear_vencido: estado.bloquearVencido,
+      aviso_repositor: estado.avisoRepositor,
+      aviso_inconsistencias: estado.avisoInconsistencias,
+      alerta_estoque_zerado: estado.alertaEstoqueZerado,
+      alerta_vencimentos: estado.alertaVencimentos,
+      alerta_pedidos: estado.alertaPedidos,
+      dias_alerta_pedido: estado.diasAlertaPedido,
     })
     .eq("id", lojaId)
     .then(({ error }) => {
