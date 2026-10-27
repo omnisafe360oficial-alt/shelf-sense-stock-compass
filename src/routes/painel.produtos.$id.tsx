@@ -10,7 +10,7 @@ import { useProdutos, getProdutos, editarProduto, excluirProduto } from "@/lib/p
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
-import { diasAte, faixaValidade } from "@/lib/estoque-store";
+import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
 
 export const Route = createFileRoute("/painel/produtos/$id")({
   loader: ({ params }) => {
@@ -359,8 +359,8 @@ function ProdutoDetalhe() {
                     <tr key={l.id}>
                       <td className="px-5 py-3 font-mono">{l.lote}</td>
                       <td className={cn("px-5 py-3 font-medium", corVal)}>
-                        {l.validade.split("-").reverse().join("/")}
-                        {dias <= 30 && <span className="ml-2 text-xs opacity-70">({dias <= 0 ? "vencido" : `${dias}d`})</span>}
+                        {exibirValidade(l.validade)}
+                        {l.validade < "2099-01-01" && dias <= 30 && <span className="ml-2 text-xs opacity-70">({dias <= 0 ? "vencido" : `${dias}d`})</span>}
                       </td>
                       <td className="px-5 py-3 text-right font-medium">{l.qtd} un</td>
                     </tr>

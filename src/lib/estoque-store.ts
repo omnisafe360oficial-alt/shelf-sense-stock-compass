@@ -98,6 +98,12 @@ export function faixaValidade(dias: number): Faixa {
 
 export const estadoAtual = () => estado;
 
+/** Exibe a data de validade formatada. Lotes "sem validade" (sentinela ≥ 2099) mostram "Sem validade". */
+export function exibirValidade(iso: string): string {
+  if (iso >= "2099-01-01") return "Sem validade";
+  return iso.split("-").reverse().join("/");
+}
+
 // ─── Persistência assíncrona ──────────────────────────────────────────────────
 
 function persistirGondola(lojaId: string, produtoId: string, qtd: number) {

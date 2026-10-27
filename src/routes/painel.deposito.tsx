@@ -4,7 +4,7 @@ import { ArrowRightLeft, Package, Search, Warehouse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
-import { diasAte, useEstoque } from "@/lib/estoque-store";
+import { diasAte, exibirValidade, useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
@@ -81,8 +81,8 @@ function Deposito() {
                         <tr key={l.id}>
                           <td className="px-5 py-3 font-mono text-xs">{l.lote}{i === 0 && <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 font-sans text-[10px] font-bold uppercase text-primary">sai primeiro</span>}</td>
                           <td className="px-5 py-3 text-muted-foreground">{l.local}</td>
-                          <td className="px-5 py-3">{l.validade.split("-").reverse().join("/")}</td>
-                          <td className="px-5 py-3"><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", d <= 7 ? "bg-destructive/10 text-destructive" : d <= 30 ? "bg-warning/15 text-warning" : "bg-success/12 text-success")}>{d <= 0 ? "vence hoje" : `${d} dias`}</span></td>
+                          <td className="px-5 py-3">{exibirValidade(l.validade)}</td>
+                          <td className="px-5 py-3">{l.validade < "2099-01-01" && <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", d <= 7 ? "bg-destructive/10 text-destructive" : d <= 30 ? "bg-warning/15 text-warning" : "bg-success/12 text-success")}>{d <= 0 ? "vence hoje" : `${d} dias`}</span>}</td>
                           <td className="px-5 py-3 text-right font-semibold">{l.qtd} un</td>
                         </tr>
                       );

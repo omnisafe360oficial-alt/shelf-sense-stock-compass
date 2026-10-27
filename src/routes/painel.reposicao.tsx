@@ -36,7 +36,8 @@ function Reposicao() {
     .map((p) => {
       const naGondola = s.gondola[p.id] ?? 0;
       const deposito = lotesFefo(s, p.id).reduce((t, l) => t + l.qtd, 0);
-      return { p, naGondola, deposito, sugestao: Math.min(deposito, p.minimo * 3 - naGondola) };
+      const cap = p.maximo && p.maximo > 0 ? p.maximo : p.minimo * 3;
+      return { p, naGondola, deposito, sugestao: Math.min(deposito, Math.max(0, cap - naGondola)) };
     })
     .filter((x) => x.naGondola <= x.p.minimo);
 

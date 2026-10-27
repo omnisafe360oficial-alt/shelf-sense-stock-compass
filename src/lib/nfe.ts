@@ -11,6 +11,17 @@ export type Nfe = { numero: string; emissao: string; fornecedor: { nome: string;
 
 const txt = (el: Element | null | undefined, tag: string) => el?.getElementsByTagName(tag)[0]?.textContent?.trim() ?? "";
 
+/** SEFAZ envia dVal como AAAA-MM; normaliza para AAAA-MM-DD (último dia do mês). */
+function normalizarDVal(dVal: string): string {
+  if (!dVal) return dVal;
+  if (dVal.length === 7) {
+    const [y, m] = dVal.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    return `${dVal}-${String(lastDay).padStart(2, "0")}`;
+  }
+  return dVal.slice(0, 10);
+}
+
 /** Lê o XML de uma NF-e (padrão SEFAZ) e extrai fornecedor e itens. */
 export function lerNfe(xml: string): Nfe {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
@@ -30,7 +41,7 @@ export function lerNfe(xml: string): Nfe {
       qtdCompra: Number(txt(prod, "qCom")) || 0,
       custoUnitCompra: Number(txt(prod, "vUnCom")) || 0,
       lote: txt(rastro, "nLote") || undefined,
-      validade: txt(rastro, "dVal") || undefined,
+      validade: normalizarDVal(txt(rastro, "dVal")) || undefined,
     };
   });
   return {

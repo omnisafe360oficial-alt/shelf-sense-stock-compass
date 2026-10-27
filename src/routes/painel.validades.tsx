@@ -5,7 +5,7 @@ import { BadgePercent, CalendarClock, CalendarX, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { brl } from "@/lib/mock-data";
 import { useProdutos } from "@/lib/produtos-store";
-import { diasAte, faixaValidade, registrarPerda, useEstoque, type Faixa } from "@/lib/estoque-store";
+import { diasAte, exibirValidade, faixaValidade, registrarPerda, useEstoque, type Faixa } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/validades")({
@@ -75,7 +75,7 @@ function Validades() {
                   </span>
                   <div className="min-w-48 flex-1">
                     <p className="font-semibold">{p.nome}</p>
-                    <p className="text-xs text-muted-foreground">Lote <span className="font-mono">{l.lote}</span> · vence {l.validade.split("-").reverse().join("/")} · {l.local}</p>
+                    <p className="text-xs text-muted-foreground">Lote <span className="font-mono">{l.lote}</span> · vence {exibirValidade(l.validade)} · {l.local}</p>
                   </div>
                   <div className="text-right"><p className="font-semibold">{l.qtd} un</p><p className="text-xs text-muted-foreground">{brl(l.qtd * p.preco)}</p></div>
                   <div className="flex gap-2">
