@@ -1,13 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, CalendarClock, ClipboardList, DollarSign, Package, PackageMinus, RefreshCw, ShoppingCart } from "lucide-react";
+import { useMemo } from "react";
+import {
+  AlertTriangle, ArrowDownRight, ArrowUpRight,
+  BarChart2, CalendarClock, ClipboardList,
+  DollarSign, Package, PackageMinus,
+  RefreshCw, ShoppingCart, TrendingUp, Warehouse,
+} from "lucide-react";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
-import { abaixoDoMinimo, HOJE, lotesVencendo, vendasHoje, vendasOntem, vendasPorDia, vendasPorHora } from "@/lib/computed";
-import { brl } from "@/lib/mock-data";
+import { useRecebeEstado } from "@/lib/recebe-store";
+import { usePedidos } from "@/lib/pedidos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
 import { useAuth } from "@/lib/auth";
-import { usePedidos } from "@/lib/pedidos-store";
+import { useProdutos } from "@/lib/produtos-store";
+import {
+  abaixoDoMinimo, HOJE, lotesVencendo,
+  vendasHoje, vendasOntem, vendasPorDia,
+  vendasPorHora, vendasPorProduto,
+} from "@/lib/computed";
+import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/")({
@@ -16,7 +28,6 @@ export const Route = createFileRoute("/painel/")({
       { title: "Início — OmniSafe 360" },
       { name: "description", content: "Resumo do dia: vendas, reposições, validades e inconsistências da sua loja." },
       { property: "og:title", content: "Início — OmniSafe 360" },
-      { property: "og:description", content: "Resumo do dia da sua loja no OmniSafe 360." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -24,207 +35,382 @@ export const Route = createFileRoute("/painel/")({
   component: Inicio,
 });
 
-const tomCls: Record<string, string> = {
-  primary: "bg-secondary text-primary",
-  warning: "bg-warning/15 text-warning",
-  destructive: "bg-destructive/10 text-destructive",
-  success: "bg-success/10 text-success",
+const STATUS_PEDIDO_COR: Record<string, string> = {
+  rascunho:   "bg-muted text-muted-foreground",
+  enviado:    "bg-primary/10 text-primary",
+  confirmado: "bg-success/12 text-success",
+  parcial:    "bg-warning/15 text-warning",
+  recebido:   "bg-success/20 text-success",
+  cancelado:  "bg-muted text-muted-foreground",
 };
-
-const STATUS_COLOR: Record<string, string> = {
-  rascunho: "bg-muted text-muted-foreground",
-  enviado: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  confirmado: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-  parcial: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  recebido: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  cancelado: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
-const STATUS_LABEL: Record<string, string> = {
+const STATUS_PEDIDO_LABEL: Record<string, string> = {
   rascunho: "Rascunho", enviado: "Enviado", confirmado: "Confirmado",
   parcial: "Parcial", recebido: "Recebido", cancelado: "Cancelado",
 };
 
+const ATALHOS = [
+  { label: "PDV",        desc: "Registrar venda",  href: "/painel/pdv",          icon: ShoppingCart, cor: "from-blue-500 to-blue-600"    },
+  { label: "Reposição",  desc: "Repor gôndola",    href: "/painel/reposicao",    icon: RefreshCw,    cor: "from-amber-500 to-orange-500"  },
+  { label: "Recebimento",desc: "Conferir entrega", href: "/painel/recebimentos", icon: Package,      cor: "from-emerald-500 to-teal-600"  },
+  { label: "Estoque",    desc: "Ver posição",      href: "/painel/estoque",      icon: Warehouse,    cor: "from-violet-500 to-purple-600" },
+  { label: "Pedidos",    desc: "Compras",          href: "/painel/pedidos/",     icon: ClipboardList,cor: "from-pink-500 to-rose-600"     },
+  { label: "Relatórios", desc: "Análises",         href: "/painel/relatorios",   icon: BarChart2,    cor: "from-cyan-500 to-sky-600"      },
+] as const;
+
 function dataFormatada() {
-  const s = new Date(HOJE + "T12:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const s = new Date(HOJE + "T12:00").toLocaleDateString("pt-BR", {
+    weekday: "long", day: "numeric", month: "long",
+  });
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
-
 function saudacao() {
   const h = new Date().getHours();
   return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 }
 
 function Inicio() {
-  const est = useEstoque();
-  const op = useOperacao();
-  const config = useConfig();
-  const equipe = useEquipe();
-  const auth = useAuth();
-  const { pedidos } = usePedidos();
-  const dono = equipe[0];
+  const est       = useEstoque();
+  const op        = useOperacao();
+  const { recebimentos } = useRecebeEstado();
+  const { pedidos }      = usePedidos();
+  const config    = useConfig();
+  const equipe    = useEquipe();
+  const auth      = useAuth();
+  const produtos  = useProdutos();
 
-  const hoje = vendasHoje(est.movs);
-  const ontem = vendasOntem(est.movs);
-  const pct = ontem > 0 ? Math.round(((hoje - ontem) / ontem) * 100) : 0;
-  const pctLabel = `${pct >= 0 ? "+" : ""}${pct}% vs. ontem`;
+  // ── Vendas ───────────────────────────────────────────────────────────────
+  const hoje    = vendasHoje(est.movs);
+  const ontem   = vendasOntem(est.movs);
+  const pct     = ontem > 0 ? Math.round(((hoje - ontem) / ontem) * 100) : 0;
+  const transoesHoje = est.movs.filter(
+    (m) => m.tipo === "venda" && m.data.startsWith(HOJE),
+  ).length;
+  const ticketMedio = transoesHoje > 0 ? hoje / transoesHoje : 0;
 
-  const abaixo = abaixoDoMinimo(est.gondola);
+  // ── Recebimentos hoje ─────────────────────────────────────────────────────
+  const recHoje = useMemo(
+    () => recebimentos.filter((r) => r.data.startsWith(HOJE)),
+    [recebimentos],
+  );
+  const itensRecHoje = useMemo(
+    () => recHoje.reduce((t, r) => t + r.itens.reduce((s, i) => s + i.qtdUN, 0), 0),
+    [recHoje],
+  );
+
+  // ── Estoque / alertas ─────────────────────────────────────────────────────
+  const abaixo          = abaixoDoMinimo(est.gondola);
+  const zerados         = abaixo.filter((p) => (est.gondola[p.id] ?? 0) === 0);
   const vencendoUrgente = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
-  const vencendoAmanha = vencendoUrgente.filter((l) => l.dias >= 0 && l.dias <= 1).length;
-  const inconsAbertas = op.inconsistencias.filter((i) => i.status === "aberta");
+  const vencidos        = vencendoUrgente.filter((l) => l.dias < 0);
+  const validades       = lotesVencendo(est.lotes, config.avisoVencimento1);
+  const inconsAbertas   = op.inconsistencias.filter((i) => i.status === "aberta");
+  const notasAguardando = op.notas.filter((n) => n.status === "aguardando");
+  const totalAlertas    = vencidos.length + inconsAbertas.length;
 
-  const horas = vendasPorHora(est.movs);
-  const maxHora = Math.max(...horas, 1);
+  // ── Pedidos ───────────────────────────────────────────────────────────────
+  const pedidosPendentes = pedidos.filter(
+    (p) => !["recebido", "cancelado"].includes(p.status),
+  );
 
+  // ── Gráficos ──────────────────────────────────────────────────────────────
+  const horas      = vendasPorHora(est.movs);
+  const maxHora    = Math.max(...horas, 1);
   const diasSemana = vendasPorDia(est.movs, 7);
-  const maxDia = Math.max(...diasSemana.map((d) => d.valor), 1);
+  const maxDia     = Math.max(...diasSemana.map((d) => d.valor), 1);
 
-  const reposicao = abaixo.slice(0, 5);
-  const validades = lotesVencendo(est.lotes, config.avisoVencimento1).slice(0, 6);
+  // ── Top produtos ──────────────────────────────────────────────────────────
+  const vendPorProd = useMemo(() => vendasPorProduto(est.movs), [est.movs]);
+  const topProdutos = useMemo(() => {
+    return Object.entries(vendPorProd)
+      .map(([id, v]) => ({ produto: produtos.find((p) => p.id === id), ...v }))
+      .filter((x): x is typeof x & { produto: NonNullable<typeof x["produto"]> } =>
+        x.produto !== undefined,
+      )
+      .sort((a, b) => b.un - a.un)
+      .slice(0, 5);
+  }, [vendPorProd, produtos]);
+  const maxTopUn = Math.max(...topProdutos.map((x) => x.un), 1);
 
-  const pedidosPendentes = pedidos.filter((p) => p.status !== "recebido" && p.status !== "cancelado");
-  const totalPedidosPendentes = pedidosPendentes.reduce((s, p) => s + p.total, 0);
+  // ── Banner de alerta crítico ───────────────────────────────────────────────
+  const alerta = useMemo(() => {
+    if (vencidos.length > 0)
+      return {
+        msg: `${vencidos.length} lote${vencidos.length !== 1 ? "s" : ""} vencido${vencidos.length !== 1 ? "s" : ""} em estoque — retire da gôndola`,
+        href: "/painel/validades" as const,
+        tom: "destructive" as const,
+      };
+    if (zerados.length > 0)
+      return {
+        msg: `${zerados.length} produto${zerados.length !== 1 ? "s" : ""} zerado${zerados.length !== 1 ? "s" : ""} na gôndola — precisa de reposição`,
+        href: "/painel/reposicao" as const,
+        tom: "destructive" as const,
+      };
+    if (inconsAbertas.length > 0)
+      return {
+        msg: `${inconsAbertas.length} inconsistência${inconsAbertas.length !== 1 ? "s" : ""} aberta${inconsAbertas.length !== 1 ? "s" : ""} aguardando análise`,
+        href: "/painel/inconsistencias" as const,
+        tom: "warning" as const,
+      };
+    if (notasAguardando.length > 0)
+      return {
+        msg: `${notasAguardando.length} nota${notasAguardando.length !== 1 ? "s" : ""} fiscal aguardando conferência`,
+        href: "/painel/recebimentos" as const,
+        tom: "warning" as const,
+      };
+    return null;
+  }, [vencidos, zerados, inconsAbertas, notasAguardando]);
 
-  const kpis = [
-    {
-      label: "Vendas hoje",
-      valor: brl(hoje),
-      extra: pctLabel,
-      icon: DollarSign,
-      tom: hoje > 0 ? "success" : "primary",
-      href: "/painel/movimentacoes",
-    },
-    {
-      label: "Abaixo do mínimo",
-      valor: String(abaixo.length),
-      extra: `${abaixo.length === 0 ? "todos ok" : abaixo.length + " aguardam reposição"}`,
-      icon: PackageMinus,
-      tom: abaixo.length > 0 ? "warning" : "primary",
-      href: "/painel/reposicao",
-    },
-    {
-      label: `Vencendo em ${config.avisoVencimentoUrgente}d`,
-      valor: String(vencendoUrgente.length),
-      extra: vencendoAmanha > 0 ? `${vencendoAmanha} vence${vencendoAmanha > 1 ? "m" : ""} amanhã` : "dentro do prazo",
-      icon: CalendarClock,
-      tom: vencendoUrgente.length > 0 ? "destructive" : "primary",
-      href: "/painel/validades",
-    },
-    {
-      label: "Inconsistências",
-      valor: String(inconsAbertas.length),
-      extra: inconsAbertas.length === 0 ? "tudo ok" : "aguardando análise",
-      icon: AlertTriangle,
-      tom: inconsAbertas.length > 0 ? "warning" : "primary",
-      href: "/painel/inconsistencias",
-    },
-    {
-      label: "Pedidos em aberto",
-      valor: String(pedidosPendentes.length),
-      extra: pedidosPendentes.length > 0 ? brl(totalPedidosPendentes) + " em aberto" : "nenhum pendente",
-      icon: ClipboardList,
-      tom: pedidosPendentes.length > 0 ? "warning" : "primary",
-      href: "/painel/pedidos",
-    },
-  ];
-
-  const atalhos = [
-    { label: "PDV", desc: "Registrar venda", href: "/painel/pdv", icon: ShoppingCart, cor: "from-blue-500 to-blue-600" },
-    { label: "Reposição", desc: "Repor gôndola", href: "/painel/reposicao", icon: RefreshCw, cor: "from-amber-500 to-orange-500" },
-    { label: "Recebimento", desc: "Conferir entrega", href: "/painel/recebimentos", icon: Package, cor: "from-emerald-500 to-teal-600" },
-    { label: "Pedidos", desc: "Compras", href: "/painel/pedidos", icon: ClipboardList, cor: "from-purple-500 to-purple-600" },
-  ];
+  const nome = (auth.nomeProprietario ?? equipe[0]?.nome ?? "Gestor").split(" ")[0];
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-muted-foreground">{dataFormatada()}</p>
-        <h1 className="text-3xl font-bold">
-          {saudacao()}, {(auth.nomeProprietario ?? dono?.nome ?? "Gestor").split(" ")[0]} 👋
-        </h1>
+      {/* ── Cabeçalho ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">{dataFormatada()}</p>
+          <h1 className="text-3xl font-bold">{saudacao()}, {nome} 👋</h1>
+        </div>
+        <Link
+          to="/painel/pdv"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+        >
+          <ShoppingCart className="h-4 w-4" /> Abrir PDV
+        </Link>
       </div>
 
-      {/* KPIs */}
+      {/* ── Banner de alerta crítico ────────────────────────────────────────── */}
+      {alerta && (
+        <Link
+          to={alerta.href}
+          className={cn(
+            "flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition hover:opacity-80",
+            alerta.tom === "destructive"
+              ? "border-destructive/40 bg-destructive/8 text-destructive"
+              : "border-warning/40 bg-warning/8 text-warning",
+          )}
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-semibold">{alerta.msg}</span>
+          <ArrowUpRight className="ml-auto h-4 w-4 shrink-0" />
+        </Link>
+      )}
+
+      {/* ── KPIs ───────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {kpis.map(({ label, valor, extra, icon: Icon, tom, href }) => (
-          <Link key={label} to={href} className="group rounded-2xl border bg-card p-5 shadow-elegant transition hover:border-primary/40 hover:shadow-lg">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">{label}</p>
-              <span className={cn("rounded-lg p-2 transition group-hover:scale-110", tomCls[tom])}>
-                <Icon className="h-4 w-4" />
-              </span>
-            </div>
-            <p className="mt-3 font-display text-3xl font-bold">{valor}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{extra}</p>
-          </Link>
-        ))}
+        {/* Vendas hoje */}
+        <Link
+          to="/painel/movimentacoes"
+          className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-elegant transition hover:border-primary/40 hover:shadow-lg"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Vendas hoje</p>
+            <span className="rounded-lg bg-success/10 p-2 text-success transition group-hover:scale-110">
+              <DollarSign className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="mt-3 font-display text-3xl font-bold">{brl(hoje)}</p>
+          <div className="mt-1 flex items-center gap-1">
+            {pct > 0
+              ? <ArrowUpRight className="h-3.5 w-3.5 text-success" />
+              : pct < 0
+              ? <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
+              : null}
+            <p className={cn("text-xs", pct > 0 ? "text-success" : pct < 0 ? "text-destructive" : "text-muted-foreground")}>
+              {pct >= 0 ? "+" : ""}{pct}% vs. ontem
+            </p>
+          </div>
+        </Link>
+
+        {/* Ticket médio */}
+        <div className="rounded-2xl border bg-card p-5 shadow-elegant">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ticket médio</p>
+            <span className="rounded-lg bg-primary/10 p-2 text-primary">
+              <TrendingUp className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="mt-3 font-display text-3xl font-bold">{brl(ticketMedio)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {transoesHoje} venda{transoesHoje !== 1 ? "s" : ""} hoje
+          </p>
+        </div>
+
+        {/* Recebimentos */}
+        <Link
+          to="/painel/recebimentos"
+          className="group rounded-2xl border bg-card p-5 shadow-elegant transition hover:border-primary/40 hover:shadow-lg"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recebimentos</p>
+            <span className={cn(
+              "rounded-lg p-2 transition group-hover:scale-110",
+              recHoje.length > 0 ? "bg-success/10 text-success" : "bg-primary/10 text-primary",
+            )}>
+              <Package className="h-4 w-4" />
+            </span>
+          </div>
+          <p className="mt-3 font-display text-3xl font-bold">{recHoje.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {itensRecHoje > 0 ? `${itensRecHoje} un recebidas hoje` : "nenhuma entrada hoje"}
+          </p>
+        </Link>
+
+        {/* Reposição */}
+        <Link
+          to="/painel/reposicao"
+          className={cn(
+            "group rounded-2xl border p-5 shadow-elegant transition hover:shadow-lg",
+            abaixo.length > 0
+              ? "border-warning/30 bg-warning/5 hover:border-warning/50"
+              : "bg-card hover:border-primary/40",
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Reposição</p>
+            <span className={cn(
+              "rounded-lg p-2 transition group-hover:scale-110",
+              abaixo.length > 0 ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary",
+            )}>
+              <PackageMinus className="h-4 w-4" />
+            </span>
+          </div>
+          <p className={cn("mt-3 font-display text-3xl font-bold", abaixo.length > 0 && "text-warning")}>
+            {abaixo.length}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {abaixo.length === 0
+              ? "tudo abastecido"
+              : `${zerados.length} zerado${zerados.length !== 1 ? "s" : ""}`}
+          </p>
+        </Link>
+
+        {/* Alertas */}
+        <Link
+          to="/painel/validades"
+          className={cn(
+            "group rounded-2xl border p-5 shadow-elegant transition hover:shadow-lg",
+            totalAlertas > 0
+              ? "border-destructive/30 bg-destructive/5 hover:border-destructive/50"
+              : "bg-card hover:border-primary/40",
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alertas</p>
+            <span className={cn(
+              "rounded-lg p-2 transition group-hover:scale-110",
+              totalAlertas > 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary",
+            )}>
+              <AlertTriangle className="h-4 w-4" />
+            </span>
+          </div>
+          <p className={cn("mt-3 font-display text-3xl font-bold", totalAlertas > 0 && "text-destructive")}>
+            {totalAlertas}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {totalAlertas === 0
+              ? "nenhum alerta"
+              : [
+                  vencidos.length > 0 && `${vencidos.length} vencido${vencidos.length !== 1 ? "s" : ""}`,
+                  inconsAbertas.length > 0 && `${inconsAbertas.length} incons.`,
+                ].filter(Boolean).join(" · ")}
+          </p>
+        </Link>
       </div>
 
-      {/* Atalhos rápidos */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-        {atalhos.map(({ label, desc, href, icon: Icon, cor }) => (
+      {/* ── Atalhos rápidos ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+        {ATALHOS.map(({ label, desc, href, icon: Icon, cor }) => (
           <Link
             key={label}
             to={href}
-            className="group flex items-center gap-4 rounded-2xl border bg-card px-5 py-4 transition hover:border-primary/40 hover:shadow-elegant"
+            className="group flex flex-col items-center gap-2 rounded-2xl border bg-card px-2 py-4 text-center transition hover:border-primary/30 hover:shadow-elegant sm:flex-row sm:items-center sm:gap-4 sm:px-5 sm:py-4 sm:text-left"
           >
-            <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white", cor)}>
+            <span
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white transition group-hover:scale-105",
+                cor,
+              )}
+            >
               <Icon className="h-5 w-5" />
             </span>
-            <div className="min-w-0">
-              <p className="font-semibold">{label}</p>
+            <div className="min-w-0 hidden sm:block">
+              <p className="truncate text-sm font-semibold">{label}</p>
               <p className="text-xs text-muted-foreground">{desc}</p>
             </div>
+            <p className="text-xs font-semibold sm:hidden">{label}</p>
           </Link>
         ))}
       </div>
 
-      {/* Gráficos */}
+      {/* ── Gráfico de vendas + Top produtos ────────────────────────────────── */}
       <div className="grid gap-5 xl:grid-cols-3">
-        {/* Vendas da semana */}
+        {/* Barras: 7 dias + por hora */}
         <div className="rounded-2xl border bg-card p-6 xl:col-span-2">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Vendas — últimos 7 dias</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Total: {brl(diasSemana.reduce((s, d) => s + d.valor, 0))}
               </p>
             </div>
-            <span className={cn("flex items-center gap-1 text-sm font-semibold", pct >= 0 ? "text-success" : "text-destructive")}>
-              <ArrowUpRight className={cn("h-4 w-4", pct < 0 && "rotate-180")} />
+            <span
+              className={cn(
+                "flex items-center gap-1 text-sm font-semibold",
+                pct >= 0 ? "text-success" : "text-destructive",
+              )}
+            >
+              {pct >= 0
+                ? <ArrowUpRight className="h-4 w-4" />
+                : <ArrowDownRight className="h-4 w-4" />}
               {Math.abs(pct)}% hoje
             </span>
           </div>
-          <div className="mt-6 flex h-48 items-end gap-2">
+
+          <div className="mt-6 flex h-44 items-end gap-2">
             {diasSemana.map((d, i) => {
               const isHoje = d.data === HOJE;
               return (
                 <div key={i} className="flex h-full flex-1 flex-col items-center gap-2">
                   <div className="flex w-full flex-1 items-end">
                     <div
-                      className={cn("w-full rounded-t-md transition-all", isHoje ? "bg-gradient-brand" : "bg-muted-foreground/20")}
-                      style={{ height: `${Math.max(4, Math.round((d.valor / maxDia) * 160))}px` }}
+                      className={cn(
+                        "w-full rounded-t-md transition-all",
+                        isHoje
+                          ? "bg-gradient-brand"
+                          : "bg-muted-foreground/20 hover:bg-muted-foreground/35",
+                      )}
+                      style={{
+                        height: `${Math.max(4, Math.round((d.valor / maxDia) * 152))}px`,
+                      }}
                     />
                   </div>
-                  <span className={cn("text-[10px]", isHoje ? "font-bold text-primary" : "text-muted-foreground")}>{d.label}</span>
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      isHoje ? "font-bold text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    {d.label}
+                  </span>
                 </div>
               );
             })}
           </div>
 
-          {/* Horas de hoje */}
           {horas.some((v) => v > 0) && (
             <div className="mt-6 border-t pt-5">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hoje por hora</p>
-              <div className="flex h-16 items-end gap-1">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Hoje por hora
+              </p>
+              <div className="flex h-14 items-end gap-1">
                 {horas.map((v, i) => (
                   <div key={i} className="flex h-full flex-1 flex-col items-center gap-1">
                     <div className="flex w-full flex-1 items-end">
                       <div
-                        className="w-full rounded-t bg-gradient-brand opacity-70"
-                        style={{ height: `${Math.max(2, Math.round((v / maxHora) * 52))}px` }}
+                        className="w-full rounded-t bg-primary/40 transition hover:bg-primary/60"
+                        style={{
+                          height: `${Math.max(2, Math.round((v / maxHora) * 44))}px`,
+                        }}
                       />
                     </div>
                     <span className="text-[9px] text-muted-foreground">{8 + i}h</span>
@@ -235,7 +421,65 @@ function Inicio() {
           )}
         </div>
 
-        {/* Reposição de gôndola */}
+        {/* Top 5 produtos */}
+        <div className="rounded-2xl border bg-card p-6">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            Top produtos vendidos
+          </h2>
+
+          {topProdutos.length === 0 ? (
+            <div className="mt-8 py-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                Nenhuma venda registrada ainda.
+              </p>
+            </div>
+          ) : (
+            <ul className="mt-5 space-y-4">
+              {topProdutos.map(({ produto, un }, idx) => (
+                <li key={produto.id}>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span
+                      className={cn(
+                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                        idx === 0 ? "bg-yellow-400/20 text-yellow-600"
+                        : idx === 1 ? "bg-slate-300/50 text-slate-500 dark:bg-slate-600/40 dark:text-slate-300"
+                        : idx === 2 ? "bg-amber-700/15 text-amber-700"
+                        : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {produto.nome}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{un} un</span>
+                  </div>
+                  <div className="mt-1.5 ml-7 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        idx === 0 ? "bg-gradient-brand" : "bg-primary/40",
+                      )}
+                      style={{ width: `${Math.round((un / maxTopUn) * 100)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-5 border-t pt-4">
+            <Link to="/painel/relatorios" className="text-xs text-primary hover:underline">
+              Ver relatório completo →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Linha inferior: Reposição + Validades + Pedidos ─────────────────── */}
+      <div className="grid gap-5 xl:grid-cols-3">
+        {/* Reposição urgente */}
         <div className="rounded-2xl border bg-card p-6">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -248,27 +492,38 @@ function Inicio() {
               </Link>
             )}
           </div>
-          {reposicao.length === 0 ? (
+
+          {abaixo.length === 0 ? (
             <div className="mt-6 rounded-xl bg-success/5 px-4 py-5 text-center">
               <p className="text-sm font-medium text-success">Tudo abastecido!</p>
-              <p className="mt-1 text-xs text-muted-foreground">Todos os produtos acima do mínimo.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Todos os produtos acima do mínimo.
+              </p>
             </div>
           ) : (
             <ul className="mt-4 divide-y">
-              {reposicao.map((p) => {
-                const qtd = est.gondola[p.id] ?? 0;
+              {abaixo.slice(0, 5).map((p) => {
+                const qtd    = est.gondola[p.id] ?? 0;
                 const pctBar = Math.min(100, p.minimo > 0 ? (qtd / p.minimo) * 100 : 100);
                 return (
                   <li key={p.id} className="py-3">
                     <div className="flex justify-between text-sm">
-                      <span className="font-medium">{p.nome}</span>
-                      <span className={cn("text-xs font-semibold", qtd === 0 ? "text-destructive" : "text-warning")}>
+                      <span className="min-w-0 truncate font-medium">{p.nome}</span>
+                      <span
+                        className={cn(
+                          "ml-2 shrink-0 text-xs font-semibold",
+                          qtd === 0 ? "text-destructive" : "text-warning",
+                        )}
+                      >
                         {qtd === 0 ? "Zerado" : "Baixo"}
                       </span>
                     </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-muted">
+                    <div className="mt-1.5 h-1.5 rounded-full bg-muted">
                       <div
-                        className={cn("h-full rounded-full", qtd === 0 ? "bg-destructive" : "bg-warning")}
+                        className={cn(
+                          "h-full rounded-full",
+                          qtd === 0 ? "bg-destructive" : "bg-warning",
+                        )}
                         style={{ width: `${pctBar}%` }}
                       />
                     </div>
@@ -281,38 +536,47 @@ function Inicio() {
             </ul>
           )}
         </div>
-      </div>
 
-      {/* Linha inferior: Validades + Pedidos pendentes */}
-      <div className="grid gap-5 xl:grid-cols-2">
-        {/* Lotes perto do vencimento */}
+        {/* Validades próximas */}
         <div className="rounded-2xl border bg-card p-6">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <CalendarClock className="h-4 w-4 text-destructive" />
-              Lotes perto do vencimento
+              Validades próximas
             </h2>
-            <Link to="/painel/validades" className="text-xs text-primary hover:underline">Ver todos</Link>
+            <Link to="/painel/validades" className="text-xs text-primary hover:underline">
+              Ver todos
+            </Link>
           </div>
+
           {validades.length === 0 ? (
             <div className="mt-6 rounded-xl bg-success/5 px-4 py-5 text-center">
               <p className="text-sm font-medium text-success">Nenhum vencimento próximo</p>
-              <p className="mt-1 text-xs text-muted-foreground">Dentro dos próximos {config.avisoVencimento1} dias.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Dentro dos próximos {config.avisoVencimento1} dias.
+              </p>
             </div>
           ) : (
             <div className="mt-4 space-y-1">
-              {validades.map((v) => (
-                <div key={v.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted/50">
+              {validades.slice(0, 6).map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted/50"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{v.produto.nome}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{v.lote} · {v.qtd} un</p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {v.lote} · {v.qtd} un
+                    </p>
                   </div>
-                  <span className={cn(
-                    "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-                    v.faixa === "vencido" || v.faixa === "7"
-                      ? "bg-destructive/10 text-destructive"
-                      : "bg-warning/15 text-warning",
-                  )}>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
+                      v.faixa === "vencido" || v.faixa === "7"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-warning/15 text-warning",
+                    )}
+                  >
                     {v.faixa === "vencido" ? "Vencido" : `${v.dias}d`}
                   </span>
                 </div>
@@ -321,23 +585,28 @@ function Inicio() {
           )}
         </div>
 
-        {/* Pedidos de compra pendentes */}
+        {/* Pedidos em aberto */}
         <div className="rounded-2xl border bg-card p-6">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <ClipboardList className="h-4 w-4 text-warning" />
-              Pedidos de compra
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Pedidos em aberto
             </h2>
-            <Link to="/painel/pedidos" className="text-xs text-primary hover:underline">Ver todos</Link>
+            <Link to="/painel/pedidos/" className="text-xs text-primary hover:underline">
+              Ver todos
+            </Link>
           </div>
+
           {pedidosPendentes.length === 0 ? (
             <div className="mt-6 rounded-xl bg-success/5 px-4 py-5 text-center">
               <p className="text-sm font-medium text-success">Nenhum pedido pendente</p>
-              <p className="mt-1 text-xs text-muted-foreground">Todos os pedidos foram recebidos ou cancelados.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Todos os pedidos foram recebidos ou cancelados.
+              </p>
             </div>
           ) : (
             <div className="mt-4 space-y-1">
-              {pedidosPendentes.slice(0, 6).map((p) => (
+              {pedidosPendentes.slice(0, 5).map((p) => (
                 <Link
                   key={p.id}
                   to="/painel/pedidos/$id"
@@ -347,15 +616,20 @@ function Inicio() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-mono text-sm font-semibold">{p.numero}</p>
-                      <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_COLOR[p.status])}>
-                        {STATUS_LABEL[p.status]}
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                          STATUS_PEDIDO_COR[p.status],
+                        )}
+                      >
+                        {STATUS_PEDIDO_LABEL[p.status]}
                       </span>
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">{p.fornecedorNome || "—"} · {p.itens.length} iten{p.itens.length !== 1 ? "s" : ""}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {p.fornecedorNome || "—"} · {p.itens.length} iten{p.itens.length !== 1 ? "s" : ""}
+                    </p>
                   </div>
-                  <p className="shrink-0 text-sm font-semibold">
-                    {brl(p.total)}
-                  </p>
+                  <p className="shrink-0 text-sm font-semibold">{brl(p.total)}</p>
                 </Link>
               ))}
             </div>
