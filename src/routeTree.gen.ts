@@ -19,6 +19,7 @@ import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelConfiguracoesRouteImport } from './routes/painel.configuracoes'
 import { Route as PainelDepositoRouteImport } from './routes/painel.deposito'
 import { Route as PainelEquipeRouteImport } from './routes/painel.equipe'
+import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
 import { Route as PainelGondolaRouteImport } from './routes/painel.gondola'
 import { Route as PainelInconsistenciasRouteImport } from './routes/painel.inconsistencias'
 import { Route as PainelMovimentacoesRouteImport } from './routes/painel.movimentacoes'
@@ -94,6 +95,11 @@ const PainelDepositoRoute = PainelDepositoRouteImport.update({
 const PainelEquipeRoute = PainelEquipeRouteImport.update({
   id: '/equipe',
   path: '/equipe',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelEstoqueRoute = PainelEstoqueRouteImport.update({
+  id: '/estoque',
+  path: '/estoque',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelGondolaRoute = PainelGondolaRouteImport.update({
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
+  '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByTo {
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
+  '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
+  '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
+    | '/painel/estoque'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
+    | '/painel/estoque'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -424,6 +435,7 @@ export interface FileRouteTypes {
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
+    | '/painel/estoque'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -532,6 +544,13 @@ declare module '@tanstack/react-router' {
       path: '/equipe'
       fullPath: '/painel/equipe'
       preLoaderRoute: typeof PainelEquipeRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/estoque': {
+      id: '/painel/estoque'
+      path: '/estoque'
+      fullPath: '/painel/estoque'
+      preLoaderRoute: typeof PainelEstoqueRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/gondola': {
@@ -723,6 +742,7 @@ interface PainelRouteChildren {
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
+  PainelEstoqueRoute: typeof PainelEstoqueRoute
   PainelGondolaRoute: typeof PainelGondolaRoute
   PainelInconsistenciasRoute: typeof PainelInconsistenciasRoute
   PainelMovimentacoesRoute: typeof PainelMovimentacoesRoute
@@ -748,6 +768,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
+  PainelEstoqueRoute: PainelEstoqueRoute,
   PainelGondolaRoute: PainelGondolaRoute,
   PainelInconsistenciasRoute: PainelInconsistenciasRoute,
   PainelMovimentacoesRoute: PainelMovimentacoesRoute,
@@ -818,13 +839,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
