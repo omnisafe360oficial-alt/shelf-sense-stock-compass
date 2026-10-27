@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, Users } from "lucide-react";
+import { Check, Copy, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEquipe, alterarPapel, alterarStatus, PAPEIS, type Papel } from "@/lib/equipe-store";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +26,7 @@ function Equipe() {
   const auth = useAuth();
   const [codigoConvite, setCodigoConvite] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [renovando, setRenovando] = useState(false);
 
   useEffect(() => {
     if (!auth.lojaId) return;
@@ -39,6 +40,23 @@ function Equipe() {
         setCodigoConvite(data?.codigo_convite ?? null);
       });
   }, [auth.lojaId]);
+
+  const renovarCodigo = async () => {
+    if (!auth.lojaId) return;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const novoCodigo = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+      .map((b) => chars[b % chars.length])
+      .join("");
+    setRenovando(true);
+    const { error } = await supabase
+      .from("lojas")
+      .update({ codigo_convite: novoCodigo })
+      .eq("id", auth.lojaId);
+    setRenovando(false);
+    if (error) { toast.error("Erro ao renovar código: " + error.message); return; }
+    setCodigoConvite(novoCodigo);
+    toast.success("Código renovado! O código anterior não funciona mais.");
+  };
 
   const copiar = () => {
     if (!codigoConvite) return;
@@ -86,6 +104,19 @@ function Equipe() {
                       <><Copy className="h-4 w-4" /> Copiar</>
                     )}
                   </Button>
+                  {(auth.papel === "Proprietário" || auth.papel === "Gerente") && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={renovarCodigo}
+                      disabled={renovando}
+                      className="shrink-0 gap-1.5 text-muted-foreground hover:text-destructive"
+                      title="Gera um novo código — o anterior para de funcionar"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${renovando ? "animate-spin" : ""}`} />
+                      Renovar
+                    </Button>
+                  )}
                 </>
               ) : (
                 <span className="text-sm text-muted-foreground">Carregando…</span>

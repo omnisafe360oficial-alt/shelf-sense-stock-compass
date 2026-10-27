@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
-import { onLojaChange, getLojaId } from "./loja-resolver";
+import { onLojaChange } from "./loja-resolver";
 
 export const PAPEIS = {
   Proprietário: "Acesso a tudo",
@@ -52,26 +52,6 @@ export function useEquipe(): Membro[] {
 }
 
 export function getEquipe(): Membro[] { return estado; }
-
-export function convidarMembro(dados: Omit<Membro, "id">): void {
-  const id = crypto.randomUUID();
-  estado = [...estado, { ...dados, id }];
-  notificar();
-  const lojaId = getLojaId();
-  if (lojaId) {
-    supabase
-      .from("membros")
-      .insert({
-        id,
-        loja_id: lojaId,
-        nome: dados.nome,
-        email: dados.email,
-        papel: dados.papel,
-        status: dados.ativo ? "ativo" : "inativo",
-      })
-      .then(({ error }) => { if (error) toast.error("Erro ao convidar membro: " + error.message); });
-  }
-}
 
 export function alterarPapel(id: string, papel: Papel): void {
   estado = estado.map((m) => (m.id === id ? { ...m, papel } : m));
