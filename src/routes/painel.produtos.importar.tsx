@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, FileCode2, FileUp, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
@@ -46,10 +46,16 @@ function Importar() {
         const conv = sugerirConversao(i.nome, i.unidadeCompra);
         const custoUnit = i.custoUnitCompra / conv;
         const ex = getProdutos().find((p) => p.codigo === i.codigo);
+        const cfg = getConfig();
+        const vendaSugerida = custoUnit > 0
+          ? (custoUnit * (1 + cfg.margemPadrao / 100)).toFixed(2)
+          : "";
         return {
           codigo: i.codigo, nome: ex?.nome ?? i.nome, existente: !!ex, unidadeCompra: i.unidadeCompra, qtdCompra: i.qtdCompra,
-          porEmbalagem: conv, custoUnit, venda: ex ? ex.preco.toFixed(2) : (custoUnit * (1 + getConfig().margemPadrao / 100)).toFixed(2),
-          minimo: ex ? String(ex.minimo) : "", lote: i.lote ?? "", validade: i.validade ?? "",
+          porEmbalagem: conv, custoUnit,
+          venda: ex ? ex.preco.toFixed(2) : vendaSugerida,
+          minimo: ex ? String(ex.minimo) : String(cfg.minimoPadrao),
+          lote: i.lote ?? "", validade: i.validade ?? "",
         };
       }));
     } catch (e) {
@@ -60,7 +66,7 @@ function Importar() {
   const upd = (i: number, k: keyof Linha, v: string | number) => setLinhas((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
 
   const fornecedorExiste = nota && getFornecedores().some((f) => f.cnpj === nota.fornecedor.cnpj);
-  const pendentes = linhas.filter((l) => !l.minimo || !l.venda).length;
+  const pendentes = linhas.filter((l) => !l.minimo || !l.venda || Number(l.venda) <= 0).length;
 
   if (!nota) {
     return (
@@ -89,31 +95,46 @@ function Importar() {
       <button onClick={() => setNota(null)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Trocar arquivo</button>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold">Conferir importação</h1><p className="text-muted-foreground">NF-e nº {nota.numero} · emitida em {nota.emissao.split("-").reverse().join("/")}</p></div>
-        <Button size="lg" disabled={pendentes > 0} onClick={() => {
-          if (!nota) return;
-          if (!fornecedorExiste) {
-            cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" });
-          }
-          linhas.forEach((l) => {
-            const qtdTotal = l.qtdCompra * l.porEmbalagem;
-            if (l.existente) {
-              const p = getProdutos().find((x) => x.codigo === l.codigo);
-              if (p && qtdTotal > 0 && l.lote && l.validade) {
-                registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
-              }
-            } else {
-              const id = cadastrarProduto({ nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, validade: l.validade || undefined });
-              inicializarProduto(id);
-              if (qtdTotal > 0 && l.lote && l.validade) {
-                registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
-              }
+        <div className="flex flex-col items-end gap-2">
+          {pendentes > 0 && (
+            <p className="flex items-center gap-1.5 text-xs text-warning">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {pendentes} {pendentes === 1 ? "produto precisa" : "produtos precisam"} de preço de venda
+            </p>
+          )}
+          <Button size="lg" variant={pendentes > 0 ? "outline" : "default"} onClick={() => {
+            if (!nota) return;
+            if (!fornecedorExiste) {
+              cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" });
             }
-          });
-          toast.success(`${linhas.length} produtos importados para o depósito!`);
-          navigate({ to: "/painel/produtos" });
-        }}>
-          <Check /> Confirmar importação
-        </Button>
+            linhas.forEach((l) => {
+              const qtdTotal = l.qtdCompra * l.porEmbalagem;
+              if (l.existente) {
+                const p = getProdutos().find((x) => x.codigo === l.codigo);
+                if (p && qtdTotal > 0 && l.lote && l.validade) {
+                  registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+                }
+              } else {
+                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0 };
+                if (l.validade) novoProd.validade = l.validade;
+                const id = cadastrarProduto(novoProd);
+                inicializarProduto(id);
+                if (qtdTotal > 0 && l.lote && l.validade) {
+                  registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML");
+                }
+              }
+            });
+            const semPreco = linhas.filter((l) => Number(l.venda) <= 0).length;
+            if (semPreco > 0) {
+              toast.success(`${linhas.length} produtos importados. Complete o preço de ${semPreco} produto(s) na lista.`);
+            } else {
+              toast.success(`${linhas.length} produtos importados para o depósito!`);
+            }
+            navigate({ to: "/painel/produtos" });
+          }}>
+            {pendentes > 0 ? <><AlertTriangle className="h-4 w-4" /> Importar assim mesmo</> : <><Check className="h-4 w-4" /> Confirmar importação</>}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
