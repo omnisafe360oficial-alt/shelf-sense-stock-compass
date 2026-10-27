@@ -55,7 +55,7 @@ const ATALHOS = [
   { label: "Reposição",  desc: "Repor gôndola",    href: "/painel/reposicao",    icon: RefreshCw,    cor: "from-amber-500 to-orange-500"  },
   { label: "Recebimento",desc: "Conferir entrega", href: "/painel/recebimentos", icon: Package,      cor: "from-emerald-500 to-teal-600"  },
   { label: "Estoque",    desc: "Ver posição",      href: "/painel/estoque",      icon: Warehouse,    cor: "from-violet-500 to-purple-600" },
-  { label: "Pedidos",    desc: "Compras",          href: "/painel/pedidos/",     icon: ClipboardList,cor: "from-pink-500 to-rose-600"     },
+  { label: "Pedidos",    desc: "Compras",          href: "/painel/pedidos",     icon: ClipboardList,cor: "from-pink-500 to-rose-600"     },
   { label: "Relatórios", desc: "Análises",         href: "/painel/relatorios",   icon: BarChart2,    cor: "from-cyan-500 to-sky-600"      },
 ] as const;
 
@@ -675,7 +675,7 @@ function Inicio() {
               <ClipboardList className="h-4 w-4 text-primary" />
               Pedidos em aberto
             </h2>
-            <Link to="/painel/pedidos/" className="text-xs text-primary hover:underline">
+            <Link to="/painel/pedidos" className="text-xs text-primary hover:underline">
               Ver todos
             </Link>
           </div>

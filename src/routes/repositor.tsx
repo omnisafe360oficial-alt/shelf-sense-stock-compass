@@ -82,7 +82,7 @@ function RepositorLayout() {
       <nav className="shrink-0 border-t border-border bg-card">
         <div className="flex h-16 items-stretch">
           {ABAS.map((aba) => {
-            const ativo = aba.exact
+            const ativo = "exact" in aba && aba.exact
               ? location.pathname === aba.to
               : location.pathname.startsWith(aba.to);
             const Icon = aba.icon;
