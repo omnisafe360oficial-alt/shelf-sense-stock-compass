@@ -2,8 +2,8 @@ import { diasAte, faixaValidade, type Faixa, type Lote, type Mov } from "./estoq
 import { getProdutos } from "./produtos-store";
 import { type Produto } from "./mock-data";
 
-export const HOJE = "2026-10-22";
-const ONTEM = "2026-10-21";
+export const HOJE = new Date().toISOString().slice(0, 10);
+const ONTEM = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
 export function vendasPorProduto(movs: Mov[]): Record<string, { un: number; ultimaData: string | null }> {
   const map: Record<string, { un: number; ultimaData: string | null }> = {};
