@@ -15,6 +15,7 @@ import { Route as ConfigurarLojaRouteImport } from './routes/configurar-loja'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as RecebeRouteImport } from './routes/recebe'
 import { Route as RepositorRouteImport } from './routes/repositor'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelConfiguracoesRouteImport } from './routes/painel.configuracoes'
 import { Route as PainelDepositoRouteImport } from './routes/painel.deposito'
@@ -75,6 +76,11 @@ const RecebeRoute = RecebeRouteImport.update({
 const RepositorRoute = RepositorRouteImport.update({
   id: '/repositor',
   path: '/repositor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PainelIndexRoute = PainelIndexRouteImport.update({
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof PainelRouteWithChildren
   '/recebe': typeof RecebeRouteWithChildren
   '/repositor': typeof RepositorRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -276,6 +283,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
   '/configurar-loja': typeof ConfigurarLojaRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/painel': typeof PainelRouteWithChildren
   '/recebe': typeof RecebeRouteWithChildren
   '/repositor': typeof RepositorRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/recebe'
     | '/repositor'
+    | '/auth/callback'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cadastro'
     | '/configurar-loja'
+    | '/auth/callback'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/recebe'
     | '/repositor'
+    | '/auth/callback'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -472,6 +484,7 @@ export interface RootRouteChildren {
   PainelRoute: typeof PainelRouteWithChildren
   RecebeRoute: typeof RecebeRouteWithChildren
   RepositorRoute: typeof RepositorRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -516,6 +529,13 @@ declare module '@tanstack/react-router' {
       path: '/repositor'
       fullPath: '/repositor'
       preLoaderRoute: typeof RepositorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel/': {
@@ -835,7 +855,18 @@ const rootRouteChildren: RootRouteChildren = {
   PainelRoute: PainelRouteWithChildren,
   RecebeRoute: RecebeRouteWithChildren,
   RepositorRoute: RepositorRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
