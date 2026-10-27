@@ -12,4 +12,4 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 8. PDV
 - [x] 9. Reposição, Recebimentos, Inconsistências
 - [x] 10. Relatórios, Equipe, Configurações
-- [ ] 11. Dados reais (Lovable Cloud, login Google)
+- [x] 11. Dados reais (Lovable Cloud, login Google)
