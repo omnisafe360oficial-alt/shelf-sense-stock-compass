@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
 import type { Produto, LocalDeposito, LocalGondola } from "./mock-data";
+import { executarTransferencia, ajustarGondola, estadoAtual } from "./estoque-store";
 
 export type { LocalDeposito, LocalGondola };
 
@@ -248,6 +249,17 @@ export function registrarReposicao(rep: Omit<Reposicao, "id" | "data">): Reposic
     });
   }
   emitir({ ...estado, tarefas, reposicoes: [nova, ...estado.reposicoes] });
+
+  // Atualiza estoque: deduz do depósito e adiciona na gôndola
+  if (rep.qtdReposta > 0) {
+    try {
+      executarTransferencia(rep.produtoId, rep.qtdReposta);
+    } catch {
+      // Lotes não carregados ainda; ajusta a gôndola diretamente
+      const gondolaAtual = estadoAtual().gondola[rep.produtoId] ?? 0;
+      ajustarGondola(rep.produtoId, gondolaAtual + rep.qtdReposta, "Reposição (sem lote)");
+    }
+  }
 
   if (lojaId) {
     supabase.from("reposicoes").insert({

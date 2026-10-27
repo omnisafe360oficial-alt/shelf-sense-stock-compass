@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { registrarEntrada } from "./estoque-store";
 
 export type RecebeUnidade = "UN" | "CX" | "FD" | "PCT" | "SC" | "DZ" | "BD" | "KG" | "GR" | "L" | "ML" | "GF";
 
@@ -182,6 +183,20 @@ export function finalizarRecebimento(rec: Omit<Recebimento, "id" | "data">) {
     });
   }
   emitir({ ...estado, pedidos, recebimentos: [novo, ...estado.recebimentos] });
+
+  // Registra entrada no estoque para cada item com quantidade > 0
+  for (const item of rec.itens) {
+    if (item.qtdUN > 0) {
+      registrarEntrada(
+        item.produtoId,
+        item.qtdUN,
+        item.lote || "S/L",
+        item.validade || new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
+        rec.fornecedor || "Recebimento",
+        rec.operador || "Sistema",
+      );
+    }
+  }
 
   if (lojaId) {
     supabase.from("recebimentos").insert({
