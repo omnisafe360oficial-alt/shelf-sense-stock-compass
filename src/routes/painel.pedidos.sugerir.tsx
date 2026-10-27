@@ -102,14 +102,14 @@ function SugerirPedidoPage() {
     }
 
     toast.success(`${count} rascunho${count !== 1 ? "s" : ""} criado${count !== 1 ? "s" : ""}`);
-    navigate({ to: "/painel/pedidos/" });
+    navigate({ to: "/painel/pedidos" });
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link to="/painel/pedidos/" className="text-muted-foreground hover:text-foreground">
+          <Link to="/painel/pedidos" className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>

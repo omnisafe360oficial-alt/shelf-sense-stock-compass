@@ -11,7 +11,7 @@ import type { PedidoStatus } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/painel/pedidos/")({
+export const Route = createFileRoute("/painel/pedidos")({
   head: () => ({
     meta: [
       { title: "Pedidos de Compra — OmniSafe 360" },
