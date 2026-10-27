@@ -88,6 +88,7 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         minimo: dados.minimo,
         maximo_gondola: dados.maximo ?? 0,
         custo_ultima_compra: dados.custoUltimaCompra ?? 0,
+        validade_padrao_dias: dados.validade ?? null,
         local_deposito: dados.localDeposito ?? null,
         local_gondola: dados.localGondola ?? null,
       })
