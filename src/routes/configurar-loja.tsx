@@ -9,7 +9,8 @@ import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import * as SelectPrimitive from "@radix-ui/react-select";
+import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -106,7 +107,7 @@ function ConfigurarLoja() {
     if (!uf) { setCidades([]); setCidade(""); return; }
     setLoadingCidades(true);
     setCidade("");
-    fetch(`https://servicodados.ibge.gov.br/api/v2/localidades/estados/${uf}/municipios?orderBy=nome`)
+    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`)
       .then((r) => r.json())
       .then((data: { nome: string }[]) => setCidades(data.map((m) => m.nome)))
       .catch(() => toast.error("Erro ao carregar cidades. Tente novamente."))
@@ -238,10 +239,20 @@ function ConfigurarLoja() {
                     <SelectContent>
                       <ScrollArea className="h-64">
                         {ESTADOS.map((e) => (
-                          <SelectItem key={e.uf} value={e.uf}>
-                            <span className="font-mono text-xs text-muted-foreground mr-2">{e.uf}</span>
-                            {e.nome}
-                          </SelectItem>
+                          // UF sigla fica fora do ItemText para o trigger mostrar só o nome
+                          <SelectPrimitive.Item
+                            key={e.uf}
+                            value={e.uf}
+                            className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                          >
+                            <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+                              <SelectPrimitive.ItemIndicator>
+                                <Check className="h-4 w-4" />
+                              </SelectPrimitive.ItemIndicator>
+                            </span>
+                            <span className="w-7 shrink-0 font-mono text-xs text-muted-foreground">{e.uf}</span>
+                            <SelectPrimitive.ItemText>{e.nome}</SelectPrimitive.ItemText>
+                          </SelectPrimitive.Item>
                         ))}
                       </ScrollArea>
                     </SelectContent>
