@@ -9,6 +9,7 @@ import { brl, categorias } from "@/lib/mock-data";
 import { cadastrarProduto } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada, executarTransferencia } from "@/lib/estoque-store";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/produtos/novo")({
@@ -61,6 +62,7 @@ const num = (s: string) => Number(s.replace(",", ".")) || 0;
 function NovoProduto() {
   const navigate = useNavigate();
   const fornecedores = useFornecedores();
+  const auth = useAuth();
   const [step, setStep] = useState(0);
   const [f, setF] = useState(inicial);
   const set = (k: keyof typeof inicial) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -74,7 +76,7 @@ function NovoProduto() {
     f.novoFornecedor ? f.fNome.trim().length > 1 : !!f.fornecedorId,
     !!f.unidade && num(f.porEmbalagem) > 0,
     custo > 0 && venda > 0,
-    !!f.lote && !!f.validade && num(f.qtdDeposito) >= 0 && f.qtdDeposito !== "",
+    f.qtdDeposito !== "" && (num(f.qtdDeposito) === 0 || (!!f.lote && !!f.validade)),
     f.qtdGondola !== "" && num(f.minimo) > 0,
     true,
   ][step];
@@ -110,7 +112,7 @@ function NovoProduto() {
     inicializarProduto(id);
 
     if (total > 0 && f.lote && f.validade) {
-      registrarEntrada(id, total, f.lote, f.validade, "Cadastro inicial", "Maria Souza");
+      registrarEntrada(id, total, f.lote, f.validade, "Cadastro inicial", auth.nomeProprietario ?? "Sistema");
       if (qtdGond > 0) {
         try { executarTransferencia(id, Math.min(qtdGond, total)); } catch { /* depósito insuficiente */ }
       }

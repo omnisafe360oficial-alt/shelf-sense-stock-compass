@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Edit3, MapPin, Save, Trash2, Warehouse, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Edit3, MapPin, Save, Trash2, Warehouse, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { useProdutos, getProdutos, editarProduto, excluirProduto } from "@/lib/p
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
+import { diasAte, faixaValidade } from "@/lib/estoque-store";
 
 export const Route = createFileRoute("/painel/produtos/$id")({
   loader: ({ params }) => {
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
   head: ({ loaderData }) => ({
     meta: [
       { title: `${loaderData?.nome ?? "Produto"} — OmniSafe 360` },
-      { name: "description", content: "Detalhe e edição do produto no OmniSafe 360." },
+      { name: "description", content: "Ficha do produto com estoque, lotes, localização e histórico de movimentações." },
       { property: "og:title", content: `${loaderData?.nome ?? "Produto"} — OmniSafe 360` },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -34,6 +35,13 @@ type FormState = {
   nome: string; categoria: string; fornecedor: string; preco: string; minimo: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
+};
+
+const MOV_LABEL: Record<string, { t: string; ic: typeof ArrowUp; c: string }> = {
+  entrada:      { t: "Entrada no depósito", ic: ArrowDown, c: "text-success" },
+  transferencia:{ t: "Reposto na gôndola",  ic: ArrowUp,   c: "text-primary" },
+  venda:        { t: "Vendido",              ic: ArrowUp,   c: "text-muted-foreground" },
+  ajuste:       { t: "Ajuste de estoque",    ic: ArrowUpDown, c: "text-warning" },
 };
 
 function ProdutoDetalhe() {
@@ -53,11 +61,33 @@ function ProdutoDetalhe() {
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
 
+  const dep = useMemo(
+    () => est.lotes.filter((l) => l.produtoId === produto?.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0),
+    [est.lotes, produto?.id],
+  );
+  const gond = produto ? (est.gondola[produto.id] ?? 0) : 0;
+  const lotesDoProduto = useMemo(
+    () => est.lotes.filter((l) => l.produtoId === produto?.id && l.qtd > 0).sort((a, b) => a.validade.localeCompare(b.validade)),
+    [est.lotes, produto?.id],
+  );
+  const movsProduto = useMemo(
+    () => est.movs.filter((m) => m.produtoId === produto?.id).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15),
+    [est.movs, produto?.id],
+  );
+
   if (!produto) return <p className="text-muted-foreground">Produto não encontrado.</p>;
 
-  const dep = est.lotes.filter((l) => l.produtoId === produto.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
-  const gond = est.gondola[produto.id] ?? 0;
-  const lotesDoProduto = est.lotes.filter((l) => l.produtoId === produto.id && l.qtd > 0);
+  const total = dep + gond;
+  const sit: "ok" | "baixo" | "sem" =
+    total === 0 ? "sem" : gond <= produto.minimo ? "baixo" : "ok";
+  const sitLabel = { ok: "Estoque ok", baixo: "Repor gôndola", sem: "Sem estoque" };
+  const sitCor = {
+    ok:    "bg-success/12 text-success",
+    baixo: "bg-warning/15 text-warning",
+    sem:   "bg-destructive/10 text-destructive",
+  };
+  const pctGond = produto.minimo > 0 ? Math.min(100, (gond / (produto.minimo * 2)) * 100) : gond > 0 ? 100 : 0;
+  const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : "bg-success";
 
   const abrirEdicao = () => {
     const ld = produto.localDeposito;
@@ -107,17 +137,23 @@ function ProdutoDetalhe() {
         <ArrowLeft className="h-4 w-4" /> Produtos
       </Link>
 
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-gradient-brand p-8 text-primary-foreground">
         <div>
           <p className="font-mono text-sm text-primary-foreground/75">{produto.codigo}</p>
           <h1 className="text-3xl font-bold">{produto.nome}</h1>
-          <p className="mt-1 text-primary-foreground/75">{produto.categoria} · {produto.fornecedor}</p>
+          <p className="mt-1 text-primary-foreground/75">{produto.categoria} · {produto.fornecedor || "Fornecedor não informado"}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn("rounded-full px-3 py-1.5 text-sm font-semibold", sitCor[sit])}>
+            {sitLabel[sit]}
+          </span>
           {!editando ? (
             <>
               <Button variant="secondary" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
-              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir produto"><Trash2 className="h-4 w-4" /></Button>
+              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir produto">
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </>
           ) : (
             <Button variant="secondary" onClick={cancelar}><X className="h-4 w-4" /> Cancelar</Button>
@@ -125,10 +161,13 @@ function ProdutoDetalhe() {
         </div>
       </div>
 
+      {/* Confirmação de exclusão */}
       {confirmando && (
         <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
           <p className="font-semibold text-destructive">Excluir "{produto.nome}"?</p>
-          <p className="mt-1 text-sm text-muted-foreground">Esta ação não pode ser desfeita. Todos os dados do produto serão removidos.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Esta ação não pode ser desfeita. Todos os dados do produto serão removidos.
+          </p>
           <div className="mt-4 flex gap-3">
             <Button variant="destructive" onClick={confirmarExclusao}><Trash2 className="h-4 w-4" /> Confirmar exclusão</Button>
             <Button variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
@@ -136,26 +175,40 @@ function ProdutoDetalhe() {
         </div>
       )}
 
+      {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-4">
-        {[
-          { l: "Depósito", v: `${dep} un` },
-          { l: "Gôndola", v: `${gond} un` },
-          { l: "Mínimo gôndola", v: `${produto.minimo} un` },
-          { l: "Preço de venda", v: brl(produto.preco) },
-        ].map((c) => (
-          <div key={c.l} className="rounded-2xl border bg-card p-5">
-            <p className="text-xs uppercase text-muted-foreground">{c.l}</p>
-            <p className="font-display text-2xl font-bold">{c.v}</p>
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase text-muted-foreground">No depósito</p>
+          <p className="font-display text-2xl font-bold">{dep} un</p>
+          <p className="mt-1 text-xs text-muted-foreground">aguardando reposição</p>
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase text-muted-foreground">Na gôndola</p>
+          <p className="font-display text-2xl font-bold">{gond} un</p>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className={cn("h-full rounded-full transition-all", barCor)} style={{ width: `${pctGond}%` }} />
           </div>
-        ))}
+          <p className="mt-1 text-xs text-muted-foreground">mínimo: {produto.minimo} un</p>
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase text-muted-foreground">Total em estoque</p>
+          <p className="font-display text-2xl font-bold">{total} un</p>
+          <p className="mt-1 text-xs text-muted-foreground">depósito + gôndola</p>
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase text-muted-foreground">Preço de venda</p>
+          <p className="font-display text-2xl font-bold">{brl(produto.preco)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">por unidade</p>
+        </div>
       </div>
 
+      {/* Formulário de edição */}
       {editando && (
         <div className="space-y-5 rounded-2xl border bg-card p-6">
           <h2 className="text-lg font-semibold">Editar produto</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label>Nome</Label>
+              <Label>Nome do produto</Label>
               <Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
             </div>
             <div className="space-y-2">
@@ -163,7 +216,7 @@ function ProdutoDetalhe() {
               <Input inputMode="decimal" value={f.preco} onChange={(e) => setF({ ...f, preco: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Mínimo na gôndola</Label>
+              <Label>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
               <Input inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
@@ -186,21 +239,27 @@ function ProdutoDetalhe() {
               </select>
             </div>
           </div>
+
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-muted-foreground">Localização no depósito <span className="font-normal">(opcional)</span></p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              Onde fica no depósito <span className="font-normal">(opcional — ajuda o repositor a encontrar)</span>
+            </p>
             <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Rua</Label><Input value={f.depRua} onChange={(e) => setF({ ...f, depRua: e.target.value })} placeholder="Ex.: A" /></div>
               <div className="space-y-2"><Label>Prateleira</Label><Input value={f.depPrateleira} onChange={(e) => setF({ ...f, depPrateleira: e.target.value })} placeholder="Ex.: B3" /></div>
               <div className="space-y-2"><Label>Nível</Label><Input inputMode="numeric" value={f.depNivel} onChange={(e) => setF({ ...f, depNivel: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 2" /></div>
             </div>
           </div>
+
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-muted-foreground">Localização na gôndola <span className="font-normal">(opcional)</span></p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              Onde fica na gôndola <span className="font-normal">(opcional)</span>
+            </p>
             <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-4">
               <div className="space-y-2"><Label>Corredor</Label><Input value={f.gondCorredor} onChange={(e) => setF({ ...f, gondCorredor: e.target.value })} placeholder="Ex.: 3" /></div>
               <div className="space-y-2"><Label>Gôndola</Label><Input value={f.gondGondola} onChange={(e) => setF({ ...f, gondGondola: e.target.value })} placeholder="Ex.: G2" /></div>
               <div className="space-y-2">
-                <Label>Nível</Label>
+                <Label>Altura</Label>
                 <div className="flex gap-1.5">
                   {(["Alto", "Médio", "Baixo"] as const).map((n) => (
                     <button key={n} type="button" onClick={() => setF({ ...f, gondNivel: n })}
@@ -213,6 +272,7 @@ function ProdutoDetalhe() {
               <div className="space-y-2"><Label>Posição</Label><Input inputMode="numeric" value={f.gondPosicao} onChange={(e) => setF({ ...f, gondPosicao: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 4" /></div>
             </div>
           </div>
+
           <div className="flex justify-end gap-3 border-t pt-4">
             <Button variant="ghost" onClick={cancelar}>Cancelar</Button>
             <Button onClick={salvar}><Save className="h-4 w-4" /> Salvar alterações</Button>
@@ -220,16 +280,21 @@ function ProdutoDetalhe() {
         </div>
       )}
 
+      {/* Localização */}
       {(produto.localDeposito || produto.localGondola) && !editando && (
         <div className="grid gap-4 sm:grid-cols-2">
           {produto.localDeposito && (
             <div className="rounded-2xl border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Warehouse className="h-4 w-4 text-primary" />
-                <h2 className="font-semibold">Localização no Depósito</h2>
+                <h2 className="font-semibold">Onde fica no depósito</h2>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
-                {[{ label: "Rua", val: produto.localDeposito.rua }, { label: "Prateleira", val: produto.localDeposito.prateleira }, { label: "Nível", val: produto.localDeposito.nivel }].map((c) => (
+                {[
+                  { label: "Rua", val: produto.localDeposito.rua },
+                  { label: "Prateleira", val: produto.localDeposito.prateleira },
+                  { label: "Nível", val: produto.localDeposito.nivel },
+                ].map((c) => (
                   <div key={c.label} className="rounded-lg bg-muted p-3">
                     <p className="text-[10px] uppercase text-muted-foreground">{c.label}</p>
                     <p className="font-display text-lg font-bold">{c.val}</p>
@@ -242,10 +307,15 @@ function ProdutoDetalhe() {
             <div className="rounded-2xl border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" />
-                <h2 className="font-semibold">Localização na Gôndola</h2>
+                <h2 className="font-semibold">Onde fica na gôndola</h2>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">
-                {[{ label: "Corredor", val: produto.localGondola.corredor }, { label: "Gôndola", val: produto.localGondola.gondola }, { label: "Nível", val: produto.localGondola.nivel }, { label: "Posição", val: String(produto.localGondola.posicao) }].map((c) => (
+                {[
+                  { label: "Corredor", val: produto.localGondola.corredor },
+                  { label: "Gôndola", val: produto.localGondola.gondola },
+                  { label: "Altura", val: produto.localGondola.nivel },
+                  { label: "Posição", val: String(produto.localGondola.posicao) },
+                ].map((c) => (
                   <div key={c.label} className="rounded-lg bg-muted p-3">
                     <p className="text-[10px] uppercase text-muted-foreground">{c.label}</p>
                     <p className="font-display text-sm font-bold">{c.val}</p>
@@ -257,29 +327,77 @@ function ProdutoDetalhe() {
         </div>
       )}
 
-      <div className="rounded-2xl border bg-card">
-        <h2 className="border-b p-5 font-semibold">Lotes em estoque</h2>
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-5 py-3">Lote</th>
-              <th className="px-5 py-3">Validade</th>
-              <th className="px-5 py-3 text-right">Qtd no depósito</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {lotesDoProduto.length === 0
-              ? <tr><td colSpan={3} className="p-5 text-center text-muted-foreground">Sem lotes em estoque.</td></tr>
-              : lotesDoProduto.map((l) => (
-                  <tr key={l.id}>
-                    <td className="px-5 py-3 font-mono">{l.lote}</td>
-                    <td className="px-5 py-3">{l.validade.split("-").reverse().join("/")}</td>
-                    <td className="px-5 py-3 text-right font-medium">{l.qtd}</td>
-                  </tr>
-                ))
-            }
-          </tbody>
-        </table>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Lotes */}
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <h2 className="border-b p-5 font-semibold">
+            Lotes no depósito <span className="text-muted-foreground font-normal text-base">({lotesDoProduto.length})</span>
+          </h2>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/30 text-left text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-5 py-3">Lote</th>
+                <th className="px-5 py-3">Validade</th>
+                <th className="px-5 py-3 text-right">Qtd</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {lotesDoProduto.length === 0 ? (
+                <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">Nenhum lote no depósito.</td></tr>
+              ) : (
+                lotesDoProduto.map((l) => {
+                  const dias = diasAte(l.validade);
+                  const faixa = faixaValidade(dias);
+                  const corVal = faixa === "vencido" ? "text-destructive" : faixa === "critico" ? "text-destructive" : faixa === "atencao" ? "text-warning" : "text-foreground";
+                  return (
+                    <tr key={l.id}>
+                      <td className="px-5 py-3 font-mono">{l.lote}</td>
+                      <td className={cn("px-5 py-3 font-medium", corVal)}>
+                        {l.validade.split("-").reverse().join("/")}
+                        {dias <= 30 && <span className="ml-2 text-xs opacity-70">({dias <= 0 ? "vencido" : `${dias}d`})</span>}
+                      </td>
+                      <td className="px-5 py-3 text-right font-medium">{l.qtd} un</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Histórico de movimentações */}
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <h2 className="border-b p-5 font-semibold">Últimas movimentações</h2>
+          <div className="divide-y">
+            {movsProduto.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                Nenhuma movimentação registrada.
+              </p>
+            ) : (
+              movsProduto.map((m) => {
+                const ml = MOV_LABEL[m.tipo] ?? { t: m.tipo, ic: ArrowUpDown, c: "text-muted-foreground" };
+                const Icon = ml.ic;
+                const dataFmt = new Date(m.data.slice(0, 10)).toLocaleDateString("pt-BR");
+                const hora = m.data.length >= 19 ? m.data.slice(11, 16) : "";
+                return (
+                  <div key={m.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30">
+                    <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted", ml.c)}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{ml.t}</p>
+                      <p className="text-xs text-muted-foreground">{m.usuario || "Sistema"}</p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="font-semibold">{m.qtd > 0 ? "+" : ""}{m.qtd} un</p>
+                      <p className="text-xs text-muted-foreground">{dataFmt}{hora ? ` ${hora}` : ""}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
