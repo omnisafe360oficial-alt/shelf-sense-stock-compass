@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as ConfigurarLojaRouteImport } from './routes/configurar-loja'
 import { Route as PainelRouteImport } from './routes/painel'
+import { Route as RecebeRouteImport } from './routes/recebe'
+import { Route as RepositorRouteImport } from './routes/repositor'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelConfiguracoesRouteImport } from './routes/painel.configuracoes'
 import { Route as PainelDepositoRouteImport } from './routes/painel.deposito'
@@ -25,9 +27,22 @@ import { Route as PainelRecebimentosRouteImport } from './routes/painel.recebime
 import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
+import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
+import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
+import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
+import { Route as RecebeReceberRouteImport } from './routes/recebe.receber'
+import { Route as RepositorIndexRouteImport } from './routes/repositor.index'
+import { Route as RepositorHistoricoRouteImport } from './routes/repositor.historico'
+import { Route as RepositorReporRouteImport } from './routes/repositor.repor'
+import { Route as RepositorTarefasRouteImport } from './routes/repositor.tarefas'
 import { Route as PainelFornecedoresIndexRouteImport } from './routes/painel.fornecedores.index'
 import { Route as PainelFornecedoresIdRouteImport } from './routes/painel.fornecedores.$id'
+import { Route as PainelPedidosIndexRouteImport } from './routes/painel.pedidos.index'
+import { Route as PainelPedidosIdRouteImport } from './routes/painel.pedidos.$id'
+import { Route as PainelPedidosNovoRouteImport } from './routes/painel.pedidos.novo'
+import { Route as PainelPedidosSugerirRouteImport } from './routes/painel.pedidos.sugerir'
 import { Route as PainelProdutosIndexRouteImport } from './routes/painel.produtos.index'
+import { Route as PainelProdutosIdRouteImport } from './routes/painel.produtos.$id'
 import { Route as PainelProdutosImportarRouteImport } from './routes/painel.produtos.importar'
 import { Route as PainelProdutosNovoRouteImport } from './routes/painel.produtos.novo'
 
@@ -49,6 +64,16 @@ const ConfigurarLojaRoute = ConfigurarLojaRouteImport.update({
 const PainelRoute = PainelRouteImport.update({
   id: '/painel',
   path: '/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecebeRoute = RecebeRouteImport.update({
+  id: '/recebe',
+  path: '/recebe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepositorRoute = RepositorRouteImport.update({
+  id: '/repositor',
+  path: '/repositor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PainelIndexRoute = PainelIndexRouteImport.update({
@@ -111,6 +136,46 @@ const PainelValidadesRoute = PainelValidadesRouteImport.update({
   path: '/validades',
   getParentRoute: () => PainelRoute,
 } as any)
+const RecebeIndexRoute = RecebeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RecebeRoute,
+} as any)
+const RecebeHistoricoRoute = RecebeHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => RecebeRoute,
+} as any)
+const RecebePedidosRoute = RecebePedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => RecebeRoute,
+} as any)
+const RecebeReceberRoute = RecebeReceberRouteImport.update({
+  id: '/receber',
+  path: '/receber',
+  getParentRoute: () => RecebeRoute,
+} as any)
+const RepositorIndexRoute = RepositorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RepositorRoute,
+} as any)
+const RepositorHistoricoRoute = RepositorHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => RepositorRoute,
+} as any)
+const RepositorReporRoute = RepositorReporRouteImport.update({
+  id: '/repor',
+  path: '/repor',
+  getParentRoute: () => RepositorRoute,
+} as any)
+const RepositorTarefasRoute = RepositorTarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => RepositorRoute,
+} as any)
 const PainelFornecedoresIndexRoute = PainelFornecedoresIndexRouteImport.update({
   id: '/fornecedores/',
   path: '/fornecedores/',
@@ -121,9 +186,34 @@ const PainelFornecedoresIdRoute = PainelFornecedoresIdRouteImport.update({
   path: '/fornecedores/$id',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelPedidosIndexRoute = PainelPedidosIndexRouteImport.update({
+  id: '/pedidos/',
+  path: '/pedidos/',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelPedidosIdRoute = PainelPedidosIdRouteImport.update({
+  id: '/pedidos/$id',
+  path: '/pedidos/$id',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelPedidosNovoRoute = PainelPedidosNovoRouteImport.update({
+  id: '/pedidos/novo',
+  path: '/pedidos/novo',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelPedidosSugerirRoute = PainelPedidosSugerirRouteImport.update({
+  id: '/pedidos/sugerir',
+  path: '/pedidos/sugerir',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelProdutosIndexRoute = PainelProdutosIndexRouteImport.update({
   id: '/produtos/',
   path: '/produtos/',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelProdutosIdRoute = PainelProdutosIdRouteImport.update({
+  id: '/produtos/$id',
+  path: '/produtos/$id',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelProdutosImportarRoute = PainelProdutosImportarRouteImport.update({
@@ -142,6 +232,8 @@ export interface FileRoutesByFullPath {
   '/cadastro': typeof CadastroRoute
   '/configurar-loja': typeof ConfigurarLojaRoute
   '/painel': typeof PainelRouteWithChildren
+  '/recebe': typeof RecebeRouteWithChildren
+  '/repositor': typeof RepositorRouteWithChildren
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -153,11 +245,24 @@ export interface FileRoutesByFullPath {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/validades': typeof PainelValidadesRoute
+  '/recebe/historico': typeof RecebeHistoricoRoute
+  '/recebe/pedidos': typeof RecebePedidosRoute
+  '/recebe/receber': typeof RecebeReceberRoute
+  '/repositor/historico': typeof RepositorHistoricoRoute
+  '/repositor/repor': typeof RepositorReporRoute
+  '/repositor/tarefas': typeof RepositorTarefasRoute
   '/painel/': typeof PainelIndexRoute
+  '/recebe/': typeof RecebeIndexRoute
+  '/repositor/': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/pedidos/$id': typeof PainelPedidosIdRoute
+  '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
+  '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
   '/painel/fornecedores/': typeof PainelFornecedoresIndexRoute
+  '/painel/pedidos/': typeof PainelPedidosIndexRoute
   '/painel/produtos/': typeof PainelProdutosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -175,11 +280,24 @@ export interface FileRoutesByTo {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/validades': typeof PainelValidadesRoute
+  '/recebe/historico': typeof RecebeHistoricoRoute
+  '/recebe/pedidos': typeof RecebePedidosRoute
+  '/recebe/receber': typeof RecebeReceberRoute
+  '/repositor/historico': typeof RepositorHistoricoRoute
+  '/repositor/repor': typeof RepositorReporRoute
+  '/repositor/tarefas': typeof RepositorTarefasRoute
   '/painel': typeof PainelIndexRoute
+  '/recebe': typeof RecebeIndexRoute
+  '/repositor': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/pedidos/$id': typeof PainelPedidosIdRoute
+  '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
+  '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
   '/painel/fornecedores': typeof PainelFornecedoresIndexRoute
+  '/painel/pedidos': typeof PainelPedidosIndexRoute
   '/painel/produtos': typeof PainelProdutosIndexRoute
 }
 export interface FileRoutesById {
@@ -188,6 +306,8 @@ export interface FileRoutesById {
   '/cadastro': typeof CadastroRoute
   '/configurar-loja': typeof ConfigurarLojaRoute
   '/painel': typeof PainelRouteWithChildren
+  '/recebe': typeof RecebeRouteWithChildren
+  '/repositor': typeof RepositorRouteWithChildren
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -199,11 +319,24 @@ export interface FileRoutesById {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/validades': typeof PainelValidadesRoute
+  '/recebe/historico': typeof RecebeHistoricoRoute
+  '/recebe/pedidos': typeof RecebePedidosRoute
+  '/recebe/receber': typeof RecebeReceberRoute
+  '/repositor/historico': typeof RepositorHistoricoRoute
+  '/repositor/repor': typeof RepositorReporRoute
+  '/repositor/tarefas': typeof RepositorTarefasRoute
   '/painel/': typeof PainelIndexRoute
+  '/recebe/': typeof RecebeIndexRoute
+  '/repositor/': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/pedidos/$id': typeof PainelPedidosIdRoute
+  '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
+  '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
+  '/painel/produtos/$id': typeof PainelProdutosIdRoute
   '/painel/produtos/importar': typeof PainelProdutosImportarRoute
   '/painel/produtos/novo': typeof PainelProdutosNovoRoute
   '/painel/fornecedores/': typeof PainelFornecedoresIndexRoute
+  '/painel/pedidos/': typeof PainelPedidosIndexRoute
   '/painel/produtos/': typeof PainelProdutosIndexRoute
 }
 export interface FileRouteTypes {
@@ -213,6 +346,8 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/configurar-loja'
     | '/painel'
+    | '/recebe'
+    | '/repositor'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -224,11 +359,24 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/validades'
+    | '/recebe/historico'
+    | '/recebe/pedidos'
+    | '/recebe/receber'
+    | '/repositor/historico'
+    | '/repositor/repor'
+    | '/repositor/tarefas'
     | '/painel/'
+    | '/recebe/'
+    | '/repositor/'
     | '/painel/fornecedores/$id'
+    | '/painel/pedidos/$id'
+    | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
+    | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
     | '/painel/fornecedores/'
+    | '/painel/pedidos/'
     | '/painel/produtos/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -246,11 +394,24 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/validades'
+    | '/recebe/historico'
+    | '/recebe/pedidos'
+    | '/recebe/receber'
+    | '/repositor/historico'
+    | '/repositor/repor'
+    | '/repositor/tarefas'
     | '/painel'
+    | '/recebe'
+    | '/repositor'
     | '/painel/fornecedores/$id'
+    | '/painel/pedidos/$id'
+    | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
+    | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
     | '/painel/fornecedores'
+    | '/painel/pedidos'
     | '/painel/produtos'
   id:
     | '__root__'
@@ -258,6 +419,8 @@ export interface FileRouteTypes {
     | '/cadastro'
     | '/configurar-loja'
     | '/painel'
+    | '/recebe'
+    | '/repositor'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -269,11 +432,24 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/validades'
+    | '/recebe/historico'
+    | '/recebe/pedidos'
+    | '/recebe/receber'
+    | '/repositor/historico'
+    | '/repositor/repor'
+    | '/repositor/tarefas'
     | '/painel/'
+    | '/recebe/'
+    | '/repositor/'
     | '/painel/fornecedores/$id'
+    | '/painel/pedidos/$id'
+    | '/painel/pedidos/novo'
+    | '/painel/pedidos/sugerir'
+    | '/painel/produtos/$id'
     | '/painel/produtos/importar'
     | '/painel/produtos/novo'
     | '/painel/fornecedores/'
+    | '/painel/pedidos/'
     | '/painel/produtos/'
   fileRoutesById: FileRoutesById
 }
@@ -282,6 +458,8 @@ export interface RootRouteChildren {
   CadastroRoute: typeof CadastroRoute
   ConfigurarLojaRoute: typeof ConfigurarLojaRoute
   PainelRoute: typeof PainelRouteWithChildren
+  RecebeRoute: typeof RecebeRouteWithChildren
+  RepositorRoute: typeof RepositorRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +490,20 @@ declare module '@tanstack/react-router' {
       path: '/painel'
       fullPath: '/painel'
       preLoaderRoute: typeof PainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recebe': {
+      id: '/recebe'
+      path: '/recebe'
+      fullPath: '/recebe'
+      preLoaderRoute: typeof RecebeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repositor': {
+      id: '/repositor'
+      path: '/repositor'
+      fullPath: '/repositor'
+      preLoaderRoute: typeof RepositorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel/': {
@@ -398,6 +590,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelValidadesRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/recebe/': {
+      id: '/recebe/'
+      path: '/'
+      fullPath: '/recebe/'
+      preLoaderRoute: typeof RecebeIndexRouteImport
+      parentRoute: typeof RecebeRoute
+    }
+    '/recebe/historico': {
+      id: '/recebe/historico'
+      path: '/historico'
+      fullPath: '/recebe/historico'
+      preLoaderRoute: typeof RecebeHistoricoRouteImport
+      parentRoute: typeof RecebeRoute
+    }
+    '/recebe/pedidos': {
+      id: '/recebe/pedidos'
+      path: '/pedidos'
+      fullPath: '/recebe/pedidos'
+      preLoaderRoute: typeof RecebePedidosRouteImport
+      parentRoute: typeof RecebeRoute
+    }
+    '/recebe/receber': {
+      id: '/recebe/receber'
+      path: '/receber'
+      fullPath: '/recebe/receber'
+      preLoaderRoute: typeof RecebeReceberRouteImport
+      parentRoute: typeof RecebeRoute
+    }
+    '/repositor/': {
+      id: '/repositor/'
+      path: '/'
+      fullPath: '/repositor/'
+      preLoaderRoute: typeof RepositorIndexRouteImport
+      parentRoute: typeof RepositorRoute
+    }
+    '/repositor/historico': {
+      id: '/repositor/historico'
+      path: '/historico'
+      fullPath: '/repositor/historico'
+      preLoaderRoute: typeof RepositorHistoricoRouteImport
+      parentRoute: typeof RepositorRoute
+    }
+    '/repositor/repor': {
+      id: '/repositor/repor'
+      path: '/repor'
+      fullPath: '/repositor/repor'
+      preLoaderRoute: typeof RepositorReporRouteImport
+      parentRoute: typeof RepositorRoute
+    }
+    '/repositor/tarefas': {
+      id: '/repositor/tarefas'
+      path: '/tarefas'
+      fullPath: '/repositor/tarefas'
+      preLoaderRoute: typeof RepositorTarefasRouteImport
+      parentRoute: typeof RepositorRoute
+    }
     '/painel/fornecedores/': {
       id: '/painel/fornecedores/'
       path: '/fornecedores'
@@ -412,11 +660,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelFornecedoresIdRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/pedidos/': {
+      id: '/painel/pedidos/'
+      path: '/pedidos'
+      fullPath: '/painel/pedidos/'
+      preLoaderRoute: typeof PainelPedidosIndexRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/pedidos/$id': {
+      id: '/painel/pedidos/$id'
+      path: '/pedidos/$id'
+      fullPath: '/painel/pedidos/$id'
+      preLoaderRoute: typeof PainelPedidosIdRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/pedidos/novo': {
+      id: '/painel/pedidos/novo'
+      path: '/pedidos/novo'
+      fullPath: '/painel/pedidos/novo'
+      preLoaderRoute: typeof PainelPedidosNovoRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/pedidos/sugerir': {
+      id: '/painel/pedidos/sugerir'
+      path: '/pedidos/sugerir'
+      fullPath: '/painel/pedidos/sugerir'
+      preLoaderRoute: typeof PainelPedidosSugerirRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/produtos/': {
       id: '/painel/produtos/'
       path: '/produtos'
       fullPath: '/painel/produtos/'
       preLoaderRoute: typeof PainelProdutosIndexRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/produtos/$id': {
+      id: '/painel/produtos/$id'
+      path: '/produtos/$id'
+      fullPath: '/painel/produtos/$id'
+      preLoaderRoute: typeof PainelProdutosIdRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/produtos/importar': {
@@ -450,9 +733,14 @@ interface PainelRouteChildren {
   PainelValidadesRoute: typeof PainelValidadesRoute
   PainelIndexRoute: typeof PainelIndexRoute
   PainelFornecedoresIdRoute: typeof PainelFornecedoresIdRoute
+  PainelPedidosIdRoute: typeof PainelPedidosIdRoute
+  PainelPedidosNovoRoute: typeof PainelPedidosNovoRoute
+  PainelPedidosSugerirRoute: typeof PainelPedidosSugerirRoute
+  PainelProdutosIdRoute: typeof PainelProdutosIdRoute
   PainelProdutosImportarRoute: typeof PainelProdutosImportarRoute
   PainelProdutosNovoRoute: typeof PainelProdutosNovoRoute
   PainelFornecedoresIndexRoute: typeof PainelFornecedoresIndexRoute
+  PainelPedidosIndexRoute: typeof PainelPedidosIndexRoute
   PainelProdutosIndexRoute: typeof PainelProdutosIndexRoute
 }
 
@@ -470,20 +758,62 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelValidadesRoute: PainelValidadesRoute,
   PainelIndexRoute: PainelIndexRoute,
   PainelFornecedoresIdRoute: PainelFornecedoresIdRoute,
+  PainelPedidosIdRoute: PainelPedidosIdRoute,
+  PainelPedidosNovoRoute: PainelPedidosNovoRoute,
+  PainelPedidosSugerirRoute: PainelPedidosSugerirRoute,
+  PainelProdutosIdRoute: PainelProdutosIdRoute,
   PainelProdutosImportarRoute: PainelProdutosImportarRoute,
   PainelProdutosNovoRoute: PainelProdutosNovoRoute,
   PainelFornecedoresIndexRoute: PainelFornecedoresIndexRoute,
+  PainelPedidosIndexRoute: PainelPedidosIndexRoute,
   PainelProdutosIndexRoute: PainelProdutosIndexRoute,
 }
 
 const PainelRouteWithChildren =
   PainelRoute._addFileChildren(PainelRouteChildren)
 
+interface RecebeRouteChildren {
+  RecebeHistoricoRoute: typeof RecebeHistoricoRoute
+  RecebePedidosRoute: typeof RecebePedidosRoute
+  RecebeReceberRoute: typeof RecebeReceberRoute
+  RecebeIndexRoute: typeof RecebeIndexRoute
+}
+
+const RecebeRouteChildren: RecebeRouteChildren = {
+  RecebeHistoricoRoute: RecebeHistoricoRoute,
+  RecebePedidosRoute: RecebePedidosRoute,
+  RecebeReceberRoute: RecebeReceberRoute,
+  RecebeIndexRoute: RecebeIndexRoute,
+}
+
+const RecebeRouteWithChildren =
+  RecebeRoute._addFileChildren(RecebeRouteChildren)
+
+interface RepositorRouteChildren {
+  RepositorHistoricoRoute: typeof RepositorHistoricoRoute
+  RepositorReporRoute: typeof RepositorReporRoute
+  RepositorTarefasRoute: typeof RepositorTarefasRoute
+  RepositorIndexRoute: typeof RepositorIndexRoute
+}
+
+const RepositorRouteChildren: RepositorRouteChildren = {
+  RepositorHistoricoRoute: RepositorHistoricoRoute,
+  RepositorReporRoute: RepositorReporRoute,
+  RepositorTarefasRoute: RepositorTarefasRoute,
+  RepositorIndexRoute: RepositorIndexRoute,
+}
+
+const RepositorRouteWithChildren = RepositorRoute._addFileChildren(
+  RepositorRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CadastroRoute: CadastroRoute,
   ConfigurarLojaRoute: ConfigurarLojaRoute,
   PainelRoute: PainelRouteWithChildren,
+  RecebeRoute: RecebeRouteWithChildren,
+  RepositorRoute: RepositorRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

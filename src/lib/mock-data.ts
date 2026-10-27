@@ -1,3 +1,16 @@
+export type LocalDeposito = {
+  rua: string;
+  prateleira: string;
+  nivel: number;
+};
+
+export type LocalGondola = {
+  corredor: string;
+  gondola: string;
+  nivel: "Alto" | "Médio" | "Baixo";
+  posicao: number;
+};
+
 export type Produto = {
   id: string;
   nome: string;
@@ -9,6 +22,8 @@ export type Produto = {
   gondola: number;
   minimo: number;
   validade?: string;
+  localDeposito?: LocalDeposito;
+  localGondola?: LocalGondola;
 };
 
 export type Fornecedor = { id: string; nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };

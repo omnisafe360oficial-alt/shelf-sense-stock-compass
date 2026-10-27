@@ -2,8 +2,8 @@ import { diasAte, faixaValidade, type Faixa, type Lote, type Mov } from "./estoq
 import { getProdutos } from "./produtos-store";
 import { type Produto } from "./mock-data";
 
-export const HOJE = "2026-10-22";
-const ONTEM = "2026-10-21";
+export const HOJE = new Date().toISOString().slice(0, 10);
+const ONTEM = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
 export function vendasPorProduto(movs: Mov[]): Record<string, { un: number; ultimaData: string | null }> {
   const map: Record<string, { un: number; ultimaData: string | null }> = {};
@@ -68,4 +68,64 @@ export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {
     })
     .filter((l) => l.dias <= limiar)
     .sort((a, b) => a.dias - b.dias);
+}
+
+export type DiaVenda = { data: string; valor: number; label: string };
+
+export function vendasPorDia(movs: Mov[], dias = 30): DiaVenda[] {
+  const resultado: DiaVenda[] = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const d = new Date(new Date(HOJE).getTime() - i * 86_400_000);
+    const ds = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const valor = movs
+      .filter((m) => m.tipo === "venda" && m.data.slice(0, 10) === ds)
+      .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    resultado.push({ data: ds, valor, label });
+  }
+  return resultado;
+}
+
+export function faturamentoMes(movs: Mov[], anoMes: string): number {
+  return movs
+    .filter((m) => m.tipo === "venda" && m.data.slice(0, 7) === anoMes)
+    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+}
+
+export type SugestaoPedido = {
+  produto: Produto;
+  gondolaAtual: number;
+  mediaDiaria: number;
+  diasRestantes: number;
+  qtdSugerida: number;
+};
+
+export function sugestoesPedido(
+  movs: Mov[],
+  gondola: Record<string, number>,
+  diasLead = 7
+): SugestaoPedido[] {
+  const PERIODO = 30;
+  const SEGURANCA = 3;
+  const inicio = new Date(new Date(HOJE).getTime() - PERIODO * 86_400_000).toISOString().slice(0, 10);
+
+  const vendas: Record<string, number> = {};
+  for (const m of movs) {
+    if (m.tipo !== "venda") continue;
+    if (m.data.slice(0, 10) < inicio) continue;
+    vendas[m.produtoId] = (vendas[m.produtoId] ?? 0) + Math.abs(m.qtd);
+  }
+
+  return getProdutos()
+    .map((p) => {
+      const vendido = vendas[p.id] ?? 0;
+      const mediaDiaria = vendido / PERIODO;
+      const atual = gondola[p.id] ?? 0;
+      const diasRestantes = mediaDiaria > 0 ? Math.floor(atual / mediaDiaria) : 999;
+      const meta = Math.ceil((diasLead + SEGURANCA) * mediaDiaria);
+      const qtdSugerida = Math.max(0, meta - atual);
+      return { produto: p, gondolaAtual: atual, mediaDiaria, diasRestantes, qtdSugerida };
+    })
+    .filter((s) => s.qtdSugerida > 0)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes);
 }

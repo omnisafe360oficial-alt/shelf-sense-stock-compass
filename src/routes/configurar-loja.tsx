@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, Cross, IceCreamCone, Shirt, ShoppingCart, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/configurar-loja")({
   head: () => ({
@@ -40,17 +42,53 @@ function maskDoc(v: string) {
 
 function ConfigurarLoja() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [step, setStep] = useState(0);
   const [tipo, setTipo] = useState("");
   const [nome, setNome] = useState("");
   const [doc, setDoc] = useState("");
   const [cidade, setCidade] = useState("");
   const [uf, setUf] = useState("");
+  const [loading, setLoading] = useState(false);
   const digits = doc.replace(/\D/g, "").length;
   const canNext = [!!tipo, nome.trim().length > 1 && (digits === 11 || digits === 14), cidade.trim().length > 1 && uf.length === 2][step];
 
-  const next = () => {
+  useEffect(() => {
+    if (auth.loading) return;
+    if (!auth.session) {
+      navigate({ to: "/" });
+    }
+    if (auth.lojaId) {
+      navigate({ to: "/painel" });
+    }
+  }, [auth.loading, auth.session, auth.lojaId, navigate]);
+
+  const next = async () => {
     if (step < 2) return setStep(step + 1);
+
+    setLoading(true);
+    const nomeProprietario =
+      auth.session?.user.user_metadata?.nome ??
+      auth.session?.user.user_metadata?.full_name ??
+      auth.session?.user.email?.split("@")[0] ??
+      "Proprietário";
+
+    const { error } = await supabase.rpc("criar_loja", {
+      p_nome_loja: nome,
+      p_cnpj: doc,
+      p_cidade: cidade,
+      p_uf: uf,
+      p_tipo_comercio: tipo,
+      p_nome_proprietario: nomeProprietario,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     toast.success(`Loja "${nome}" configurada!`);
     navigate({ to: "/painel" });
   };
@@ -126,11 +164,11 @@ function ConfigurarLoja() {
           )}
 
           <div className="mt-8 flex justify-between">
-            <Button variant="ghost" disabled={step === 0} onClick={() => setStep(step - 1)}>
+            <Button variant="ghost" disabled={step === 0 || loading} onClick={() => setStep(step - 1)}>
               <ArrowLeft /> Voltar
             </Button>
-            <Button size="lg" disabled={!canNext} onClick={next}>
-              {step < 2 ? "Continuar" : "Concluir e abrir painel"} <ArrowRight />
+            <Button size="lg" disabled={!canNext || loading} onClick={next}>
+              {loading ? "Salvando…" : step < 2 ? "Continuar" : "Concluir e abrir painel"} {!loading && <ArrowRight />}
             </Button>
           </div>
         </div>
