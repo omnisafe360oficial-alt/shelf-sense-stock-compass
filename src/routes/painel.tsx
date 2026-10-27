@@ -45,6 +45,7 @@ function PainelLayout() {
     else if (!auth.lojaId) navigate({ to: "/configurar-loja" });
     else if (auth.papel === "Repositor") navigate({ to: "/repositor" });
     else if (auth.papel === "Recebimento") navigate({ to: "/recebe" });
+    else if (auth.papel === "Caixa") navigate({ to: "/painel/pdv" });
   }, [auth.loading, auth.session, auth.lojaId, auth.papel, navigate]);
 
   if (auth.loading || !auth.session) return null;

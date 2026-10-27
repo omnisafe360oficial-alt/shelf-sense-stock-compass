@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight,
-  BarChart2, CalendarClock, ClipboardList,
+  BarChart2, CalendarClock, CheckCircle2, Circle, ClipboardList,
   DollarSign, Package, PackageMinus,
   RefreshCw, ShoppingCart, TrendingUp, Warehouse,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
 import { useAuth } from "@/lib/auth";
 import { useProdutos } from "@/lib/produtos-store";
+import { useFornecedores } from "@/lib/fornecedores-store";
 import {
   abaixoDoMinimo, HOJE, lotesVencendo,
   vendasHoje, vendasOntem, vendasPorDia,
@@ -75,8 +76,9 @@ function Inicio() {
   const { pedidos }      = usePedidos();
   const config    = useConfig();
   const equipe    = useEquipe();
-  const auth      = useAuth();
-  const produtos  = useProdutos();
+  const auth        = useAuth();
+  const produtos    = useProdutos();
+  const fornecedores = useFornecedores();
 
   // ── Vendas ───────────────────────────────────────────────────────────────
   const hoje    = vendasHoje(est.movs);
@@ -162,6 +164,15 @@ function Inicio() {
 
   const nome = (auth.nomeProprietario ?? equipe[0]?.nome ?? "Gestor").split(" ")[0];
 
+  // ── Onboarding checklist ──────────────────────────────────────────────────
+  const setup = {
+    lojaOk:        true,
+    produtosOk:    produtos.length > 0,
+    fornecedoresOk: fornecedores.length > 0,
+    minimosOk:     produtos.some((p) => p.minimo > 0),
+  };
+  const setupCompleto = Object.values(setup).every(Boolean);
+
   return (
     <div className="space-y-8">
       {/* ── Cabeçalho ──────────────────────────────────────────────────────── */}
@@ -193,6 +204,36 @@ function Inicio() {
           <span className="text-sm font-semibold">{alerta.msg}</span>
           <ArrowUpRight className="ml-auto h-4 w-4 shrink-0" />
         </Link>
+      )}
+
+      {/* ── Onboarding checklist ───────────────────────────────────────────── */}
+      {!setupCompleto && (
+        <div className="rounded-2xl border bg-card p-5">
+          <h2 className="text-base font-semibold">Configure sua loja</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Complete os passos abaixo para aproveitar o sistema por completo.
+          </p>
+          <div className="mt-4 space-y-1">
+            {([
+              { label: "Loja criada",               ok: setup.lojaOk,        href: null                   },
+              { label: "Adicionar produtos",         ok: setup.produtosOk,    href: "/painel/produtos"      },
+              { label: "Cadastrar fornecedores",     ok: setup.fornecedoresOk,href: "/painel/fornecedores"  },
+              { label: "Configurar mínimos de estoque", ok: setup.minimosOk, href: "/painel/produtos"      },
+            ] as { label: string; ok: boolean; href: string | null }[]).map(({ label, ok, href }) => (
+              <div key={label} className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5", ok && "opacity-50")}>
+                {ok
+                  ? <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+                  : <Circle className="h-5 w-5 shrink-0 text-muted-foreground/40" />}
+                {href && !ok ? (
+                  <Link to={href} className="text-sm font-medium text-primary hover:underline">{label}</Link>
+                ) : (
+                  <span className={cn("text-sm font-medium", ok && "line-through text-muted-foreground")}>{label}</span>
+                )}
+                {!ok && !href && null}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ── KPIs ───────────────────────────────────────────────────────────── */}
