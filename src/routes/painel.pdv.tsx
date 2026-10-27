@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BellRing, CheckCircle2, Minus, Plus, Receipt, ScanBarcode, Trash2, X,
+  BellRing, CheckCircle2, Copy, MessageCircle, Minus, Plus, Receipt, ScanBarcode, Trash2, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/painel/pdv")({
 type Linha = { produtoId: string; qtd: number };
 type VendaHistorico = {
   id: string; hora: string; total: number; qtdItens: number; pagamento: string;
+  descontoVal: number; troco: number;
   linhas: { nome: string; qtd: number; preco: number }[];
 };
 
@@ -149,7 +150,14 @@ function Pdv() {
 
   function finalizar() {
     try {
-      const repor = fecharVenda(itens, operador, minimos);
+      const snapDesconto = descontoVal;
+      const snapTroco = troco;
+      const itensComPreco = itens.map((i) => ({
+        produtoId: i.produtoId,
+        qtd: i.qtd,
+        preco: produtos.find((x) => x.id === i.produtoId)?.preco,
+      }));
+      const repor = fecharVenda(itensComPreco, operador, minimos);
       const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const linhas = itens.map((i) => {
         const p = produtos.find((x) => x.id === i.produtoId)!;
@@ -158,7 +166,7 @@ function Pdv() {
       const entrada: VendaHistorico = {
         id: crypto.randomUUID(), hora, total,
         qtdItens: itens.reduce((t, i) => t + i.qtd, 0),
-        pagamento: pag, linhas,
+        pagamento: pag, descontoVal: snapDesconto, troco: snapTroco, linhas,
       };
       setHistorico((h) => [entrada, ...h].slice(0, 20));
       setUltimaVenda(entrada);
@@ -559,10 +567,10 @@ function Pdv() {
               </div>
             </div>
 
-            {descontoVal > 0 && (
+            {ultimaVenda.descontoVal > 0 && (
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Desconto ({desconto}%)</span>
-                <span>− {brl(descontoVal)}</span>
+                <span>Desconto</span>
+                <span>− {brl(ultimaVenda.descontoVal)}</span>
               </div>
             )}
 
@@ -576,10 +584,10 @@ function Pdv() {
                 <p className="text-xs text-muted-foreground">Pagamento</p>
                 <p className="mt-0.5 font-semibold">{ultimaVenda.pagamento}</p>
               </div>
-              {ultimaVenda.pagamento === "Dinheiro" && troco > 0 && (
+              {ultimaVenda.pagamento === "Dinheiro" && ultimaVenda.troco > 0 && (
                 <div className="rounded-xl bg-success/10 p-3">
                   <p className="text-xs text-muted-foreground">Troco</p>
-                  <p className="mt-0.5 font-bold text-success">{brl(troco)}</p>
+                  <p className="mt-0.5 font-bold text-success">{brl(ultimaVenda.troco)}</p>
                 </div>
               )}
             </div>
@@ -587,6 +595,39 @@ function Pdv() {
             <p className="text-center text-xs text-muted-foreground">
               {ultimaVenda.hora} · Operador: {operador}
             </p>
+
+            {/* Compartilhar */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const linhas = ultimaVenda.linhas.map((l) => `${l.qtd}x ${l.nome}  ${brl(l.preco * l.qtd)}`).join("\n");
+                  const descLine = ultimaVenda.descontoVal > 0 ? `\nDesconto: -${brl(ultimaVenda.descontoVal)}` : "";
+                  const trocoLine = ultimaVenda.troco > 0 ? `\nTroco: ${brl(ultimaVenda.troco)}` : "";
+                  const texto = `*Cupom OmniSafe 360*\n${ultimaVenda.hora}\n─────────────\n${linhas}${descLine}\n─────────────\n*Total: ${brl(ultimaVenda.total)}*\nPagamento: ${ultimaVenda.pagamento}${trocoLine}\nOp: ${operador}`;
+                  navigator.clipboard.writeText(texto).then(
+                    () => toast.success("Cupom copiado!"),
+                    () => toast.error("Não foi possível copiar"),
+                  );
+                }}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium hover:bg-muted transition"
+              >
+                <Copy className="h-4 w-4" /> Copiar
+              </button>
+              <a
+                href={(() => {
+                  const linhas = ultimaVenda.linhas.map((l) => `${l.qtd}x ${l.nome}  ${brl(l.preco * l.qtd)}`).join("\n");
+                  const descLine = ultimaVenda.descontoVal > 0 ? `\nDesconto: -${brl(ultimaVenda.descontoVal)}` : "";
+                  const trocoLine = ultimaVenda.troco > 0 ? `\nTroco: ${brl(ultimaVenda.troco)}` : "";
+                  const texto = `*Cupom OmniSafe 360*\n${ultimaVenda.hora}\n─────────────\n${linhas}${descLine}\n─────────────\n*Total: ${brl(ultimaVenda.total)}*\nPagamento: ${ultimaVenda.pagamento}${trocoLine}\nOp: ${operador}`;
+                  return `https://wa.me/?text=${encodeURIComponent(texto)}`;
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 py-3 text-sm font-medium text-[#25D366] hover:bg-[#25D366]/20 transition"
+              >
+                <MessageCircle className="h-4 w-4" /> WhatsApp
+              </a>
+            </div>
 
             <Button
               className="w-full"
