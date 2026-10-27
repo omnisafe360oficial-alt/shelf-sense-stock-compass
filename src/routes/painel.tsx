@@ -43,7 +43,9 @@ function PainelLayout() {
     if (auth.loading) return;
     if (!auth.session) navigate({ to: "/" });
     else if (!auth.lojaId) navigate({ to: "/configurar-loja" });
-  }, [auth.loading, auth.session, auth.lojaId, navigate]);
+    else if (auth.papel === "Repositor") navigate({ to: "/repositor" });
+    else if (auth.papel === "Recebimento") navigate({ to: "/recebe" });
+  }, [auth.loading, auth.session, auth.lojaId, auth.papel, navigate]);
 
   if (auth.loading || !auth.session) return null;
 
@@ -309,7 +311,7 @@ function PainelLayout() {
             </span>
             <div className="text-sm leading-tight">
               <p className="font-semibold">{auth.nomeProprietario ?? dono?.nome ?? "Usuário"}</p>
-              <p className="text-xs text-muted-foreground">{dono?.papel ?? "Proprietário"}</p>
+              <p className="text-xs text-muted-foreground">{auth.papel ?? dono?.papel ?? "Proprietário"}</p>
             </div>
             <button
               className="ml-1 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
