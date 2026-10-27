@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Cross, IceCreamCone, Shirt, ShoppingCart, Store } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Cross, Hammer, IceCreamCone, Shirt, ShoppingCart, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +25,12 @@ export const Route = createFileRoute("/configurar-loja")({
 });
 
 const tipos = [
-  { id: "supermercado", label: "Supermercado", icon: ShoppingCart },
-  { id: "farmacia", label: "Farmácia", icon: Cross },
-  { id: "sorveteria", label: "Sorveteria", icon: IceCreamCone },
-  { id: "roupas", label: "Loja de roupas", icon: Shirt },
-  { id: "outro", label: "Outro comércio", icon: Store },
+  { id: "supermercado", label: "Supermercado",       icon: ShoppingCart, iconCls: "text-emerald-600", iconBg: "bg-emerald-50 dark:bg-emerald-950/30" },
+  { id: "farmacia",     label: "Farmácia",            icon: Cross,        iconCls: "text-red-500",     iconBg: "bg-red-50 dark:bg-red-950/30"       },
+  { id: "sorveteria",   label: "Sorveteria",          icon: IceCreamCone, iconCls: "text-violet-500",  iconBg: "bg-violet-50 dark:bg-violet-950/30" },
+  { id: "roupas",       label: "Loja de roupas",      icon: Shirt,        iconCls: "text-sky-500",     iconBg: "bg-sky-50 dark:bg-sky-950/30"       },
+  { id: "construcao",   label: "Construção",          icon: Hammer,       iconCls: "text-orange-500",  iconBg: "bg-orange-50 dark:bg-orange-950/30" },
+  { id: "outro",        label: "Outro comércio",      icon: Store,        iconCls: "text-slate-500",   iconBg: "bg-slate-100 dark:bg-slate-800/30"  },
 ];
 const passos = ["Tipo de comércio", "Dados da loja", "Localização"];
 
@@ -116,12 +117,38 @@ function ConfigurarLoja() {
               <h2 className="text-2xl font-bold">Qual é o seu tipo de comércio?</h2>
               <p className="mt-1 text-muted-foreground">Vamos adaptar o sistema para o seu negócio.</p>
               <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {tipos.map(({ id, label, icon: Icon }) => (
-                  <button key={id} type="button" onClick={() => setTipo(id)} className={cn("flex flex-col items-center gap-3 rounded-xl border-2 p-5 font-semibold transition", tipo === id ? "border-primary bg-secondary text-primary" : "border-border hover:border-primary/40")}>
-                    <Icon className="h-7 w-7" />
-                    <span className="text-sm">{label}</span>
-                  </button>
-                ))}
+                {tipos.map(({ id, label, icon: Icon, iconCls, iconBg }) => {
+                  const selected = tipo === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setTipo(id)}
+                      className={cn(
+                        "group relative flex flex-col items-center gap-3 rounded-xl border-2 p-5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]",
+                        selected
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border bg-card hover:border-primary/50 hover:shadow-sm"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex h-12 w-12 items-center justify-center rounded-full transition-all duration-200",
+                        selected ? "bg-primary/10" : iconBg
+                      )}>
+                        <Icon className={cn("h-6 w-6 transition-colors duration-200", selected ? "text-primary" : iconCls)} />
+                      </div>
+                      <span className={cn(
+                        "text-sm font-semibold text-center leading-tight",
+                        selected ? "text-primary" : "text-foreground"
+                      )}>{label}</span>
+                      {selected && (
+                        <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                          <Check className="h-3 w-3 text-primary-foreground" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}
