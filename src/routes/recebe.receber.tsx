@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/recebe/receber")({
   validateSearch: (s: Record<string, unknown>) => ({
     pedidoId: typeof s.pedidoId === "string" ? s.pedidoId : undefined,
-  }),
+  }) as { pedidoId?: string },
   component: ReceberFluxo,
 });
 

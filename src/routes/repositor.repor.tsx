@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/repositor/repor")({
-  validateSearch: (s: Record<string, unknown>) => ({ tarefaId: typeof s.tarefaId === "string" ? s.tarefaId : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ tarefaId: typeof s.tarefaId === "string" ? s.tarefaId : undefined } as { tarefaId?: string }),
   component: RepositorRepor,
 });
 

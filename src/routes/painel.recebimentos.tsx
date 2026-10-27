@@ -358,7 +358,7 @@ function Recebimentos() {
                 <p className="text-muted-foreground">Nenhum pedido de compra registrado.</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Crie pedidos em{" "}
-                  <Link to="/painel/pedidos/" className="text-primary hover:underline">
+                  <Link to="/painel/pedidos" className="text-primary hover:underline">
                     Pedidos de Compra
                   </Link>{" "}
                   para acompanhar o recebimento.
@@ -420,7 +420,7 @@ function Recebimentos() {
                   })}
                 </div>
                 <div className="border-t p-3 text-right">
-                  <Link to="/painel/pedidos/" className="text-sm text-primary hover:underline">
+                  <Link to="/painel/pedidos" className="text-sm text-primary hover:underline">
                     Ver todos os pedidos →
                   </Link>
                 </div>
