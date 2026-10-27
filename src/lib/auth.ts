@@ -20,12 +20,14 @@ function set(partial: Partial<AuthState>) {
 }
 
 async function carregarLoja(userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("membros")
     .select("loja_id, nome, papel")
     .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
+  if (error) console.error("[auth] carregarLoja error:", error.message);
+  if (!data?.loja_id) console.warn("[auth] carregarLoja: nenhuma loja encontrada para", userId);
   set({ lojaId: data?.loja_id ?? null, nomeProprietario: data?.nome ?? null, papel: data?.papel ?? null });
   emitLojaChange(data?.loja_id ?? null);
 }

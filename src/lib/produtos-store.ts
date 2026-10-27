@@ -92,6 +92,8 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         local_gondola: dados.localGondola ?? null,
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar produto: " + error.message); });
+  } else {
+    toast.error("Sessão não identificada — faça login novamente para salvar produtos.");
   }
   return id;
 }
