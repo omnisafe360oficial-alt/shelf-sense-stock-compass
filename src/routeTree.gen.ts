@@ -28,6 +28,7 @@ import { Route as PainelPdvRouteImport } from './routes/painel.pdv'
 import { Route as PainelRecebimentosRouteImport } from './routes/painel.recebimentos'
 import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
+import { Route as PainelEtiquetasRouteImport } from './routes/painel.etiquetas'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
@@ -143,6 +144,11 @@ const PainelReposicaoRoute = PainelReposicaoRouteImport.update({
   path: '/reposicao',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelEtiquetasRoute = PainelEtiquetasRouteImport.update({
+  id: '/etiquetas',
+  path: '/etiquetas',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelValidadesRoute = PainelValidadesRouteImport.update({
   id: '/validades',
   path: '/validades',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -288,6 +295,7 @@ export interface FileRoutesByTo {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
   '/painel/estoque': typeof PainelEstoqueRoute
+  '/painel/etiquetas': typeof PainelEtiquetasRoute
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -371,6 +380,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -408,6 +418,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -448,6 +459,7 @@ export interface FileRouteTypes {
     | '/painel/deposito'
     | '/painel/equipe'
     | '/painel/estoque'
+    | '/painel/etiquetas'
     | '/painel/gondola'
     | '/painel/inconsistencias'
     | '/painel/movimentacoes'
@@ -622,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelReposicaoRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/etiquetas': {
+      id: '/painel/etiquetas'
+      path: '/etiquetas'
+      fullPath: '/painel/etiquetas'
+      preLoaderRoute: typeof PainelEtiquetasRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/validades': {
       id: '/painel/validades'
       path: '/validades'
@@ -763,6 +782,7 @@ interface PainelRouteChildren {
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
+  PainelEtiquetasRoute: typeof PainelEtiquetasRoute
   PainelGondolaRoute: typeof PainelGondolaRoute
   PainelInconsistenciasRoute: typeof PainelInconsistenciasRoute
   PainelMovimentacoesRoute: typeof PainelMovimentacoesRoute
@@ -789,6 +809,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
+  PainelEtiquetasRoute: PainelEtiquetasRoute,
   PainelGondolaRoute: PainelGondolaRoute,
   PainelInconsistenciasRoute: PainelInconsistenciasRoute,
   PainelMovimentacoesRoute: PainelMovimentacoesRoute,
