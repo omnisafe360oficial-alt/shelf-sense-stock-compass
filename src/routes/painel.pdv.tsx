@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BellRing, CheckCircle2, Copy, MessageCircle, Minus, Plus, Receipt, ScanBarcode, Trash2, X,
+  BellRing, CheckCircle2, Copy, MessageCircle, Minus, Pencil, Plus, Receipt, ScanBarcode, Trash2, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,9 @@ function Pdv() {
   const [historico, setHistorico] = useState<VendaHistorico[]>([]);
   const [ultimaVenda, setUltimaVenda] = useState<VendaHistorico | null>(null);
   const [showRecibo, setShowRecibo] = useState(false);
+  const [descontoItens, setDescontoItens] = useState<Record<string, { val: string; modo: "%" | "R$" }>>({});
+  const [editDescId, setEditDescId] = useState<string | null>(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const buscaRef = useRef<HTMLInputElement>(null);
   const buscaWrapRef = useRef<HTMLDivElement>(null);
 
@@ -78,10 +81,33 @@ function Pdv() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showSug]);
 
+  const precoLiquido = (produtoId: string): number => {
+    const p = produtos.find((x) => x.id === produtoId);
+    if (!p) return 0;
+    const d = descontoItens[produtoId];
+    if (!d || !d.val) return p.preco;
+    const v = parseFloat(d.val.replace(",", ".")) || 0;
+    if (v <= 0) return p.preco;
+    return d.modo === "%" ? Math.max(0, p.preco * (1 - v / 100)) : Math.max(0, p.preco - v);
+  };
+
   const subtotal = useMemo(
-    () => itens.reduce((t, i) => t + i.qtd * (produtos.find((p) => p.id === i.produtoId)?.preco ?? 0), 0),
-    [itens, produtos],
+    () => itens.reduce((t, i) => t + i.qtd * precoLiquido(i.produtoId), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itens, produtos, descontoItens],
   );
+
+  const breakdown = useMemo(() => {
+    const map = new Map<string, { nome: string; qtd: number; valor: number }>();
+    for (const v of historico) {
+      for (const l of v.linhas) {
+        const ex = map.get(l.nome);
+        if (ex) { ex.qtd += l.qtd; ex.valor += l.qtd * l.preco; }
+        else map.set(l.nome, { nome: l.nome, qtd: l.qtd, valor: l.qtd * l.preco });
+      }
+    }
+    return [...map.values()].sort((a, b) => b.valor - a.valor);
+  }, [historico]);
   const descontoVal = useMemo(() => {
     const d = Number(desconto.replace(",", "."));
     if (!desconto || isNaN(d) || d <= 0) return 0;
@@ -104,15 +130,20 @@ function Pdv() {
 
   function adicionar(produtoId: string, delta = 1) {
     const naGondola = s.gondola[produtoId] ?? 0;
-    setItens((atual) => {
-      const ex = atual.find((i) => i.produtoId === produtoId);
-      const nova = (ex?.qtd ?? 0) + delta;
-      if (nova > naGondola) { toast.error(`Só há ${naGondola} na gôndola.`); return atual; }
-      if (nova <= 0) return atual.filter((i) => i.produtoId !== produtoId);
-      return ex
-        ? atual.map((i) => (i.produtoId === produtoId ? { ...i, qtd: nova } : i))
-        : [...atual, { produtoId, qtd: nova }];
-    });
+    const ex = itens.find((i) => i.produtoId === produtoId);
+    const nova = (ex?.qtd ?? 0) + delta;
+    if (nova > naGondola) { toast.error(`Só há ${naGondola} na gôndola.`); return; }
+    if (nova <= 0) {
+      setItens((prev) => prev.filter((i) => i.produtoId !== produtoId));
+      setDescontoItens((prev) => { const n = { ...prev }; delete n[produtoId]; return n; });
+      if (editDescId === produtoId) setEditDescId(null);
+      return;
+    }
+    setItens((prev) =>
+      ex
+        ? prev.map((i) => (i.produtoId === produtoId ? { ...i, qtd: nova } : i))
+        : [...prev, { produtoId, qtd: nova }],
+    );
   }
 
   function setQty(produtoId: string, qtd: number) {
@@ -155,13 +186,13 @@ function Pdv() {
       const itensComPreco = itens.map((i) => ({
         produtoId: i.produtoId,
         qtd: i.qtd,
-        preco: produtos.find((x) => x.id === i.produtoId)?.preco,
+        preco: precoLiquido(i.produtoId),
       }));
       const repor = fecharVenda(itensComPreco, operador, minimos);
       const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const linhas = itens.map((i) => {
         const p = produtos.find((x) => x.id === i.produtoId)!;
-        return { nome: p.nome, qtd: i.qtd, preco: p.preco };
+        return { nome: p.nome, qtd: i.qtd, preco: precoLiquido(i.produtoId) };
       });
       const entrada: VendaHistorico = {
         id: crypto.randomUUID(), hora, total,
@@ -172,6 +203,8 @@ function Pdv() {
       setUltimaVenda(entrada);
       setShowRecibo(true);
       setItens([]);
+      setDescontoItens({});
+      setEditDescId(null);
       setRecebido("");
       setDesconto("");
       setBusca("");
@@ -326,7 +359,7 @@ function Pdv() {
                     {qtdTotal} iten{qtdTotal !== 1 ? "s" : ""} no carrinho
                   </p>
                   <button
-                    onClick={() => { if (confirm("Limpar o carrinho?")) setItens([]); }}
+                    onClick={() => { if (confirm("Limpar o carrinho?")) { setItens([]); setDescontoItens({}); setEditDescId(null); } }}
                     className="text-xs text-muted-foreground hover:text-destructive"
                   >
                     Limpar tudo
@@ -338,44 +371,82 @@ function Pdv() {
                   {itens.map((item) => {
                     const p = produtos.find((x) => x.id === item.produtoId)!;
                     const gondola = s.gondola[item.produtoId] ?? 0;
+                    const liq = precoLiquido(item.produtoId);
+                    const temDesc = !!descontoItens[item.produtoId]?.val;
                     return (
-                      <div key={item.produtoId} className="flex items-center gap-3 px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold">{p.nome}</p>
-                          <p className="font-mono text-xs text-muted-foreground">{p.codigo} · {brl(p.preco)} un</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-1.5">
+                      <div key={item.produtoId} className="flex flex-col px-4 py-3">
+                        {/* main row */}
+                        <div className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold">{p.nome}</p>
+                            <p className="font-mono text-xs text-muted-foreground">
+                              {p.codigo} ·{" "}
+                              {temDesc ? (
+                                <><span className="line-through">{brl(p.preco)}</span> <span className="text-primary font-semibold">{brl(liq)}</span></>
+                              ) : brl(p.preco)} un
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button onClick={() => adicionar(p.id, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Remover um">
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <input
+                              type="number" min={1} max={gondola} value={item.qtd}
+                              onChange={(e) => setQty(item.produtoId, Number(e.target.value) || 1)}
+                              className="h-8 w-12 rounded-lg border bg-transparent text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                            <button onClick={() => adicionar(p.id, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Adicionar um">
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <p className={cn("w-20 shrink-0 text-right font-semibold", temDesc && "text-primary")}>{brl(liq * item.qtd)}</p>
                           <button
-                            onClick={() => adicionar(p.id, -1)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted"
-                            aria-label="Remover um"
+                            onClick={() => setEditDescId(editDescId === item.produtoId ? null : item.produtoId)}
+                            className={cn("shrink-0 rounded-lg p-1.5 transition", temDesc ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted")}
+                            aria-label="Desconto no item"
                           >
-                            <Minus className="h-3.5 w-3.5" />
+                            <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <input
-                            type="number"
-                            min={1}
-                            max={gondola}
-                            value={item.qtd}
-                            onChange={(e) => setQty(item.produtoId, Number(e.target.value) || 1)}
-                            className="h-8 w-12 rounded-lg border bg-transparent text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
                           <button
-                            onClick={() => adicionar(p.id, 1)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted"
-                            aria-label="Adicionar um"
+                            onClick={() => {
+                              setItens((prev) => prev.filter((i) => i.produtoId !== item.produtoId));
+                              setDescontoItens((prev) => { const n = { ...prev }; delete n[item.produtoId]; return n; });
+                              if (editDescId === item.produtoId) setEditDescId(null);
+                            }}
+                            className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            aria-label="Remover item"
                           >
-                            <Plus className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                        <p className="w-20 shrink-0 text-right font-semibold">{brl(p.preco * item.qtd)}</p>
-                        <button
-                          onClick={() => setItens((prev) => prev.filter((i) => i.produtoId !== item.produtoId))}
-                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          aria-label="Remover item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {/* inline discount form */}
+                        {editDescId === item.produtoId && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-muted/40 px-3 py-2">
+                            <span className="text-xs font-medium text-muted-foreground">Desconto:</span>
+                            <Input
+                              type="number" min="0" placeholder="0"
+                              value={descontoItens[item.produtoId]?.val ?? ""}
+                              onChange={(e) => setDescontoItens((prev) => ({ ...prev, [item.produtoId]: { val: e.target.value, modo: prev[item.produtoId]?.modo ?? "%" } }))}
+                              className="h-8 w-20 text-right"
+                            />
+                            <div className="flex overflow-hidden rounded-lg border">
+                              {(["%", "R$"] as const).map((m) => (
+                                <button key={m} type="button"
+                                  onClick={() => setDescontoItens((prev) => ({ ...prev, [item.produtoId]: { val: prev[item.produtoId]?.val ?? "", modo: m } }))}
+                                  className={cn("px-2.5 py-1 text-xs font-semibold transition",
+                                    (descontoItens[item.produtoId]?.modo ?? "%") === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}
+                                >{m}</button>
+                              ))}
+                            </div>
+                            {descontoItens[item.produtoId]?.val && (
+                              <span className="text-xs text-primary font-medium">= {brl(liq)} / un</span>
+                            )}
+                            <button type="button" onClick={() => { setDescontoItens((prev) => { const n = { ...prev }; delete n[item.produtoId]; return n; }); setEditDescId(null); }}
+                              className="text-xs text-muted-foreground hover:text-destructive">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -393,25 +464,48 @@ function Pdv() {
           {/* Histórico da sessão */}
           {historico.length > 0 && (
             <div className="rounded-2xl border bg-card p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Vendas desta sessão
-              </p>
-              <div className="space-y-1">
-                {historico.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => { setUltimaVenda(v); setShowRecibo(true); }}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-muted/50 transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs text-muted-foreground">{v.hora}</span>
-                      <span>{v.qtdItens} iten{v.qtdItens !== 1 ? "s" : ""}</span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{v.pagamento}</span>
-                    </div>
-                    <span className="font-semibold">{brl(v.total)}</span>
-                  </button>
-                ))}
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Vendas desta sessão
+                </p>
+                <button onClick={() => setShowBreakdown((v) => !v)} className="text-xs text-primary hover:underline">
+                  {showBreakdown ? "Por venda" : "Por produto"}
+                </button>
               </div>
+              {showBreakdown ? (
+                <div className="space-y-1">
+                  {breakdown.map((item) => (
+                    <div key={item.nome} className="flex items-center justify-between rounded-xl px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold">{item.qtd}×</span>
+                        <span className="truncate">{item.nome}</span>
+                      </div>
+                      <span className="shrink-0 font-semibold">{brl(item.valor)}</span>
+                    </div>
+                  ))}
+                  <div className="mt-2 flex justify-between border-t pt-2 text-xs font-semibold text-muted-foreground">
+                    <span>{breakdown.reduce((t, i) => t + i.qtd, 0)} un · {breakdown.length} produto{breakdown.length !== 1 ? "s"  : ""}</span>
+                    <span>{brl(fatSessao)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {historico.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => { setUltimaVenda(v); setShowRecibo(true); }}
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm hover:bg-muted/50 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-muted-foreground">{v.hora}</span>
+                        <span>{v.qtdItens} iten{v.qtdItens !== 1 ? "s" : ""}</span>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{v.pagamento}</span>
+                      </div>
+                      <span className="font-semibold">{brl(v.total)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
