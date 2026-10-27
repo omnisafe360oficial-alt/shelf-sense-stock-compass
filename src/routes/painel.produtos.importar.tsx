@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, FileCode2, FileUp, MapPin, Sparkles, Truck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCode2, FileUp, MapPin, Package, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ export const Route = createFileRoute("/painel/produtos/importar")({
   component: Importar,
 });
 
+type Resumo = { novos: number; atualizados: number; totalUnidades: number; valorNota: number };
+
 type Linha = {
   codigo: string; nome: string; existente: boolean; unidadeCompra: string; qtdCompra: number;
   porEmbalagem: number; custoUnit: number; venda: string; minimo: string; maximo: string; lote: string; validade: string;
@@ -41,6 +43,7 @@ function Importar() {
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [arrastando, setArrastando] = useState(false);
   const [localDeposito, setLocalDeposito] = useState("Depósito");
+  const [resumo, setResumo] = useState<Resumo | null>(null);
 
   const carregar = (xml: string) => {
     try {
@@ -110,6 +113,7 @@ function Importar() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <button onClick={() => setNota(null)} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Trocar arquivo</button>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -150,13 +154,11 @@ function Importar() {
                 }
               }
             });
-            const semPreco = linhas.filter((l) => Number(l.venda) <= 0).length;
-            if (semPreco > 0) {
-              toast.success(`${linhas.length} produtos importados. Complete o preço de ${semPreco} produto(s) na lista.`);
-            } else {
-              toast.success(`${linhas.length} produtos importados para o depósito!`);
-            }
-            navigate({ to: "/painel/produtos" });
+            const novos = linhas.filter((l) => !l.existente).length;
+            const atualizados = linhas.filter((l) => l.existente).length;
+            const totalUnidades = linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem, 0);
+            const valorNota = linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem * l.custoUnit, 0);
+            setResumo({ novos, atualizados, totalUnidades, valorNota });
           }}>
             {pendentes > 0 ? <><AlertTriangle className="h-4 w-4" /> Importar assim mesmo</> : <><Check className="h-4 w-4" /> Confirmar importação</>}
           </Button>
@@ -248,5 +250,48 @@ function Importar() {
       </div>
       <p className="flex items-center gap-2 text-sm text-muted-foreground"><FileCode2 className="h-4 w-4" />O preço de venda sugerido usa a margem padrão ({getConfig().margemPadrao}%) configurada em Configurações. A conversão foi lida do nome do produto; ajuste se precisar.</p>
     </div>
+
+    {resumo && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="w-full max-w-md rounded-2xl bg-card shadow-2xl">
+          <div className="flex flex-col items-center p-8 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+            </span>
+            <h2 className="mt-4 text-2xl font-bold">Importação concluída!</h2>
+            <p className="mt-1 text-sm text-muted-foreground">NF-e nº {nota?.numero} importada com sucesso</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 px-8 pb-6">
+            <div className="rounded-xl bg-muted p-4 text-center">
+              <Package className="mx-auto mb-1 h-5 w-5 text-success" />
+              <p className="font-display text-2xl font-bold">{resumo.novos}</p>
+              <p className="text-xs text-muted-foreground">novos produtos</p>
+            </div>
+            <div className="rounded-xl bg-muted p-4 text-center">
+              <Check className="mx-auto mb-1 h-5 w-5 text-primary" />
+              <p className="font-display text-2xl font-bold">{resumo.atualizados}</p>
+              <p className="text-xs text-muted-foreground">estoque atualizado</p>
+            </div>
+            <div className="rounded-xl bg-muted p-4 text-center">
+              <Truck className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+              <p className="font-display text-2xl font-bold">{resumo.totalUnidades}</p>
+              <p className="text-xs text-muted-foreground">unidades adicionadas</p>
+            </div>
+            <div className="rounded-xl bg-gradient-brand p-4 text-center text-primary-foreground">
+              <p className="text-xs font-semibold uppercase text-primary-foreground/70">Valor da nota</p>
+              <p className="font-display text-xl font-bold">{brl(resumo.valorNota)}</p>
+            </div>
+          </div>
+
+          <div className="border-t px-8 py-5">
+            <Button className="w-full" size="lg" onClick={() => navigate({ to: "/painel/produtos" })}>
+              <Check className="h-4 w-4" /> Ir para produtos
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

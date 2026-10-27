@@ -256,3 +256,33 @@ export function inicializarProduto(produtoId: string) {
   const lojaId = getLojaId();
   if (lojaId) persistirGondola(lojaId, produtoId, 0);
 }
+
+// ─── Ajuste manual de estoque por lote ────────────────────────────────────────
+
+export function ajustarEstoque(loteId: string, novoSaldo: number, motivo: string, usuario = "Sistema") {
+  const l = estado.lotes.find((x) => x.id === loteId);
+  if (!l) return;
+  const delta = novoSaldo - l.qtd;
+  const mov: Mov = {
+    id: crypto.randomUUID(),
+    data: new Date().toISOString().slice(0, 16),
+    tipo: "ajuste",
+    produtoId: l.produtoId,
+    lote: l.lote,
+    qtd: delta,
+    origem: "Ajuste manual",
+    destino: motivo || "Sem motivo",
+    usuario,
+  };
+  const novoEstado = {
+    ...estado,
+    lotes: estado.lotes.map((x) => x.id === loteId ? { ...x, qtd: novoSaldo } : x),
+    movs: [mov, ...estado.movs],
+  };
+  emitir(novoEstado);
+  const lojaId = getLojaId();
+  if (lojaId) {
+    persistirLote(lojaId, { ...l, qtd: novoSaldo });
+    persistirMov(lojaId, mov);
+  }
+}
