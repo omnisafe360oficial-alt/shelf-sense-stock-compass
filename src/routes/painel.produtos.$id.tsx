@@ -32,7 +32,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 });
 
 type FormState = {
-  nome: string; categoria: string; fornecedor: string; preco: string; minimo: string;
+  nome: string; categoria: string; fornecedor: string; preco: string; minimo: string; maximo: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
@@ -56,7 +56,7 @@ function ProdutoDetalhe() {
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [f, setF] = useState<FormState>({
-    nome: "", categoria: "", fornecedor: "", preco: "", minimo: "",
+    nome: "", categoria: "", fornecedor: "", preco: "", minimo: "", maximo: "",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
@@ -86,15 +86,16 @@ function ProdutoDetalhe() {
     baixo: "bg-warning/15 text-warning",
     sem:   "bg-destructive/10 text-destructive",
   };
-  const pctGond = produto.minimo > 0 ? Math.min(100, (gond / (produto.minimo * 2)) * 100) : gond > 0 ? 100 : 0;
-  const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : "bg-success";
+  const capacidade = produto.maximo && produto.maximo > 0 ? produto.maximo : produto.minimo > 0 ? produto.minimo * 2 : 0;
+  const pctGond = capacidade > 0 ? Math.min(100, (gond / capacidade) * 100) : gond > 0 ? 100 : 0;
+  const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : produto.maximo && gond >= produto.maximo ? "bg-primary" : "bg-success";
 
   const abrirEdicao = () => {
     const ld = produto.localDeposito;
     const lg = produto.localGondola;
     setF({
       nome: produto.nome, categoria: produto.categoria, fornecedor: produto.fornecedor,
-      preco: String(produto.preco), minimo: String(produto.minimo),
+      preco: String(produto.preco), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
       depRua: ld?.rua ?? "", depPrateleira: ld?.prateleira ?? "", depNivel: ld ? String(ld.nivel) : "",
       gondCorredor: lg?.corredor ?? "", gondGondola: lg?.gondola ?? "",
       gondNivel: lg?.nivel ?? "", gondPosicao: lg ? String(lg.posicao) : "",
@@ -118,6 +119,7 @@ function ProdutoDetalhe() {
       fornecedor: f.fornecedor,
       preco: Number(f.preco.replace(",", ".")) || produto.preco,
       minimo: Number(f.minimo) || produto.minimo,
+      maximo: Number(f.maximo) || 0,
       localDeposito,
       localGondola,
     });
@@ -188,7 +190,7 @@ function ProdutoDetalhe() {
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div className={cn("h-full rounded-full transition-all", barCor)} style={{ width: `${pctGond}%` }} />
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">mínimo: {produto.minimo} un</p>
+          <p className="mt-1 text-xs text-muted-foreground">mín: {produto.minimo}{produto.maximo ? ` · máx: ${produto.maximo}` : ""} un</p>
         </div>
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Total em estoque</p>
@@ -218,6 +220,10 @@ function ProdutoDetalhe() {
             <div className="space-y-2">
               <Label>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
               <Input inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Máximo na gôndola <span className="font-normal text-muted-foreground text-xs">— capacidade total da gôndola (0 = não definido)</span></Label>
+              <Input inputMode="numeric" value={f.maximo} onChange={(e) => setF({ ...f, maximo: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>

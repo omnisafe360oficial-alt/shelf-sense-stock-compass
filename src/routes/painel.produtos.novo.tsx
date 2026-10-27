@@ -104,6 +104,7 @@ function NovoProduto() {
       deposito: 0,
       gondola: 0,
       minimo: num(f.minimo),
+      maximo: num(f.maximo) || 0,
       validade: f.validade || undefined,
       localDeposito,
       localGondola,

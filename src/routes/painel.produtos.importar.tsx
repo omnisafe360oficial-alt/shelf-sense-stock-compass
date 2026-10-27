@@ -29,7 +29,7 @@ export const Route = createFileRoute("/painel/produtos/importar")({
 
 type Linha = {
   codigo: string; nome: string; existente: boolean; unidadeCompra: string; qtdCompra: number;
-  porEmbalagem: number; custoUnit: number; venda: string; minimo: string; lote: string; validade: string;
+  porEmbalagem: number; custoUnit: number; venda: string; minimo: string; maximo: string; lote: string; validade: string;
   semValidade: boolean; loteAuto: boolean;
   custoAnterior: number; atualizarVenda: boolean; vendaAnterior: string;
 };
@@ -65,6 +65,7 @@ function Importar() {
           venda: atualizarVenda ? vendaSugerida : vendaAtual,
           vendaAnterior: vendaAtual,
           minimo: ex ? String(ex.minimo) : String(cfg.minimoPadrao),
+          maximo: ex ? String(ex.maximo ?? 0) : "0",
           custoAnterior, atualizarVenda,
           lote: i.lote ?? `NF-${n.numero}-${idx + 1}`,
           validade: i.validade ?? "2099-12-31",
@@ -136,11 +137,11 @@ function Importar() {
               if (l.existente) {
                 const p = getProdutos().find((x) => x.codigo === l.codigo);
                 if (p && qtdTotal > 0) {
-                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit, ...(l.atualizarVenda ? { preco: Number(l.venda) } : {}) });
+                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit, maximo: Number(l.maximo) || 0, ...(l.atualizarVenda ? { preco: Number(l.venda) } : {}) });
                   registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
                 }
               } else {
-                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, custoUltimaCompra: l.custoUnit };
+                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, maximo: Number(l.maximo) || 0, custoUltimaCompra: l.custoUnit };
                 if (!l.semValidade && l.validade) novoProd.validade = l.validade;
                 const id = cadastrarProduto(novoProd);
                 inicializarProduto(id);
@@ -181,7 +182,7 @@ function Importar() {
       <div className="overflow-x-auto rounded-2xl border bg-card">
         <table className="w-full min-w-[64rem] text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-            <tr><th className="px-4 py-3">Produto</th><th className="px-4 py-3">Compra → unidades</th><th className="px-4 py-3">Custo un.</th><th className="px-4 py-3">Venda (R$)</th><th className="px-4 py-3">Mín. gôndola</th><th className="px-4 py-3">Lote / validade</th></tr>
+            <tr><th className="px-4 py-3">Produto</th><th className="px-4 py-3">Compra → unidades</th><th className="px-4 py-3">Custo un.</th><th className="px-4 py-3">Venda (R$)</th><th className="px-4 py-3">Mín. gôndola</th><th className="px-4 py-3">Máx. gôndola</th><th className="px-4 py-3">Lote / validade</th></tr>
           </thead>
           <tbody className="divide-y">
             {linhas.map((l, i) => (
@@ -221,6 +222,7 @@ function Importar() {
                   )}
                 </td>
                 <td className="px-4 py-3"><Input className={cn("h-8 w-20", !l.minimo && "border-warning")} placeholder="?" value={l.minimo} onChange={(e) => upd(i, "minimo", e.target.value.replace(/\D/g, ""))} /></td>
+                <td className="px-4 py-3"><Input className="h-8 w-20" placeholder="0" value={l.maximo} onChange={(e) => upd(i, "maximo", e.target.value.replace(/\D/g, ""))} /></td>
                 <td className="px-4 py-3">
                   {(l.loteAuto || l.semValidade) && (
                     <span className="mb-1.5 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">

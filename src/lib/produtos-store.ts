@@ -22,6 +22,7 @@ function mapDoBanco(row: Record<string, unknown>): Produto {
     deposito: lotes.reduce((s, l) => s + (l.qtd ?? 0), 0),
     gondola: gondola[0]?.qtd_gondola ?? 0,
     minimo: (row.minimo as number) ?? 0,
+    maximo: (row.maximo_gondola as number) ?? 0,
     custoUltimaCompra: (row.custo_ultima_compra as number) ?? 0,
     validade: (row.validade_padrao_dias as unknown as string) ?? undefined,
     localDeposito: (row.local_deposito as Produto["localDeposito"]) ?? undefined,
@@ -34,7 +35,7 @@ let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 async function carregarProdutos(lojaId: string) {
   const { data, error } = await supabase
     .from("produtos")
-    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, lotes(qtd), gondola(qtd_gondola)")
+    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, maximo_gondola, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, lotes(qtd), gondola(qtd_gondola)")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar produtos"); return; }
@@ -85,6 +86,7 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         fornecedor_nome: dados.fornecedor,
         preco_venda: dados.preco,
         minimo: dados.minimo,
+        maximo_gondola: dados.maximo ?? 0,
         custo_ultima_compra: dados.custoUltimaCompra ?? 0,
         local_deposito: dados.localDeposito ?? null,
         local_gondola: dados.localGondola ?? null,
@@ -106,6 +108,7 @@ export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): 
     if (dados.fornecedor !== undefined) payload.fornecedor_nome = dados.fornecedor;
     if (dados.preco !== undefined) payload.preco_venda = dados.preco;
     if (dados.minimo !== undefined) payload.minimo = dados.minimo;
+    if (dados.maximo !== undefined) payload.maximo_gondola = dados.maximo;
     if (dados.custoUltimaCompra !== undefined) payload.custo_ultima_compra = dados.custoUltimaCompra;
     if ("localDeposito" in dados) payload.local_deposito = dados.localDeposito ?? null;
     if ("localGondola" in dados) payload.local_gondola = dados.localGondola ?? null;
