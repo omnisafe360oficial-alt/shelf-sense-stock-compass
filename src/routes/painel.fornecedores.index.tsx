@@ -93,9 +93,12 @@ function Fornecedores() {
             <div className="space-y-2"><Label>Nome / razão social</Label><Input required value={form.nome} onChange={sf("nome")} /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>CNPJ</Label><Input required value={form.cnpj} onChange={sf("cnpj")} /></div>
-              <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} onChange={sf("telefone")} /></div>
+              <div className="space-y-2"><Label>Nome do contato</Label><Input value={form.contato} onChange={sf("contato")} placeholder="Ex.: João Silva" /></div>
             </div>
-            <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={form.email} onChange={sf("email")} /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Telefone</Label><Input value={form.telefone} onChange={sf("telefone")} /></div>
+              <div className="space-y-2"><Label>E-mail</Label><Input type="email" value={form.email} onChange={sf("email")} /></div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Cidade</Label><Input value={form.cidade} onChange={sf("cidade")} /></div>
               <div className="space-y-2"><Label>Prazo de pagamento</Label><Input placeholder="28 dias" value={form.prazo} onChange={sf("prazo")} /></div>

@@ -1,12 +1,12 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Edit3, Mail, MapPin, Phone, Save, User, X } from "lucide-react";
+import { ArrowLeft, Clock, Edit3, Mail, MapPin, Phone, Save, Trash2, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { brl } from "@/lib/mock-data";
-import { useFornecedores, getFornecedores, editarFornecedor } from "@/lib/fornecedores-store";
+import { useFornecedores, getFornecedores, editarFornecedor, excluirFornecedor } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,7 @@ type FForm = { nome: string; cnpj: string; contato: string; telefone: string; em
 
 function Ficha() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const todos = useFornecedores();
   const f = todos.find((x) => x.id === id);
 
@@ -42,6 +43,7 @@ function Ficha() {
   const est = useEstoque();
 
   const [editando, setEditando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
   const [form, setForm] = useState<FForm>({ nome: "", cnpj: "", contato: "", telefone: "", email: "", cidade: "", prazo: "" });
 
   if (!f) return <p className="text-muted-foreground">Fornecedor não encontrado.</p>;
@@ -53,13 +55,19 @@ function Ficha() {
     setEditando(true);
   };
 
-  const cancelar = () => setEditando(false);
+  const cancelar = () => { setEditando(false); setConfirmando(false); };
 
   const salvar = () => {
     if (!form.nome.trim()) { toast.error("Nome não pode ser vazio."); return; }
     editarFornecedor(f.id, { ...form, nome: form.nome.trim() });
     setEditando(false);
     toast.success("Fornecedor atualizado!");
+  };
+
+  const confirmarExclusao = () => {
+    excluirFornecedor(f.id);
+    toast.success(`"${f.nome}" excluído.`);
+    navigate({ to: "/painel/fornecedores" });
   };
 
   const info = [
@@ -84,11 +92,28 @@ function Ficha() {
             <p className="font-mono text-sm text-primary-foreground/75">CNPJ {f.cnpj}</p>
           </div>
         </div>
-        {!editando
-          ? <Button variant="secondary" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
-          : <Button variant="secondary" onClick={cancelar}><X className="h-4 w-4" /> Cancelar</Button>
-        }
+        <div className="flex gap-2">
+          {!editando ? (
+            <>
+              <Button variant="secondary" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
+              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir fornecedor"><Trash2 className="h-4 w-4" /></Button>
+            </>
+          ) : (
+            <Button variant="secondary" onClick={cancelar}><X className="h-4 w-4" /> Cancelar</Button>
+          )}
+        </div>
       </div>
+
+      {confirmando && (
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
+          <p className="font-semibold text-destructive">Excluir "{f.nome}"?</p>
+          <p className="mt-1 text-sm text-muted-foreground">Esta ação não pode ser desfeita. O fornecedor será removido permanentemente.</p>
+          <div className="mt-4 flex gap-3">
+            <Button variant="destructive" onClick={confirmarExclusao}><Trash2 className="h-4 w-4" /> Confirmar exclusão</Button>
+            <Button variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
 
       {editando && (
         <div className="space-y-5 rounded-2xl border bg-card p-6">

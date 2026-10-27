@@ -70,6 +70,19 @@ export function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): string {
   return id;
 }
 
+export function excluirFornecedor(id: string): void {
+  estado = estado.filter((f) => f.id !== id);
+  notificar();
+  const lojaId = getLojaId();
+  if (lojaId) {
+    supabase
+      .from("fornecedores")
+      .delete()
+      .eq("id", id)
+      .then(({ error }) => { if (error) toast.error("Erro ao excluir fornecedor: " + error.message); });
+  }
+}
+
 export function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id">>): void {
   estado = estado.map((f) => (f.id === id ? { ...f, ...dados } : f));
   notificar();
