@@ -58,6 +58,11 @@ supabase.auth.onAuthStateChange((_event, session) => {
   }
 });
 
+export async function recarregarLoja() {
+  if (!state.session) return;
+  await carregarLoja(state.session.user.id);
+}
+
 export function useAuth() {
   return useSyncExternalStore(
     (cb) => { listeners.add(cb); return () => listeners.delete(cb); },

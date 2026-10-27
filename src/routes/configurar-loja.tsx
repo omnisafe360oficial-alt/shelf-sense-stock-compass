@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/brand/Logo";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
+import { useAuth, recarregarLoja } from "@/lib/auth";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -69,6 +69,10 @@ const ESTADOS = [
 ];
 
 const passos = ["Tipo de comércio", "Dados da loja", "Localização"];
+
+function toTitleCase(s: string) {
+  return s.replace(/(?:^|\s)\S/g, (c) => c.toUpperCase());
+}
 
 function maskDoc(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 14);
@@ -140,7 +144,11 @@ function ConfigurarLoja() {
       return;
     }
 
-    toast.success(`Loja "${nome}" configurada!`);
+    // Atualiza auth.lojaId em memória antes de navegar para o painel,
+    // evitando que o guard do painel redirecione de volta para /configurar-loja.
+    await recarregarLoja();
+
+    toast.success(`Loja "${nome}" configurada com sucesso!`);
     navigate({ to: "/painel" });
   };
 
@@ -213,7 +221,7 @@ function ConfigurarLoja() {
               <div className="mt-6 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome da loja</Label>
-                  <Input id="nome" className="h-11" placeholder="Ex.: Mercado Bom Preço" value={nome} onChange={(e) => setNome(e.target.value)} />
+                  <Input id="nome" className="h-11" placeholder="Ex.: Mercado Bom Preço" value={nome} onChange={(e) => setNome(toTitleCase(e.target.value))} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="doc">CNPJ ou CPF</Label>
