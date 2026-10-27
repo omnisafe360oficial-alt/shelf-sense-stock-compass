@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, EyeOff, RefreshCw, TriangleAlert } from "lucide-react";
+import { CheckCircle2, EyeOff, Package, RefreshCw, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,22 @@ function Reposicao() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {pedidos.length === 0 && <p className="text-muted-foreground">Nenhuma reposição pendente.</p>}
+        {produtos.length === 0 ? (
+          <div className="col-span-full rounded-2xl border border-dashed bg-card py-16 text-center">
+            <Package className="mx-auto h-10 w-10 text-muted-foreground/30" />
+            <p className="mt-3 font-semibold">Nenhum produto cadastrado</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cadastre os produtos para ver quais precisam de reposição.</p>
+            <Button asChild size="sm" className="mt-5">
+              <Link to="/painel/produtos"><Package className="h-4 w-4" /> Cadastrar produtos</Link>
+            </Button>
+          </div>
+        ) : pedidos.length === 0 && (
+          <div className="col-span-full rounded-2xl border bg-card py-12 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success/50" />
+            <p className="mt-3 font-semibold">Tudo reposto!</p>
+            <p className="mt-1 text-sm text-muted-foreground">Nenhum produto está abaixo do mínimo na gôndola agora.</p>
+          </div>
+        )}
         {pedidos.map(({ p, naGondola, deposito, sugestao }) => (
           <div key={p.id} className="space-y-3 rounded-xl border bg-card p-5 shadow-sm">
             <div className="flex items-start justify-between gap-2">

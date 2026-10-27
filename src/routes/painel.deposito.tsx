@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRightLeft, Search } from "lucide-react";
+import { ArrowRightLeft, Package, Search, Warehouse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
@@ -31,6 +31,26 @@ function Deposito() {
     .map((p) => ({ p, lotes: s.lotes.filter((l) => l.produtoId === p.id && l.qtd > 0).sort((a, b) => a.validade.localeCompare(b.validade)) }))
     .filter(({ p }) => p.nome.toLowerCase().includes(q.toLowerCase()) || p.codigo.includes(q));
   const totalUn = s.lotes.reduce((t, l) => t + l.qtd, 0);
+
+  if (produtos.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div><h1 className="text-3xl font-bold">Depósito</h1><p className="text-muted-foreground">Nenhum produto cadastrado</p></div>
+        <div className="rounded-2xl border border-dashed bg-card py-20 text-center">
+          <Warehouse className="mx-auto h-12 w-12 text-muted-foreground/30" />
+          <p className="mt-4 text-xl font-semibold">Depósito vazio</p>
+          <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
+            Cadastre os produtos da loja para começar a controlar o estoque do depósito.
+          </p>
+          <div className="mt-8 flex justify-center gap-3">
+            <Button asChild size="lg">
+              <Link to="/painel/produtos"><Package className="h-4 w-4" /> Cadastrar produtos</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

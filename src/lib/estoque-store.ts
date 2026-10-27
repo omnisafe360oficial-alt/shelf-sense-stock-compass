@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
 
 export type Lote = { id: string; produtoId: string; lote: string; validade: string; qtd: number; local: string };
-export type Mov = { id: string; data: string; tipo: "entrada" | "transferencia" | "venda" | "ajuste"; produtoId: string; lote?: string; qtd: number; origem: string; destino: string; usuario: string };
+export type Mov = { id: string; data: string; tipo: "entrada" | "transferencia" | "venda" | "ajuste"; produtoId: string; lote?: string; qtd: number; origem: string; destino: string; usuario: string; precoUnitario?: number };
 
 type Estado = { lotes: Lote[]; gondola: Record<string, number>; movs: Mov[] };
 
@@ -117,7 +117,7 @@ function persistirLote(lojaId: string, lote: Lote) {
 function persistirMov(lojaId: string, mov: Mov) {
   supabase
     .from("movimentacoes")
-    .insert({ id: mov.id, loja_id: lojaId, data: mov.data, tipo: mov.tipo, produto_id: mov.produtoId, lote: mov.lote ?? null, qtd: mov.qtd, origem: mov.origem, destino: mov.destino, usuario_nome: mov.usuario })
+    .insert({ id: mov.id, loja_id: lojaId, data: mov.data, tipo: mov.tipo, produto_id: mov.produtoId, lote: mov.lote ?? null, qtd: mov.qtd, origem: mov.origem, destino: mov.destino, usuario_nome: mov.usuario, preco_unitario: mov.precoUnitario ?? 0 })
     .then(({ error }) => { if (error) toast.error("Erro ao registrar movimentação: " + error.message); });
 }
 
@@ -185,7 +185,7 @@ export function registrarPerda(loteId: string, motivo: string) {
 
 // ─── Venda ────────────────────────────────────────────────────────────────────
 
-export type ItemVenda = { produtoId: string; qtd: number };
+export type ItemVenda = { produtoId: string; qtd: number; preco?: number };
 
 export function vender(s: Estado, itens: ItemVenda[], caixa: string, minimos: Record<string, number>): { estado: Estado; repor: string[] } {
   if (!itens.length) throw new Error("Nenhum item na venda.");
@@ -196,7 +196,7 @@ export function vender(s: Estado, itens: ItemVenda[], caixa: string, minimos: Re
     gondola[i.produtoId] = (gondola[i.produtoId] ?? 0) - i.qtd;
   }
   const agora = new Date().toISOString().slice(0, 16);
-  const novos: Mov[] = itens.map((i) => ({ id: crypto.randomUUID(), data: agora, tipo: "venda", produtoId: i.produtoId, qtd: i.qtd, origem: "Gôndola", destino: `PDV · ${caixa}`, usuario: `Caixa · ${caixa}` }));
+  const novos: Mov[] = itens.map((i) => ({ id: crypto.randomUUID(), data: agora, tipo: "venda", produtoId: i.produtoId, qtd: i.qtd, origem: "Gôndola", destino: `PDV · ${caixa}`, usuario: `Caixa · ${caixa}`, precoUnitario: i.preco ?? 0 }));
   const repor = itens.filter((i) => (gondola[i.produtoId] ?? 0) <= (minimos[i.produtoId] ?? 0) && (s.gondola[i.produtoId] ?? 0) > (minimos[i.produtoId] ?? 0)).map((i) => i.produtoId);
   return { estado: { ...s, gondola, movs: [...novos, ...s.movs] }, repor };
 }

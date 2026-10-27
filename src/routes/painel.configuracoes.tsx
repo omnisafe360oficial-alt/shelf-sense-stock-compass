@@ -80,8 +80,33 @@ function Configuracoes() {
       <Bloco t="Avisos" d="O que chega para você e para a equipe.">
         <Aviso t="Avisar o repositor quando a gôndola atingir o mínimo" field="avisoRepositor" f={f} onSet={onSet} />
         <Aviso t="Me avisar de inconsistências na conferência" field="avisoInconsistencias" f={f} onSet={onSet} />
-        <Aviso t="Resumo diário por e-mail" field="resumoDiario" f={f} onSet={onSet} />
+        <Aviso t="Resumo diário por e-mail (às 8h)" field="resumoDiario" f={f} onSet={onSet} />
+        {f.resumoDiario && (
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>E-mail para o resumo diário</Label>
+            <Input
+              type="email"
+              placeholder="exemplo@suaempresa.com.br"
+              value={f.emailNotificacoes}
+              onChange={(e) => onSet("emailNotificacoes", e.target.value)}
+            />
+          </div>
+        )}
         <Aviso t="Avisos por WhatsApp" field="avisosWhatsApp" f={f} onSet={onSet} />
+        {f.avisosWhatsApp && (
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>Número do WhatsApp (com DDI e DDD)</Label>
+            <Input
+              type="tel"
+              placeholder="+55 11 99999-9999"
+              value={f.telefoneWhatsApp}
+              onChange={(e) => onSet("telefoneWhatsApp", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Usado pela integração de notificações automáticas via WhatsApp Business.
+            </p>
+          </div>
+        )}
       </Bloco>
       <Bloco t="Alertas" d="Controle quais alertas aparecem no sino de notificações.">
         <Aviso t="Alertar sobre produtos zerados no estoque" field="alertaEstoqueZerado" f={f} onSet={onSet} />

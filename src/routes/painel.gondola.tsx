@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRightLeft, BellRing } from "lucide-react";
+import { ArrowRightLeft, BellRing, Boxes, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
 import { useEstoque } from "@/lib/estoque-store";
@@ -29,6 +29,26 @@ function Gondola() {
   const itens = produtos.map((p) => ({ p, qtd: s.gondola[p.id] ?? 0, max: p.minimo * 3 }));
   const repor = itens.filter((i) => i.qtd <= i.p.minimo);
   const lista = filtro === "repor" ? repor : itens;
+
+  if (produtos.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div><h1 className="text-3xl font-bold">Gôndola</h1><p className="text-muted-foreground">Nenhum produto cadastrado</p></div>
+        <div className="rounded-2xl border border-dashed bg-card py-20 text-center">
+          <Boxes className="mx-auto h-12 w-12 text-muted-foreground/30" />
+          <p className="mt-4 text-xl font-semibold">Gôndola vazia</p>
+          <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
+            Cadastre os produtos da loja para controlar o que está exposto e configurar quantidades mínimas.
+          </p>
+          <div className="mt-8 flex justify-center gap-3">
+            <Button asChild size="lg">
+              <Link to="/painel/produtos"><Package className="h-4 w-4" /> Cadastrar produtos</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

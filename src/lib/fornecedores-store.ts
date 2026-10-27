@@ -21,12 +21,9 @@ function mapDoBanco(row: Record<string, unknown>): Fornecedor {
   };
 }
 
-onLojaChange(async (lojaId) => {
-  if (!lojaId) {
-    estado = [];
-    notificar();
-    return;
-  }
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+async function carregarFornecedores(lojaId: string) {
   const { data, error } = await supabase
     .from("fornecedores")
     .select("id, nome, cnpj_cpf, contato, telefone, email, cidade, prazo")
@@ -35,6 +32,23 @@ onLojaChange(async (lojaId) => {
   if (error) { toast.error("Erro ao carregar fornecedores"); return; }
   estado = (data ?? []).map(mapDoBanco);
   notificar();
+}
+
+onLojaChange(async (lojaId) => {
+  if (realtimeChannel) {
+    await supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+  if (!lojaId) { estado = []; notificar(); return; }
+
+  await carregarFornecedores(lojaId);
+
+  realtimeChannel = supabase
+    .channel(`fornecedores-${lojaId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "fornecedores", filter: `loja_id=eq.${lojaId}` }, () => {
+      carregarFornecedores(lojaId);
+    })
+    .subscribe();
 });
 
 export function useFornecedores(): Fornecedor[] {

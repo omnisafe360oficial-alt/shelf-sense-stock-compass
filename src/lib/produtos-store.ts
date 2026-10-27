@@ -28,12 +28,9 @@ function mapDoBanco(row: Record<string, unknown>): Produto {
   };
 }
 
-onLojaChange(async (lojaId) => {
-  if (!lojaId) {
-    estado = [];
-    notificar();
-    return;
-  }
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+async function carregarProdutos(lojaId: string) {
   const { data, error } = await supabase
     .from("produtos")
     .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, validade_padrao_dias, local_deposito, local_gondola, lotes(qtd), gondola(qtd_gondola)")
@@ -42,6 +39,23 @@ onLojaChange(async (lojaId) => {
   if (error) { toast.error("Erro ao carregar produtos"); return; }
   estado = (data ?? []).map((row) => mapDoBanco(row as Record<string, unknown>));
   notificar();
+}
+
+onLojaChange(async (lojaId) => {
+  if (realtimeChannel) {
+    await supabase.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+  if (!lojaId) { estado = []; notificar(); return; }
+
+  await carregarProdutos(lojaId);
+
+  realtimeChannel = supabase
+    .channel(`produtos-${lojaId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "produtos", filter: `loja_id=eq.${lojaId}` }, () => {
+      carregarProdutos(lojaId);
+    })
+    .subscribe();
 });
 
 export function useProdutos(): Produto[] {

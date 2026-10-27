@@ -134,7 +134,12 @@ function Importar() {
             {linhas.map((l, i) => (
               <tr key={l.codigo} className="align-top">
                 <td className="px-4 py-3">
-                  <span className={cn("mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", l.existente ? "bg-secondary text-primary" : "bg-success/12 text-success")}>{l.existente ? "Já existe · soma estoque" : "Novo"}</span>
+                  <div className="mb-1 flex flex-wrap gap-1">
+                    <span className={cn("inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", l.existente ? "bg-secondary text-primary" : "bg-success/12 text-success")}>{l.existente ? "Já existe · soma estoque" : "Novo"}</span>
+                    {(!l.venda || !l.minimo) && (
+                      <span className="inline-block rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">Completar dados</span>
+                    )}
+                  </div>
                   <p className="font-semibold">{l.nome}</p><p className="font-mono text-xs text-muted-foreground">{l.codigo}</p>
                 </td>
                 <td className="px-4 py-3">
@@ -144,7 +149,7 @@ function Importar() {
                   <p className="mt-1 text-xs font-semibold text-primary">= {l.qtdCompra * l.porEmbalagem} un no depósito</p>
                 </td>
                 <td className="px-4 py-3 font-medium">{brl(l.custoUnit)}</td>
-                <td className="px-4 py-3"><Input className="h-8 w-24" value={l.venda} onChange={(e) => upd(i, "venda", e.target.value)} /></td>
+                <td className="px-4 py-3"><Input className={cn("h-8 w-24", !l.venda && "border-warning")} value={l.venda} onChange={(e) => upd(i, "venda", e.target.value)} /></td>
                 <td className="px-4 py-3"><Input className={cn("h-8 w-20", !l.minimo && "border-warning")} placeholder="?" value={l.minimo} onChange={(e) => upd(i, "minimo", e.target.value.replace(/\D/g, ""))} /></td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1.5">
