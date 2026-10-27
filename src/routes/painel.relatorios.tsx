@@ -5,7 +5,7 @@ import {
   TrendingDown, TrendingUp, Trophy,
 } from "lucide-react";
 import { brl } from "@/lib/mock-data";
-import { useEstoque, type Mov } from "@/lib/estoque-store";
+import { useEstoque, type Mov, type TipoPerda } from "@/lib/estoque-store";
 import { HOJE, diasSemVenda, vendasPorProduto, vendasPorDia, faturamentoMes } from "@/lib/computed";
 import { useProdutos, getProdutos } from "@/lib/produtos-store";
 import { useRecebeEstado } from "@/lib/recebe-store";
@@ -499,6 +499,25 @@ function Relatorios() {
                 ? "Nenhuma perda registrada no período."
                 : `${perdas.length} evento${perdas.length !== 1 ? "s" : ""} — total de ${brl(valorPerdas)} no período.`}
             </p>
+            {perdas.length > 0 && (() => {
+              const tipoLabel: Record<TipoPerda, string> = { vencido: "Vencido", avariado: "Avariado", furto: "Furto", outros: "Outros" };
+              const counts: Record<TipoPerda, number> = { vencido: 0, avariado: 0, furto: 0, outros: 0 };
+              for (const m of perdas) {
+                const match = m.destino?.match(/^Perda: (\w+)/);
+                const tipo = match?.[1];
+                if (tipo && tipo in counts) counts[tipo as TipoPerda]++;
+              }
+              return (
+                <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(Object.keys(tipoLabel) as TipoPerda[]).map((t) => (
+                    <div key={t} className="rounded-xl border bg-muted/30 px-3 py-2 text-center">
+                      <p className="text-xs text-muted-foreground">{tipoLabel[t]}</p>
+                      <p className="font-display text-xl font-bold">{counts[t]}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             {perdas.length === 0 ? (
               <div className="rounded-xl bg-success/5 px-4 py-6 text-center">
                 <p className="font-semibold text-success">Nenhuma perda no período.</p>

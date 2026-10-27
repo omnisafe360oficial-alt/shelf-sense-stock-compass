@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Check, CheckCircle, ChevronRight, Edit3, Package,
+  AlertTriangle, ArrowLeft, Check, CheckCircle, ChevronRight, Edit3, FileUp, Package,
   Plus, Save, Send, Trash2, X, XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,15 @@ import { useFornecedores } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 import type { PedidoStatus, ItemPedido } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
+import { lerNfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
+
+type ConcItem = {
+  item: ItemPedido;
+  nomeProd: string;
+  codigoProd: string;
+  qtdNf: number | null;
+};
 
 export const Route = createFileRoute("/painel/pedidos/$id")({
   head: () => ({
@@ -105,6 +113,11 @@ function DetalhesPedido() {
   const [qtds, setQtds] = useState<Record<string, number>>({});
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState<"cancelar" | "excluir" | null>(null);
+  const [showXml, setShowXml] = useState(false);
+  const [xmlDrag, setXmlDrag] = useState(false);
+  const [conciliacao, setConciliacao] = useState<ConcItem[] | null>(null);
+  const [nfNumero, setNfNumero] = useState("");
+  const xmlInputRef = useRef<HTMLInputElement>(null);
 
   const [eFornecedorId, setEFornecedorId] = useState("");
   const [eFornecedorNome, setEFornecedorNome] = useState("");
@@ -154,6 +167,41 @@ function DetalhesPedido() {
     editarPedido(id, { fornecedorId: eFornecedorId || null, fornecedorNome: eFornecedorNome, dataPrevista: eDataPrevista, observacao: eObservacao, itens: eItens });
     toast.success("Pedido atualizado!");
     setEditando(false);
+  };
+
+  const carregarXml = (xml: string) => {
+    try {
+      const n = lerNfe(xml);
+      setNfNumero(n.numero);
+      const conc: ConcItem[] = pedido.itens.map((item) => {
+        const prod = produtos.find((p) => p.id === item.produtoId);
+        const nfItem = n.itens.find((ni) => ni.codigo === prod?.codigo);
+        return {
+          item,
+          nomeProd: nomeProduto(item.produtoId),
+          codigoProd: prod?.codigo ?? "—",
+          qtdNf: nfItem ? nfItem.qtdCompra : null,
+        };
+      });
+      setConciliacao(conc);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const confirmarXml = () => {
+    if (!conciliacao) return;
+    for (const c of conciliacao) {
+      receberItemPedido(pedido.id, c.item.id, c.qtdNf ?? 0);
+    }
+    const nDiv = conciliacao.filter((c) => c.qtdNf === null || c.qtdNf !== c.item.qtdSolicitada).length;
+    if (nDiv > 0) {
+      toast.warning(`Recebimento registrado com ${nDiv} divergência${nDiv !== 1 ? "s" : ""} — pedido parcial`);
+    } else {
+      toast.success(`NF nº ${nfNumero} conciliada — pedido recebido`);
+    }
+    setConciliacao(null);
+    setShowXml(false);
   };
 
   const handleReceber = () => {
@@ -316,9 +364,14 @@ function DetalhesPedido() {
           </Button>
         )}
         {podaReceber && (
-          <Button onClick={handleReceber}>
-            <Package className="h-4 w-4" /> Salvar recebimento
-          </Button>
+          <>
+            <Button onClick={handleReceber}>
+              <Package className="h-4 w-4" /> Salvar recebimento
+            </Button>
+            <Button variant="outline" onClick={() => { setShowXml((v) => !v); setConciliacao(null); }}>
+              <FileUp className="h-4 w-4" /> Receber com XML
+            </Button>
+          </>
         )}
         {!["recebido", "cancelado"].includes(pedido.status) && (
           <Button variant="outline" className="text-destructive hover:bg-destructive/10" onClick={() => setConfirmando("cancelar")}>
@@ -350,6 +403,92 @@ function DetalhesPedido() {
             </Button>
             <Button variant="ghost" onClick={() => setConfirmando(null)}>Voltar</Button>
           </div>
+        </div>
+      )}
+
+      {/* Receber com XML */}
+      {podaReceber && showXml && (
+        <div className="rounded-2xl border bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Conciliar com XML da nota fiscal</h3>
+            <button onClick={() => { setShowXml(false); setConciliacao(null); }} className="text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {!conciliacao ? (
+            <div
+              onDragOver={(e) => { e.preventDefault(); setXmlDrag(true); }}
+              onDragLeave={() => setXmlDrag(false)}
+              onDrop={(e) => { e.preventDefault(); setXmlDrag(false); const f = e.dataTransfer.files[0]; f?.text().then(carregarXml); }}
+              onClick={() => xmlInputRef.current?.click()}
+              className={cn("flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed p-10 text-center transition", xmlDrag ? "border-primary bg-secondary/50" : "hover:border-primary/50")}
+            >
+              <FileUp className="h-8 w-8 text-muted-foreground" />
+              <p className="mt-2 text-sm font-medium">Arraste o XML da NF-e aqui</p>
+              <p className="text-xs text-muted-foreground">ou clique para selecionar</p>
+              <input ref={xmlInputRef} type="file" accept=".xml,text/xml" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; f?.text().then(carregarXml); }} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">NF nº <strong>{nfNumero}</strong> — {conciliacao.length} item{conciliacao.length !== 1 ? "s" : ""} do pedido</p>
+              <div className="overflow-x-auto rounded-xl border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left">Produto</th>
+                      <th className="px-4 py-2.5 text-right">Pedido</th>
+                      <th className="px-4 py-2.5 text-right">NF</th>
+                      <th className="px-4 py-2.5 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {conciliacao.map((c) => {
+                      const diverge = c.qtdNf === null || c.qtdNf !== c.item.qtdSolicitada;
+                      return (
+                        <tr key={c.item.id} className={diverge ? "bg-warning/5" : ""}>
+                          <td className="px-4 py-3">
+                            <p className="font-medium">{c.nomeProd}</p>
+                            <p className="font-mono text-xs text-muted-foreground">{c.codigoProd}</p>
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums">{c.item.qtdSolicitada}</td>
+                          <td className={cn("px-4 py-3 text-right tabular-nums font-semibold",
+                            c.qtdNf === null ? "text-destructive" : diverge ? "text-warning" : "text-success")}>
+                            {c.qtdNf ?? "Ausente"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {diverge ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning">
+                                <AlertTriangle className="h-3 w-3" /> Divergência
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-success/12 px-2 py-0.5 text-xs font-semibold text-success">
+                                <Check className="h-3 w-3" /> OK
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {conciliacao.some((c) => c.qtdNf === null || c.qtdNf !== c.item.qtdSolicitada) && (
+                <div className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  Divergências detectadas — o pedido ficará como parcial.
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={confirmarXml}>
+                  <Package className="h-4 w-4" /> Confirmar recebimento
+                </Button>
+                <Button variant="outline" onClick={() => setConciliacao(null)}>Trocar XML</Button>
+                <Button variant="ghost" onClick={() => { setConciliacao(null); setShowXml(false); }}>Cancelar</Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

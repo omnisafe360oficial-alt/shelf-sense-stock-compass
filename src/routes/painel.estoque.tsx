@@ -4,7 +4,7 @@ import { ArrowRightLeft, BellRing, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TransferirDialog } from "@/components/estoque/TransferirDialog";
-import { useEstoque, diasAte, faixaValidade, type Faixa } from "@/lib/estoque-store";
+import { useEstoque, diasAte, exibirValidade, faixaValidade, type Faixa } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +92,7 @@ function Estoque() {
     const todos = produtos.map((p) => ({
       p,
       qtd: s.gondola[p.id] ?? 0,
-      max: Math.max(p.minimo * 3, 1),
+      max: p.maximo && p.maximo > 0 ? p.maximo : Math.max(p.minimo * 3, 1),
     }));
     return filtroGondola === "repor" ? todos.filter((i) => i.qtd <= i.p.minimo) : todos;
   }, [produtos, s.gondola, filtroGondola]);
@@ -428,7 +428,7 @@ function Estoque() {
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-muted-foreground">Vence</p>
-                        <p className="font-semibold">{fmtData(l.validade)}</p>
+                        <p className="font-semibold">{exibirValidade(l.validade)}</p>
                       </div>
                     </div>
                     <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", FAIXAS[faixa as Exclude<Faixa, "ok">].cor)}>

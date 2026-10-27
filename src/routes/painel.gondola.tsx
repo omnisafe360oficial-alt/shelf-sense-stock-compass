@@ -26,7 +26,7 @@ function Gondola() {
   const produtos = useProdutos();
   const [filtro, setFiltro] = useState<"todos" | "repor">("todos");
   const [transf, setTransf] = useState<string | null>(null);
-  const itens = produtos.map((p) => ({ p, qtd: s.gondola[p.id] ?? 0, max: p.minimo * 3 }));
+  const itens = produtos.map((p) => ({ p, qtd: s.gondola[p.id] ?? 0, max: p.maximo && p.maximo > 0 ? p.maximo : Math.max(p.minimo * 3, 1) }));
   const repor = itens.filter((i) => i.qtd <= i.p.minimo);
   const lista = filtro === "repor" ? repor : itens;
 

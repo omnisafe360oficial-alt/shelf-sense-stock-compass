@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { brl, categorias, type LocalDeposito, type LocalGondola } from "@/lib/mock-data";
 import { useProdutos, getProdutos, editarProduto, excluirProduto } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
-import { useEstoque } from "@/lib/estoque-store";
+import { useEstoque, ajustarEstoque } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
-import { diasAte, faixaValidade } from "@/lib/estoque-store";
+import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
 
 export const Route = createFileRoute("/painel/produtos/$id")({
   loader: ({ params }) => {
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 });
 
 type FormState = {
-  nome: string; categoria: string; fornecedor: string; preco: string; minimo: string;
+  nome: string; categoria: string; fornecedor: string; preco: string; minimo: string; maximo: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
@@ -55,8 +55,11 @@ function ProdutoDetalhe() {
 
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+  const [ajustando, setAjustando] = useState<string | null>(null);
+  const [ajusteVal, setAjusteVal] = useState("");
+  const [ajusteMotivo, setAjusteMotivo] = useState("");
   const [f, setF] = useState<FormState>({
-    nome: "", categoria: "", fornecedor: "", preco: "", minimo: "",
+    nome: "", categoria: "", fornecedor: "", preco: "", minimo: "", maximo: "",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
@@ -86,15 +89,16 @@ function ProdutoDetalhe() {
     baixo: "bg-warning/15 text-warning",
     sem:   "bg-destructive/10 text-destructive",
   };
-  const pctGond = produto.minimo > 0 ? Math.min(100, (gond / (produto.minimo * 2)) * 100) : gond > 0 ? 100 : 0;
-  const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : "bg-success";
+  const capacidade = produto.maximo && produto.maximo > 0 ? produto.maximo : produto.minimo > 0 ? produto.minimo * 2 : 0;
+  const pctGond = capacidade > 0 ? Math.min(100, (gond / capacidade) * 100) : gond > 0 ? 100 : 0;
+  const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : produto.maximo && gond >= produto.maximo ? "bg-primary" : "bg-success";
 
   const abrirEdicao = () => {
     const ld = produto.localDeposito;
     const lg = produto.localGondola;
     setF({
       nome: produto.nome, categoria: produto.categoria, fornecedor: produto.fornecedor,
-      preco: String(produto.preco), minimo: String(produto.minimo),
+      preco: String(produto.preco), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
       depRua: ld?.rua ?? "", depPrateleira: ld?.prateleira ?? "", depNivel: ld ? String(ld.nivel) : "",
       gondCorredor: lg?.corredor ?? "", gondGondola: lg?.gondola ?? "",
       gondNivel: lg?.nivel ?? "", gondPosicao: lg ? String(lg.posicao) : "",
@@ -118,11 +122,27 @@ function ProdutoDetalhe() {
       fornecedor: f.fornecedor,
       preco: Number(f.preco.replace(",", ".")) || produto.preco,
       minimo: Number(f.minimo) || produto.minimo,
+      maximo: Number(f.maximo) || 0,
       localDeposito,
       localGondola,
     });
     setEditando(false);
     toast.success("Produto atualizado!");
+  };
+
+  const abrirAjuste = (loteId: string, qtdAtual: number) => {
+    setAjustando(loteId);
+    setAjusteVal(String(qtdAtual));
+    setAjusteMotivo("");
+  };
+
+  const salvarAjuste = (loteId: string) => {
+    const novo = Number(ajusteVal);
+    if (isNaN(novo) || novo < 0) { toast.error("Saldo inválido."); return; }
+    if (!ajusteMotivo.trim()) { toast.error("Informe o motivo do ajuste."); return; }
+    ajustarEstoque(loteId, novo, ajusteMotivo.trim());
+    toast.success("Estoque ajustado.");
+    setAjustando(null);
   };
 
   const confirmarExclusao = () => {
@@ -188,7 +208,7 @@ function ProdutoDetalhe() {
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div className={cn("h-full rounded-full transition-all", barCor)} style={{ width: `${pctGond}%` }} />
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">mínimo: {produto.minimo} un</p>
+          <p className="mt-1 text-xs text-muted-foreground">mín: {produto.minimo}{produto.maximo ? ` · máx: ${produto.maximo}` : ""} un</p>
         </div>
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Total em estoque</p>
@@ -218,6 +238,10 @@ function ProdutoDetalhe() {
             <div className="space-y-2">
               <Label>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
               <Input inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Máximo na gôndola <span className="font-normal text-muted-foreground text-xs">— capacidade total da gôndola (0 = não definido)</span></Label>
+              <Input inputMode="numeric" value={f.maximo} onChange={(e) => setF({ ...f, maximo: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>
@@ -339,25 +363,69 @@ function ProdutoDetalhe() {
                 <th className="px-5 py-3">Lote</th>
                 <th className="px-5 py-3">Validade</th>
                 <th className="px-5 py-3 text-right">Qtd</th>
+                <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {lotesDoProduto.length === 0 ? (
-                <tr><td colSpan={3} className="p-6 text-center text-muted-foreground">Nenhum lote no depósito.</td></tr>
+                <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhum lote no depósito.</td></tr>
               ) : (
                 lotesDoProduto.map((l) => {
                   const dias = diasAte(l.validade);
                   const faixa = faixaValidade(dias);
                   const corVal = faixa === "vencido" ? "text-destructive" : faixa === "critico" ? "text-destructive" : faixa === "atencao" ? "text-warning" : "text-foreground";
                   return (
-                    <tr key={l.id}>
-                      <td className="px-5 py-3 font-mono">{l.lote}</td>
-                      <td className={cn("px-5 py-3 font-medium", corVal)}>
-                        {l.validade.split("-").reverse().join("/")}
-                        {dias <= 30 && <span className="ml-2 text-xs opacity-70">({dias <= 0 ? "vencido" : `${dias}d`})</span>}
-                      </td>
-                      <td className="px-5 py-3 text-right font-medium">{l.qtd} un</td>
-                    </tr>
+                    <>
+                      <tr key={l.id}>
+                        <td className="px-5 py-3 font-mono">{l.lote}</td>
+                        <td className={cn("px-5 py-3 font-medium", corVal)}>
+                          {exibirValidade(l.validade)}
+                          {l.validade < "2099-01-01" && dias <= 30 && <span className="ml-2 text-xs opacity-70">({dias <= 0 ? "vencido" : `${dias}d`})</span>}
+                        </td>
+                        <td className="px-5 py-3 text-right font-medium">{l.qtd} un</td>
+                        <td className="px-5 py-3 text-right">
+                          {ajustando === l.id ? (
+                            <Button variant="ghost" size="sm" onClick={() => setAjustando(null)}>
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => abrirAjuste(l.id, l.qtd)}>
+                              Ajustar
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                      {ajustando === l.id && (
+                        <tr key={`${l.id}-ajuste`} className="bg-muted/30">
+                          <td colSpan={4} className="px-5 py-4">
+                            <div className="flex flex-wrap items-end gap-3">
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Novo saldo (un)</label>
+                                <Input
+                                  type="number" min={0} className="h-8 w-24"
+                                  value={ajusteVal}
+                                  onChange={(e) => setAjusteVal(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex-1 space-y-1 min-w-40">
+                                <label className="text-xs font-medium text-muted-foreground">Motivo</label>
+                                <Input
+                                  className="h-8" placeholder="Ex: Contagem física, quebra…"
+                                  value={ajusteMotivo}
+                                  onChange={(e) => setAjusteMotivo(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => salvarAjuste(l.id)}>
+                                  <Save className="h-3.5 w-3.5" /> Salvar
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setAjustando(null)}>Cancelar</Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })
               )}

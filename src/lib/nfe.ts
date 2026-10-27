@@ -11,6 +11,17 @@ export type Nfe = { numero: string; emissao: string; fornecedor: { nome: string;
 
 const txt = (el: Element | null | undefined, tag: string) => el?.getElementsByTagName(tag)[0]?.textContent?.trim() ?? "";
 
+/** SEFAZ envia dVal como AAAA-MM; normaliza para AAAA-MM-DD (último dia do mês). */
+function normalizarDVal(dVal: string): string {
+  if (!dVal) return dVal;
+  if (dVal.length === 7) {
+    const [y, m] = dVal.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    return `${dVal}-${String(lastDay).padStart(2, "0")}`;
+  }
+  return dVal.slice(0, 10);
+}
+
 /** Lê o XML de uma NF-e (padrão SEFAZ) e extrai fornecedor e itens. */
 export function lerNfe(xml: string): Nfe {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
@@ -30,7 +41,7 @@ export function lerNfe(xml: string): Nfe {
       qtdCompra: Number(txt(prod, "qCom")) || 0,
       custoUnitCompra: Number(txt(prod, "vUnCom")) || 0,
       lote: txt(rastro, "nLote") || undefined,
-      validade: txt(rastro, "dVal") || undefined,
+      validade: normalizarDVal(txt(rastro, "dVal")) || undefined,
     };
   });
   return {
@@ -41,11 +52,19 @@ export function lerNfe(xml: string): Nfe {
   };
 }
 
-/** Tenta descobrir quantas unidades vêm por embalagem pelo nome (ex.: "CX 12UN", "C/24", "PACK 6"). */
+/** Tenta descobrir quantas unidades vêm por embalagem pelo nome (ex.: "CX 12UN", "C/24", "PACK 6", "FARDO 12", "6X1"). */
 export function sugerirConversao(nome: string, unidade: string): number {
   if (/^(UN|UND|UNID|KG|L|LT)$/i.test(unidade)) return 1;
-  const m = nome.match(/(?:\bC\/|\bCX\s*|\bPACK\s*|\bFD\s*|\bPCT\s*)(\d{1,3})(?!\s*(?:G|KG|ML|L)\b)/i) ?? nome.match(/(\d{1,3})\s*UN\b/i);
-  return m ? Number(m[1]) : 1;
+  // CX 12, PACK 6, FD 9, FD9, PCT 6, C/24, BD 20, BANDEJA 12, FARDO 12
+  const m1 = nome.match(/(?:\bC\/|\bCX\s*|\bPACK\s*|\bFD\s*|\bPCT\s*|\bBD\s*|\bBANDEJA\s*|\bFARDO\s*)(\d{1,3})(?!\s*(?:G|KG|ML|L)\b)/i);
+  if (m1) return Number(m1[1]);
+  // 12UN, 24UN
+  const m2 = nome.match(/(\d{1,3})\s*UN\b/i);
+  if (m2) return Number(m2[1]);
+  // 6X1, 12X2, 24X330ML — formato NxN (primeiro número = qtd por embalagem)
+  const m3 = nome.match(/\b(\d{1,3})[Xx]\d/);
+  if (m3) return Number(m3[1]);
+  return 1;
 }
 
 export const XML_EXEMPLO = `<?xml version="1.0" encoding="UTF-8"?>
@@ -57,4 +76,6 @@ export const XML_EXEMPLO = `<?xml version="1.0" encoding="UTF-8"?>
 <det nItem="3"><prod><cProd>DOV90</cProd><cEAN>7891037010904</cEAN><xProd>SABONETE DOVE 90G CX 12UN</xProd><uCom>CX</uCom><qCom>10</qCom><vUnCom>38.40</vUnCom></prod><rastro><nLote>DV1120</nLote><dVal>2028-07-01</dVal></rastro></det>
 <det nItem="4"><prod><cProd>REX150</cProd><cEAN>7891037150150</cEAN><xProd>DESODORANTE REXONA AERO 150ML PACK 6</xProd><uCom>PCT</uCom><qCom>12</qCom><vUnCom>69.00</vUnCom></prod></det>
 <det nItem="5"><prod><cProd>OMO1K</cProd><cEAN>7891150064003</cEAN><xProd>LAVA ROUPAS OMO PO 1,6KG FD 9</xProd><uCom>FD</uCom><qCom>5</qCom><vUnCom>171.00</vUnCom></prod><rastro><nLote>OM5530</nLote><dVal>2028-12-20</dVal></rastro></det>
+<det nItem="6"><prod><cProd>ANT350</cProd><cEAN>7891991010551</cEAN><xProd>CERVEJA ANTARTICA LATA 350ML FARDO 12</xProd><uCom>FD</uCom><qCom>8</qCom><vUnCom>36.00</vUnCom></prod></det>
+<det nItem="7"><prod><cProd>AGU500</cProd><cEAN>7896024200013</cEAN><xProd>AGUA MINERAL CRYSTAL 500ML 6X1</xProd><uCom>PCT</uCom><qCom>20</qCom><vUnCom>12.00</vUnCom></prod></det>
 </infNFe></NFe></nfeProc>`;

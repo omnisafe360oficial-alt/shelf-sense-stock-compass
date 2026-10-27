@@ -88,6 +88,7 @@ export const lotesFefo = (s: Estado, produtoId: string) =>
 export const diasAte = (iso: string, hoje = new Date()) => Math.round((new Date(iso).getTime() - hoje.getTime()) / 86400000);
 
 export type Faixa = "vencido" | "7" | "15" | "30" | "ok";
+export type TipoPerda = "vencido" | "avariado" | "furto" | "outros";
 export function faixaValidade(dias: number): Faixa {
   if (dias < 0) return "vencido";
   if (dias <= 7) return "7";
@@ -97,6 +98,12 @@ export function faixaValidade(dias: number): Faixa {
 }
 
 export const estadoAtual = () => estado;
+
+/** Exibe a data de validade formatada. Lotes "sem validade" (sentinela ≥ 2099) mostram "Sem validade". */
+export function exibirValidade(iso: string): string {
+  if (iso >= "2099-01-01") return "Sem validade";
+  return iso.split("-").reverse().join("/");
+}
 
 // ─── Persistência assíncrona ──────────────────────────────────────────────────
 
@@ -170,10 +177,11 @@ export function executarTransferencia(produtoId: string, qtd: number) {
 
 // ─── Perda ────────────────────────────────────────────────────────────────────
 
-export function registrarPerda(loteId: string, motivo: string) {
+export function registrarPerda(loteId: string, tipo: TipoPerda, obs?: string) {
   const l = estado.lotes.find((x) => x.id === loteId);
   if (!l || l.qtd <= 0) return;
-  const mov: Mov = { id: crypto.randomUUID(), data: new Date().toISOString().slice(0, 16), tipo: "ajuste", produtoId: l.produtoId, lote: l.lote, qtd: -l.qtd, origem: "Depósito", destino: `Perda (${motivo})`, usuario: "Sistema" };
+  const destino = `Perda: ${tipo}${obs ? ` – ${obs}` : ""}`;
+  const mov: Mov = { id: crypto.randomUUID(), data: new Date().toISOString().slice(0, 16), tipo: "ajuste", produtoId: l.produtoId, lote: l.lote, qtd: -l.qtd, origem: "Depósito", destino, usuario: "Sistema" };
   const novoEstado = { ...estado, lotes: estado.lotes.map((x) => (x.id === loteId ? { ...x, qtd: 0 } : x)), movs: [mov, ...estado.movs] };
   emitir(novoEstado);
   const lojaId = getLojaId();
@@ -216,9 +224,9 @@ export function fecharVenda(itens: ItemVenda[], caixa: string, minimos: Record<s
 
 // ─── Entrada ─────────────────────────────────────────────────────────────────
 
-export function registrarEntrada(produtoId: string, qtd: number, lote: string, validade: string, origem: string, usuario: string) {
+export function registrarEntrada(produtoId: string, qtd: number, lote: string, validade: string, origem: string, usuario: string, local = "Depósito") {
   if (qtd <= 0) return;
-  const novoLote: Lote = { id: crypto.randomUUID(), produtoId, lote, validade, qtd, local: "Doca de recebimento" };
+  const novoLote: Lote = { id: crypto.randomUUID(), produtoId, lote, validade, qtd, local };
   const mov: Mov = { id: crypto.randomUUID(), data: new Date().toISOString().slice(0, 16), tipo: "entrada", produtoId, lote, qtd, origem, destino: "Depósito", usuario };
   emitir({ ...estado, lotes: [...estado.lotes, novoLote], movs: [mov, ...estado.movs] });
   const lojaId = getLojaId();
@@ -249,4 +257,34 @@ export function inicializarProduto(produtoId: string) {
   emitir({ ...estado, gondola: { ...estado.gondola, [produtoId]: 0 } });
   const lojaId = getLojaId();
   if (lojaId) persistirGondola(lojaId, produtoId, 0);
+}
+
+// ─── Ajuste manual de estoque por lote ────────────────────────────────────────
+
+export function ajustarEstoque(loteId: string, novoSaldo: number, motivo: string, usuario = "Sistema") {
+  const l = estado.lotes.find((x) => x.id === loteId);
+  if (!l) return;
+  const delta = novoSaldo - l.qtd;
+  const mov: Mov = {
+    id: crypto.randomUUID(),
+    data: new Date().toISOString().slice(0, 16),
+    tipo: "ajuste",
+    produtoId: l.produtoId,
+    lote: l.lote,
+    qtd: delta,
+    origem: "Ajuste manual",
+    destino: motivo || "Sem motivo",
+    usuario,
+  };
+  const novoEstado = {
+    ...estado,
+    lotes: estado.lotes.map((x) => x.id === loteId ? { ...x, qtd: novoSaldo } : x),
+    movs: [mov, ...estado.movs],
+  };
+  emitir(novoEstado);
+  const lojaId = getLojaId();
+  if (lojaId) {
+    persistirLote(lojaId, { ...l, qtd: novoSaldo });
+    persistirMov(lojaId, mov);
+  }
 }
