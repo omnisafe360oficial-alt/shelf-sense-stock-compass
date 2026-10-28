@@ -76,7 +76,7 @@ function NovoProduto() {
     f.novoFornecedor ? f.fNome.trim().length > 1 : !!f.fornecedorId,
     !!f.unidade && num(f.porEmbalagem) > 0,
     custo > 0 && venda > 0,
-    f.qtdDeposito !== "" && (num(f.qtdDeposito) === 0 || (!!f.lote && !!f.validade)),
+    f.qtdDeposito !== "",
     f.qtdGondola !== "" && num(f.minimo) > 0,
     true,
   ][step];
@@ -101,6 +101,7 @@ function NovoProduto() {
       categoria: f.categoria,
       fornecedor: fornecedorNome ?? "",
       preco: venda,
+      custoUltimaCompra: custo > 0 ? custo : undefined,
       deposito: 0,
       gondola: 0,
       minimo: num(f.minimo),
@@ -113,15 +114,17 @@ function NovoProduto() {
 
     inicializarProduto(id);
 
-    if (total > 0 && f.lote && f.validade) {
-      registrarEntrada(id, total, f.lote, f.validade, "Cadastro inicial", auth.nomeProprietario ?? "Sistema");
+    if (total > 0) {
+      const lote = f.lote || "LOTE-INICIAL";
+      const validade = f.validade || "2099-12-31";
+      registrarEntrada(id, total, lote, validade, "Cadastro inicial", auth.nomeProprietario ?? "Sistema");
       if (qtdGond > 0) {
         try { executarTransferencia(id, Math.min(qtdGond, total)); } catch { /* depósito insuficiente */ }
       }
     }
 
     toast.success(`"${f.nome}" cadastrado com sucesso!`);
-    navigate({ to: "/painel/produtos" });
+    navigate({ to: "/painel/produtos/$id", params: { id } });
   };
 
   return (
@@ -219,8 +222,8 @@ function NovoProduto() {
 
           {step === 4 && (
             <div className="grid gap-5 sm:grid-cols-2">
-              <Campo label="Lote"><Input value={f.lote} onChange={set("lote")} placeholder="Ex.: L2310A" className="font-mono" /></Campo>
-              <Campo label="Data de validade" dica="Você será avisado antes de vencer."><Input type="date" value={f.validade} onChange={set("validade")} /></Campo>
+              <Campo label="Lote" dica="Opcional para produtos sem vencimento."><Input value={f.lote} onChange={set("lote")} placeholder="Ex.: L2310A" className="font-mono" /></Campo>
+              <Campo label="Data de validade" dica="Deixe em branco para produtos sem vencimento."><Input type="date" value={f.validade} onChange={set("validade")} /></Campo>
               <Campo label={`Quantidade no depósito (${f.unidade})`}><Input inputMode="numeric" value={f.qtdDeposito} onChange={set("qtdDeposito")} placeholder="0" /></Campo>
               <div className="sm:col-span-2">
                 <p className="mb-3 text-sm font-semibold text-muted-foreground">Localização no depósito <span className="font-normal">(opcional)</span></p>
