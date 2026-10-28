@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { AuthShell, Divider, GoogleButton } from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { Logo } from "@/components/brand/Logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,6 +47,18 @@ function Login() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) toast.error(error.message);
+  }
+
+  if (auth.loading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4">
+        <Logo />
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Verificando sua conta…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
