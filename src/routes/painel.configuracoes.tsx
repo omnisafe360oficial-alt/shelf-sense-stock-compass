@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { toast } from "sonner";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { getConfig, salvarConfig, type Config } from "@/lib/config-store";
+import { useProdutos, excluirTodosProdutos } from "@/lib/produtos-store";
+import { useAuth } from "@/lib/auth";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/configuracoes")({
@@ -56,6 +59,17 @@ function Bloco({ t, d, children }: { t: string; d: string; children: React.React
 function Configuracoes() {
   const [f, setF] = useState<Config>(getConfig);
   const onSet: SetF = (k, v) => setF((c) => ({ ...c, [k]: v }));
+  const produtos = useProdutos();
+  const auth = useAuth();
+  const [confirmaExclusao, setConfirmaExclusao] = useState("");
+  const [excluindo, setExcluindo] = useState(false);
+
+  async function handleExcluirTodos() {
+    setExcluindo(true);
+    await excluirTodosProdutos(auth.nomeProprietario ?? "Gerente");
+    setExcluindo(false);
+    setConfirmaExclusao("");
+  }
 
   return (
     <div className="space-y-6">
@@ -136,6 +150,46 @@ function Configuracoes() {
           </div>
         </div>
       </Bloco>
+      {/* Zona de perigo */}
+      <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <h2 className="font-semibold text-destructive">Zona de perigo</h2>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">Excluir todos os produtos</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Remove permanentemente todos os {produtos.length} produto{produtos.length !== 1 ? "s" : ""} desta loja.
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end shrink-0">
+            <Label className="text-xs text-muted-foreground">
+              Digite <span className="font-mono font-bold text-destructive">EXCLUIR</span> para confirmar
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={confirmaExclusao}
+                onChange={(e) => setConfirmaExclusao(e.target.value)}
+                placeholder="EXCLUIR"
+                className="h-9 w-32 font-mono text-sm border-destructive/40 focus-visible:ring-destructive"
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-9"
+                disabled={confirmaExclusao !== "EXCLUIR" || excluindo || produtos.length === 0}
+                onClick={handleExcluirTodos}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                {excluindo ? "Excluindo…" : "Excluir tudo"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <Button onClick={() => { salvarConfig(f); toast.success("Configurações salvas"); }}>Salvar alterações</Button>
       </div>

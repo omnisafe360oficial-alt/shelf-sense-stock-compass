@@ -153,3 +153,19 @@ export function excluirProduto(id: string): void {
     gravarAudit({ acao: "excluir", modulo: "Produtos", descricao: `Produto "${nomeProd}" excluído.`, usuarioNome: "Sistema", produtoId: id, produtoNome: nomeProd });
   }
 }
+
+export async function excluirTodosProdutos(usuarioNome: string): Promise<void> {
+  const total = estado.length;
+  if (total === 0) { toast("Nenhum produto para excluir."); return; }
+  const lojaId = getLojaId();
+  if (!lojaId) { toast.error("Loja não identificada."); return; }
+  estado = [];
+  notificar();
+  const { error } = await supabase.from("produtos").delete().eq("loja_id", lojaId);
+  if (error) {
+    toast.error("Erro ao excluir produtos: " + error.message);
+  } else {
+    gravarAudit({ acao: "excluir", modulo: "Produtos", descricao: `Todos os ${total} produtos da loja excluídos.`, usuarioNome });
+    toast.success(`${total} produto${total !== 1 ? "s" : ""} excluído${total !== 1 ? "s" : ""}.`);
+  }
+}
