@@ -13,6 +13,7 @@ import { brl, categorias, UNIDADES, type LocalDeposito, type LocalGondola } from
 import { useProdutos, getProdutos, editarProduto, excluirProduto, cadastrarVariante } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { useEstoque, ajustarEstoque, inicializarProduto } from "@/lib/estoque-store";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -69,6 +70,7 @@ function ProdutoDetalhe() {
 
   const fornecedores = useFornecedores();
   const est = useEstoque();
+  const auth = useAuth();
 
   const fid = useId();
   const [editando, setEditando] = useState(false);
@@ -230,7 +232,7 @@ function ProdutoDetalhe() {
     const novo = Number(ajusteVal);
     if (isNaN(novo) || novo < 0) { toast.error("Saldo inválido."); return; }
     if (!ajusteMotivo.trim()) { toast.error("Informe o motivo do ajuste."); return; }
-    ajustarEstoque(loteId, novo, ajusteMotivo.trim());
+    ajustarEstoque(loteId, novo, ajusteMotivo.trim(), auth.nomeProprietario ?? "Gerente");
     toast.success("Estoque ajustado.");
     setAjustando(null);
   };

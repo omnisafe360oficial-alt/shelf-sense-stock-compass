@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import {
   AlertTriangle, Bell, CheckCircle2, Clock, Download,
-  Package, PackageX, ShoppingCart, Timer,
+  Package, PackageX, ShoppingCart, Timer, XCircle,
 } from "lucide-react";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
@@ -60,6 +60,8 @@ function Alertas() {
     });
     const vendasMap = vendasPorProduto(est.movs);
     const parados = produtos.filter((p) => diasSemVenda(vendasMap[p.id]?.ultimaData ?? null) >= DIAS_PARADO);
+    const nuncaVendeu = parados.filter((p) => !vendasMap[p.id]);
+    const paradoHaDias = parados.filter((p) => vendasMap[p.id]);
 
     return [
       {
@@ -119,14 +121,25 @@ function Alertas() {
         }),
       },
       {
+        id: "nunca-vendeu",
+        titulo: "Nunca vendidos (sem registro de venda)",
+        cor: "text-muted-foreground",
+        icone: <XCircle className="h-4 w-4" />,
+        link: "/painel/relatorios",
+        itens: nuncaVendeu.map((p) => {
+          const depTotal = est.lotes.filter((l) => l.produtoId === p.id).reduce((s, l) => s + l.qtd, 0);
+          return { label: p.nome, detalhe: `Estoque: ${(est.gondola[p.id] ?? 0) + depTotal} un. · nunca vendido` };
+        }),
+      },
+      {
         id: "parado",
-        titulo: `Produtos sem venda há +${DIAS_PARADO}d`,
+        titulo: `Parado há +${DIAS_PARADO}d (tinha vendas)`,
         cor: "text-muted-foreground",
         icone: <Clock className="h-4 w-4" />,
         link: "/painel/relatorios",
-        itens: parados.map((p) => {
-          const dsv = diasSemVenda(vendasPorProduto(est.movs)[p.id]?.ultimaData ?? null);
-          return { label: p.nome, detalhe: dsv >= 999 ? "Sem vendas registradas" : `${dsv}d sem venda` };
+        itens: paradoHaDias.map((p) => {
+          const dsv = diasSemVenda(vendasMap[p.id]?.ultimaData ?? null);
+          return { label: p.nome, detalhe: `${dsv}d sem venda` };
         }),
       },
     ].filter((c) => c.itens.length > 0);

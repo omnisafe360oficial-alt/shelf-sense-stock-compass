@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight, Eye, Package, ShieldAlert, TrendingDown } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Eye, Package, ShieldAlert, TrendingDown, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
-import { calcularAlertas, type AlertaAntifurto } from "@/lib/antifurto-store";
+import { calcularAlertas, calcularAlertasPorFuncionario, type AlertaAntifurto, type AlertaFuncionario } from "@/lib/antifurto-store";
 import { gravarAudit } from "@/lib/audit-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
@@ -104,6 +104,65 @@ function RowAlerta({ alerta, expandido, onToggle }: { alerta: AlertaAntifurto; e
   );
 }
 
+const COR_SEV_FUNC = {
+  alto: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  médio: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  baixo: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+} as const;
+
+function RowFuncionario({ alerta, expandido, onToggle }: { alerta: AlertaFuncionario; expandido: boolean; onToggle: () => void }) {
+  return (
+    <>
+      <tr
+        className="border-b last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+        onClick={onToggle}
+      >
+        <td className="py-3 px-4">
+          <div className="flex items-center gap-2">
+            {expandido ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <p className="font-medium text-sm">{alerta.funcionario}</p>
+            </div>
+          </div>
+        </td>
+        <td className="py-3 px-4 text-center">
+          <span className="font-semibold text-rose-600 dark:text-rose-400">{alerta.perdaAcumulada}</span>
+          <span className="text-xs text-muted-foreground ml-1">un.</span>
+        </td>
+        <td className="py-3 px-4 text-center text-sm">{alerta.ocorrencias}</td>
+        <td className="py-3 px-4 text-center text-sm">{alerta.produtosAfetados}</td>
+        <td className="py-3 px-4 text-sm text-muted-foreground">
+          {new Date(alerta.ultimaData).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+        </td>
+        <td className="py-3 px-4">
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${COR_SEV_FUNC[alerta.severidade]}`}>
+            {LABEL_SEV[alerta.severidade]}
+          </span>
+        </td>
+      </tr>
+      {expandido && (
+        <tr className="bg-muted/20">
+          <td colSpan={6} className="px-8 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Ajustes negativos por {alerta.funcionario} (últimos 30 dias)</p>
+            <div className="space-y-1.5">
+              {alerta.movimentos.map((m) => (
+                <div key={m.id} className="flex items-center gap-3 text-xs">
+                  <span className="text-muted-foreground w-32 shrink-0">
+                    {new Date(m.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })} {new Date(m.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <span className="font-semibold text-rose-600 dark:text-rose-400 w-16">{m.qtd} un.</span>
+                  <span className="text-muted-foreground">Produto: {m.produtoId}</span>
+                </div>
+              ))}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 function Antifurto() {
   const estoque = useEstoque();
   const produtos = useProdutos();
@@ -111,7 +170,9 @@ function Antifurto() {
 
   const limiar = config.limiteAntifurtoUnidades ?? 2;
   const alertas = calcularAlertas(estoque.movs, produtos, limiar);
+  const alertasFuncionario = calcularAlertasPorFuncionario(estoque.movs, limiar);
 
+  const [aba, setAba] = useState<"produtos" | "funcionarios">("produtos");
   const [filtroSev, setFiltroSev] = useState<"todos" | "alto" | "médio" | "baixo">("todos");
   const [busca, setBusca] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -171,6 +232,73 @@ function Antifurto() {
         </Card>
       </div>
 
+      {/* Abas */}
+      <div className="flex border-b">
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${aba === "produtos" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setAba("produtos")}
+        >
+          Por Produto
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${aba === "funcionarios" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setAba("funcionarios")}
+        >
+          <Users className="h-3.5 w-3.5" />
+          Por Funcionário
+          {alertasFuncionario.some((a) => a.severidade === "alto") && (
+            <span className="ml-1 h-2 w-2 rounded-full bg-rose-500 inline-block" />
+          )}
+        </button>
+      </div>
+
+      {aba === "funcionarios" ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4 text-rose-500" />
+              Correlação ajuste × funcionário
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Funcionários com mais ajustes negativos nos últimos 30 dias
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {alertasFuncionario.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <Users className="h-10 w-10 text-emerald-400/60" />
+                <p className="text-sm text-muted-foreground">Nenhum funcionário com ajustes negativos acima do limiar.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Funcionário</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Perda (un.)</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Ajustes</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Produtos</th>
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Última ocorrência</th>
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Risco</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alertasFuncionario.map((a) => (
+                      <RowFuncionario
+                        key={a.funcionario}
+                        alerta={a}
+                        expandido={expandido === `f-${a.funcionario}`}
+                        onToggle={() => setExpandido(expandido === `f-${a.funcionario}` ? null : `f-${a.funcionario}`)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+      <>
       {/* Filtros */}
       <div className="flex gap-3 flex-wrap">
         <Input
@@ -254,6 +382,8 @@ function Antifurto() {
         Detecta ajustes do tipo <strong>ajuste negativo</strong> nos últimos 30 dias. Limiar atual: <strong>{limiar} unidades</strong>.
         Ajuste o limiar em <Link to="/painel/configuracoes" className="underline text-primary">Configurações</Link>.
       </p>
+      </>
+      )}
     </div>
   );
 }
