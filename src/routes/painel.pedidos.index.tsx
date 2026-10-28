@@ -97,7 +97,6 @@ function PedidosPage() {
     [est.gondola],
   );
 
-  // Totais do depósito por produto (para exibir na lista e calcular qtd a pedir)
   const totaisDeposito = useMemo(() => {
     const t: Record<string, number> = {};
     for (const l of est.lotes) {
@@ -106,7 +105,6 @@ function PedidosPage() {
     return t;
   }, [est.lotes]);
 
-  // Produtos com depósito abaixo do mínimo
   const abaixoMinimoDeposito = useMemo(
     () => abaixoDoMinimoDeposito(est.lotes),
     [est.lotes],
@@ -119,13 +117,11 @@ function PedidosPage() {
     return ids;
   }, [pedidos]);
 
-  // Só mostra os que ainda não têm pedido aberto (gôndola)
   const produtosSemPedido = useMemo(
     () => abaixoMinimo.filter((p) => !idsComPedidoAberto.has(p.id)),
     [abaixoMinimo, idsComPedidoAberto],
   );
 
-  // Só mostra os que ainda não têm pedido aberto (depósito)
   const produtosDepositoSemPedido = useMemo(
     () => abaixoMinimoDeposito.filter((p) => !idsComPedidoAberto.has(p.id)),
     [abaixoMinimoDeposito, idsComPedidoAberto],
