@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Barcode, Boxes, Check, DollarSign, Layers, ListC
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { brl, categorias } from "@/lib/mock-data";
+import { brl, categorias, UNIDADES } from "@/lib/mock-data";
 import { cadastrarProduto } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada, executarTransferencia } from "@/lib/estoque-store";
@@ -108,6 +108,7 @@ function NovoProduto() {
       validade: f.validade || undefined,
       localDeposito,
       localGondola,
+      unidade: f.unidade || "un",
     });
 
     inicializarProduto(id);
@@ -181,9 +182,23 @@ function NovoProduto() {
 
           {step === 2 && (
             <div className="grid gap-5 sm:grid-cols-3">
-              <Campo label="Vende por">
-                <div className="flex gap-1.5">{["un", "kg", "L"].map((u) => <button key={u} type="button" onClick={() => setF({ ...f, unidade: u })} className={cn("flex-1 rounded-lg border py-2 text-sm font-semibold", f.unidade === u ? "border-primary bg-primary text-primary-foreground" : "")}>{u}</button>)}</div>
-              </Campo>
+              <div className="sm:col-span-3">
+                <Campo label="Vende por (unidade de medida)">
+                  <div className="flex flex-wrap gap-1.5">
+                    {UNIDADES.map((u) => (
+                      <button key={u} type="button" onClick={() => setF({ ...f, unidade: u })}
+                        className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold transition", f.unidade === u ? "border-primary bg-primary text-primary-foreground" : "hover:border-primary/50")}>
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {f.unidade === "kg" || f.unidade === "g" || f.unidade === "L" || f.unidade === "mL" || f.unidade === "m" || f.unidade === "m²"
+                      ? "⚖️ Unidade fracionada — o PDV aceitará quantidades decimais (ex.: 1,350 kg)"
+                      : "📦 Unidade inteira — o PDV usará quantidades inteiras"}
+                  </p>
+                </Campo>
+              </div>
               <Campo label="Compra em"><Input value={f.embalagem} onChange={set("embalagem")} placeholder="Caixa, Fardo, Pack" /></Campo>
               <Campo label={`${f.unidade} por ${f.embalagem.toLowerCase() || "embalagem"}`}><Input inputMode="numeric" value={f.porEmbalagem} onChange={set("porEmbalagem")} /></Campo>
               <div className="rounded-xl bg-secondary p-4 text-sm sm:col-span-3">Conversão: <strong>1 {f.embalagem || "embalagem"} = {num(f.porEmbalagem)} {f.unidade}</strong>. É usada na conferência do recebimento.</div>

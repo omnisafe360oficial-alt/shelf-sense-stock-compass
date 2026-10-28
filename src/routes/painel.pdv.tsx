@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { brl } from "@/lib/mock-data";
+import { brl, isFracionado, stepUnidade } from "@/lib/mock-data";
 import { fecharVenda, useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useAuth } from "@/lib/auth";
@@ -131,11 +131,13 @@ function Pdv() {
       .slice(0, 8);
   }, [busca, produtos]);
 
-  function adicionar(produtoId: string, delta = 1) {
+  function adicionar(produtoId: string, deltaOverride?: number) {
+    const prod = produtos.find((x) => x.id === produtoId);
+    const step = deltaOverride !== undefined ? deltaOverride : stepUnidade(prod?.unidade);
     const naGondola = s.gondola[produtoId] ?? 0;
     const ex = itens.find((i) => i.produtoId === produtoId);
-    const nova = (ex?.qtd ?? 0) + delta;
-    if (nova > naGondola) { toast.error(`Só há ${naGondola} na gôndola.`); return; }
+    const nova = Math.round(((ex?.qtd ?? 0) + step) * 1000) / 1000;
+    if (nova > naGondola + 0.0005) { toast.error(`Só há ${naGondola} ${prod?.unidade ?? "un"} na gôndola.`); return; }
     if (nova <= 0) {
       setItens((prev) => prev.filter((i) => i.produtoId !== produtoId));
       setDescontoItens((prev) => { const n = { ...prev }; delete n[produtoId]; return n; });
@@ -161,9 +163,11 @@ function Pdv() {
   }
 
   function setQty(produtoId: string, qtd: number) {
+    const prod = produtos.find((x) => x.id === produtoId);
     const naGondola = s.gondola[produtoId] ?? 0;
-    const safe = Math.max(1, Math.min(naGondola, qtd));
-    if (qtd > naGondola) toast.error(`Só há ${naGondola} na gôndola.`);
+    const min = isFracionado(prod?.unidade) ? 0.001 : 1;
+    const safe = Math.max(min, Math.min(naGondola, qtd));
+    if (qtd > naGondola) toast.error(`Só há ${naGondola} ${prod?.unidade ?? "un"} na gôndola.`);
     setItens((prev) => prev.map((i) => i.produtoId === produtoId ? { ...i, qtd: safe } : i));
   }
 
@@ -319,7 +323,7 @@ function Pdv() {
                       <div className="shrink-0 text-right">
                         <p className="font-bold">{brl(p.preco)}</p>
                         <p className={cn("text-xs", semEstoque ? "text-destructive font-semibold" : "text-muted-foreground")}>
-                          {semEstoque ? "Sem estoque" : `${gondola} na gôndola`}
+                          {semEstoque ? "Sem estoque" : `${gondola} ${p.unidade ?? "un"} na gôndola`}
                         </p>
                       </div>
                     </button>
@@ -387,6 +391,8 @@ function Pdv() {
                     const gondola = s.gondola[item.produtoId] ?? 0;
                     const liq = precoLiquido(item.produtoId);
                     const temDesc = !!descontoItens[item.produtoId]?.val;
+                    const fracionado = isFracionado(p.unidade);
+                    const stepQty = stepUnidade(p.unidade);
                     return (
                       <div key={item.produtoId} className="flex flex-col px-4 py-3">
                         {/* main row */}
@@ -397,23 +403,31 @@ function Pdv() {
                               {p.codigo} ·{" "}
                               {temDesc ? (
                                 <><span className="line-through">{brl(p.preco)}</span> <span className="text-primary font-semibold">{brl(liq)}</span></>
-                              ) : brl(p.preco)} un
+                              ) : brl(p.preco)}{" "}{p.unidade ?? "un"}
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1.5">
-                            <button onClick={() => adicionar(p.id, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Remover um">
+                            <button onClick={() => adicionar(p.id, -stepQty)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Remover">
                               <Minus className="h-3.5 w-3.5" />
                             </button>
                             <input
-                              type="number" min={1} max={gondola} value={item.qtd}
-                              onChange={(e) => setQty(item.produtoId, Number(e.target.value) || 1)}
-                              className="h-8 w-12 rounded-lg border bg-transparent text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+                              type="number"
+                              min={fracionado ? 0.001 : 1}
+                              max={gondola}
+                              step={stepQty}
+                              inputMode={fracionado ? "decimal" : "numeric"}
+                              value={item.qtd}
+                              onChange={(e) => setQty(item.produtoId, parseFloat(e.target.value.replace(",", ".")) || stepQty)}
+                              className={cn("h-8 rounded-lg border bg-transparent text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary", fracionado ? "w-20" : "w-12")}
                             />
-                            <button onClick={() => adicionar(p.id, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Adicionar um">
+                            <button onClick={() => adicionar(p.id, stepQty)} className="flex h-8 w-8 items-center justify-center rounded-lg border hover:bg-muted" aria-label="Adicionar">
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                          <p className={cn("w-20 shrink-0 text-right font-semibold", temDesc && "text-primary")}>{brl(liq * item.qtd)}</p>
+                          <div className="shrink-0 text-right">
+                            <p className={cn("w-20 font-semibold", temDesc && "text-primary")}>{brl(liq * item.qtd)}</p>
+                            {fracionado && <p className="w-20 text-xs text-muted-foreground">{item.qtd} {p.unidade}</p>}
+                          </div>
                           <button
                             onClick={() => setEditDescId(editDescId === item.produtoId ? null : item.produtoId)}
                             className={cn("shrink-0 rounded-lg p-1.5 transition", temDesc ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted")}
@@ -666,12 +680,16 @@ function Pdv() {
 
             <div className="rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1.5">
-                {ultimaVenda.linhas.map((l, i) => (
-                  <div key={i} className="flex justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate">{l.qtd}× {l.nome}</span>
-                    <span className="shrink-0 font-medium">{brl(l.preco * l.qtd)}</span>
-                  </div>
-                ))}
+                {ultimaVenda.linhas.map((l, i) => {
+                  const prod = produtos.find((x) => x.nome === l.nome);
+                  const un = prod?.unidade ?? "un";
+                  return (
+                    <div key={i} className="flex justify-between gap-2 text-sm">
+                      <span className="min-w-0 truncate">{l.qtd} {un} · {l.nome}</span>
+                      <span className="shrink-0 font-medium">{brl(l.preco * l.qtd)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
