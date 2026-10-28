@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle, ArrowLeft, Check, CheckCircle, Clock, Edit3, FileUp, MessageCircle, Package,
-  Plus, Save, Send, Trash2, X, XCircle, Building2, TrendingUp,
+  Plus, Printer, Save, Send, Trash2, X, XCircle, Building2, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,6 +269,72 @@ function DetalhesPedido() {
     navigate({ to: "/painel/pedidos" });
   };
 
+  const imprimirPedido = () => {
+    const forn = fornecedores.find((f) => f.id === pedido.fornecedorId);
+    const win = window.open("", "_blank", "width=820,height=700");
+    if (!win) { toast.error("Permita pop-ups para imprimir o pedido."); return; }
+    const itensHtml = pedido.itens.map((i) => {
+      const p = produtos.find((x) => x.id === i.produtoId);
+      const subtotal = i.qtdSolicitada * i.precoUnitario;
+      return `<tr>
+        <td>${p?.codigo ?? "—"}</td>
+        <td>${p?.nome ?? "Produto removido"}</td>
+        <td class="r">${i.qtdSolicitada} ${i.unidade}</td>
+        <td class="r">${brl(i.precoUnitario)}</td>
+        <td class="r">${brl(subtotal)}</td>
+      </tr>`;
+    }).join("");
+    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Pedido ${pedido.numero}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#111;padding:32px}
+h1{font-size:22px;margin-bottom:2px}
+.sub{color:#666;font-size:12px;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.box{border:1px solid #ddd;border-radius:6px;padding:12px}
+.lbl{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.05em;margin-bottom:2px}
+.val{font-weight:700}
+table{width:100%;border-collapse:collapse;margin-bottom:16px}
+th{background:#f5f5f5;padding:8px;font-size:11px;text-transform:uppercase;border:1px solid #ddd;text-align:left}
+td{padding:8px;border:1px solid #ddd}
+tr:nth-child(even) td{background:#fafafa}
+.r{text-align:right}
+.total-row{text-align:right;font-size:15px;font-weight:700;padding:8px 0}
+.obs{border:1px solid #e5e7eb;border-radius:6px;padding:12px;margin-bottom:20px;background:#fafafa}
+.footer{text-align:center;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:16px;margin-top:8px}
+@media print{body{padding:16px}}
+</style></head><body>
+<h1>Pedido de Compra — ${pedido.numero}</h1>
+<p class="sub">Emitido em ${fmtData(pedido.dataEmissao)} &nbsp;·&nbsp; Status: ${SIT[pedido.status].t}</p>
+<div class="grid">
+  <div class="box">
+    <div class="lbl">Fornecedor</div>
+    <div class="val">${pedido.fornecedorNome || "—"}</div>
+    ${forn?.cnpj ? `<div style="font-size:12px;color:#555;margin-top:4px">CNPJ: ${forn.cnpj}</div>` : ""}
+    ${forn?.contato ? `<div style="font-size:12px;color:#555">Contato: ${forn.contato}</div>` : ""}
+    ${forn?.whatsapp ? `<div style="font-size:12px;color:#555">WhatsApp: ${forn.whatsapp}</div>` : ""}
+  </div>
+  <div class="box">
+    <div class="lbl">Entrega prevista</div>
+    <div class="val">${pedido.dataPrevista ? fmtData(pedido.dataPrevista) : "A combinar"}</div>
+    <div style="margin-top:10px" class="lbl">Total do pedido</div>
+    <div class="val" style="font-size:20px;color:#1d4ed8">${brl(pedido.total)}</div>
+  </div>
+</div>
+<table>
+  <thead><tr><th>Código</th><th>Produto</th><th class="r">Qtd</th><th class="r">Preço unit.</th><th class="r">Subtotal</th></tr></thead>
+  <tbody>${itensHtml}</tbody>
+</table>
+<div class="total-row">Total: ${brl(pedido.total)}</div>
+${pedido.observacao ? `<div class="obs"><strong>Observação:</strong> ${pedido.observacao}</div>` : ""}
+<div class="footer">OmniSafe 360 &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString("pt-BR")}</div>
+<script>window.onload=function(){window.print()}</script>
+</body></html>`;
+    win.document.write(html);
+    win.document.close();
+  };
+
   // ─── Modo edição ──────────────────────────────────────────────────────────────
 
   if (editando) {
@@ -423,6 +489,9 @@ function DetalhesPedido() {
             <MessageCircle className="h-4 w-4" /> Enviar pelo WhatsApp
           </a>
         )}
+        <Button variant="outline" onClick={imprimirPedido}>
+          <Printer className="h-4 w-4" /> Imprimir / PDF
+        </Button>
         {podaEditar && (
           <Button variant="outline" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
         )}
