@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, ArrowLeftRight, BarChart3, BarChart2, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
-  Layers, LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, ShieldAlert, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
+  Layers, LogOut, Menu, Moon, MoreHorizontal, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, ShieldAlert, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
@@ -140,14 +140,15 @@ function PainelLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card/90 px-4 backdrop-blur lg:px-8">
           <button
-            className="rounded-lg p-2 hover:bg-muted lg:hidden"
+            className="rounded-lg p-2 hover:bg-muted hidden"
             aria-label="Menu"
             onClick={() => setSidebarAberto((v) => !v)}
           >
             <Menu className="h-5 w-5" />
           </button>
+          <span className="font-semibold text-sm lg:hidden">{config.nomeLoja || "OmniSafe 360"}</span>
           {/* Busca global */}
-          <div className="relative max-w-md flex-1">
+          <div className="hidden lg:block relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar produto, código ou categoria…"
@@ -331,7 +332,7 @@ function PainelLayout() {
           </div>
 
           {/* Usuário */}
-          <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-primary-foreground">
               {(auth.nomeProprietario ?? dono?.nome ?? "MS").split(" ").map((n) => n[0]).slice(0, 2).join("")}
             </span>
@@ -349,9 +350,54 @@ function PainelLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 lg:p-8 pb-20 lg:pb-8">
           <Outlet />
         </main>
+
+        {/* Bottom navigation — mobile only */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t bg-card/95 backdrop-blur"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          <div className="flex h-16 items-stretch">
+            <Link
+              to="/painel"
+              activeOptions={{ exact: true }}
+              className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground aria-[current=page]:text-primary transition-colors"
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Início</span>
+            </Link>
+            <Link
+              to="/painel/produtos"
+              className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground aria-[current=page]:text-primary transition-colors"
+            >
+              <Package className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Produtos</span>
+            </Link>
+            <Link
+              to="/painel/pdv"
+              className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground aria-[current=page]:text-primary transition-colors"
+            >
+              <ScanBarcode className="h-5 w-5" />
+              <span className="text-[10px] font-medium">PDV</span>
+            </Link>
+            <Link
+              to="/painel/pedidos"
+              className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground aria-[current=page]:text-primary transition-colors"
+            >
+              <ClipboardList className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Pedidos</span>
+            </Link>
+            <button
+              onClick={() => setSidebarAberto(true)}
+              className="flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground transition-colors"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Mais</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );
