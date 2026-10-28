@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Calendar, Edit3,
   GitBranch, MapPin, Package, Plus, Save, ShoppingCart,
-  TrendingDown, TrendingUp, Trash2, Warehouse, X,
+  TrendingDown, TrendingUp, Trash2, Warehouse, X, BarChart2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -428,6 +428,43 @@ function ProdutoDetalhe() {
           </div>
         </div>
       </div>
+
+      {/* Previsão de demanda e ponto de pedido */}
+      {mediaDiaria > 0 && (
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Previsão de Demanda</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Média diária (30d)</p>
+              <p className="text-xl font-bold">{mediaDiaria.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">un/dia</span></p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Previsão 7 dias</p>
+              <p className="text-xl font-bold">{Math.ceil(mediaDiaria * 7)} <span className="text-sm font-normal text-muted-foreground">un</span></p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Previsão 30 dias</p>
+              <p className="text-xl font-bold">{Math.ceil(mediaDiaria * 30)} <span className="text-sm font-normal text-muted-foreground">un</span></p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Ponto de pedido</p>
+              <p className={cn("text-xl font-bold", total <= Math.ceil(mediaDiaria * 7 + produto.minimo) ? "text-destructive" : "text-foreground")}>
+                {Math.ceil(mediaDiaria * 7 + produto.minimo)} <span className="text-sm font-normal text-muted-foreground">un</span>
+              </p>
+              <p className="text-xs text-muted-foreground">7d de lead + estoque mínimo</p>
+            </div>
+          </div>
+          {total <= Math.ceil(mediaDiaria * 7 + produto.minimo) && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+              <TrendingDown className="h-4 w-4 shrink-0" />
+              <span>Abaixo do ponto de pedido — considere reabastecer agora para cobrir a demanda dos próximos 7 dias.</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Formulário de edição */}
       {editando && (
