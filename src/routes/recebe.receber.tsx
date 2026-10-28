@@ -286,7 +286,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("inicio")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={() => navigate({ to: "/recebe" })} className="text-muted-foreground">
+          <button onClick={() => navigate({ to: "/recebe" })} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Novo recebimento</h1>
@@ -399,7 +399,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("identificar")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1">
@@ -540,7 +540,7 @@ function ReceberFluxo() {
                 <p className="font-display text-base font-semibold text-foreground">
                   Itens adicionados ({s.itens.length})
                 </p>
-                <button onClick={() => setShowLista(false)} className="text-muted-foreground">
+                <button onClick={() => setShowLista(false)} className="text-muted-foreground" aria-label="Fechar">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -567,6 +567,7 @@ function ReceberFluxo() {
                       <button
                         onClick={() => up({ itens: s.itens.filter((i) => i.id !== item.id) })}
                         className="text-destructive"
+                        aria-label="Remover item"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -588,7 +589,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("unidade")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Unidade de entrada</h1>
@@ -670,7 +671,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col bg-card">
         <BarraProgresso pct={progresso("contagem")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Contagem cega</h1>
@@ -722,7 +723,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("lote")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Dados do lote</h1>
@@ -820,7 +821,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("comparativo")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Resultado da contagem</h1>
@@ -910,7 +911,7 @@ function ReceberFluxo() {
       <div className="flex min-h-full flex-col">
         <BarraProgresso pct={progresso("resumo")} />
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <button onClick={voltar} className="text-muted-foreground">
+          <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-display text-base font-semibold text-foreground">Resumo do recebimento</h1>

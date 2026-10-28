@@ -101,7 +101,7 @@ function Metas() {
         <div className="rounded-xl border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Configurar metas</h2>
-            <button onClick={() => setEditando(false)} className="rounded-lg p-1 hover:bg-muted">
+            <button onClick={() => setEditando(false)} className="rounded-lg p-1 hover:bg-muted" aria-label="Fechar">
               <X className="h-4 w-4" />
             </button>
           </div>

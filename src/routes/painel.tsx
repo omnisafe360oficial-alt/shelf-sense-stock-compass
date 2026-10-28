@@ -220,7 +220,7 @@ function PainelLayout() {
                 <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border bg-card shadow-xl">
                   <div className="flex items-center justify-between border-b px-4 py-3">
                     <p className="text-sm font-semibold">Alertas ativos</p>
-                    <button className="rounded p-0.5 hover:bg-muted" onClick={fecharNotif}>
+                    <button className="rounded p-0.5 hover:bg-muted" onClick={fecharNotif} aria-label="Fechar alertas">
                       <X className="h-4 w-4" />
                     </button>
                   </div>

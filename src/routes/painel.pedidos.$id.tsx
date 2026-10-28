@@ -243,7 +243,7 @@ function DetalhesPedido() {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setEditando(false)} className="text-muted-foreground hover:text-foreground">
+          <button onClick={() => setEditando(false)} className="text-muted-foreground hover:text-foreground" aria-label="Voltar">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-2xl font-bold">Editar {pedido.numero}</h1>
@@ -308,7 +308,7 @@ function DetalhesPedido() {
                   </div>
                   {eItens.length > 1 && (
                     <button type="button" className="mb-1 rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setEItens((p) => p.filter((_, i) => i !== idx))}>
+                      onClick={() => setEItens((p) => p.filter((_, i) => i !== idx))} aria-label="Remover item">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   )}
@@ -409,7 +409,7 @@ function DetalhesPedido() {
           </Button>
         )}
         {podaEditar && (
-          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => setConfirmando("excluir")}>
+          <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => setConfirmando("excluir")} aria-label="Excluir pedido">
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
@@ -441,7 +441,7 @@ function DetalhesPedido() {
         <div className="rounded-2xl border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Conciliar com XML da nota fiscal</h3>
-            <button onClick={() => { setShowXml(false); setConciliacao(null); }} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => { setShowXml(false); setConciliacao(null); }} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
               <X className="h-4 w-4" />
             </button>
           </div>

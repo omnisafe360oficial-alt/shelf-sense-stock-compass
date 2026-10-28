@@ -682,7 +682,7 @@ function Pdv() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <h2 className="text-lg font-bold">Recibo</h2>
               </div>
-              <button onClick={() => setShowRecibo(false)} className="rounded-lg p-1 text-muted-foreground hover:bg-muted">
+              <button onClick={() => setShowRecibo(false)} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="Fechar recibo">
                 <X className="h-5 w-5" />
               </button>
             </div>
