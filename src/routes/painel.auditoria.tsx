@@ -6,6 +6,13 @@ import { useAuditLog, type AuditEntry } from "@/lib/audit-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/auditoria")({
+  head: () => ({
+    meta: [
+      { title: "Auditoria — OmniSafe 360" },
+      { name: "description", content: "Histórico de todas as ações realizadas no sistema." },
+      { property: "og:title", content: "Auditoria — OmniSafe 360" },
+    ],
+  }),
   pendingComponent: SkeletonListPage,
   pendingMs: 200,
   component: Auditoria,

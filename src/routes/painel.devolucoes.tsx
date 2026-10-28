@@ -14,7 +14,15 @@ import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
-export const Route = createFileRoute("/painel/devolucoes")({  pendingComponent: SkeletonListPage,
+export const Route = createFileRoute("/painel/devolucoes")({
+  head: () => ({
+    meta: [
+      { title: "Devoluções — OmniSafe 360" },
+      { name: "description", content: "Registro e histórico de devoluções de produtos." },
+      { property: "og:title", content: "Devoluções — OmniSafe 360" },
+    ],
+  }),
+  pendingComponent: SkeletonListPage,
   pendingMs: 200,
   component: Devolucoes,
 });

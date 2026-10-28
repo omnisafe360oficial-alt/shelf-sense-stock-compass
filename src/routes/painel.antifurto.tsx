@@ -13,7 +13,15 @@ import { calcularAlertas, type AlertaAntifurto } from "@/lib/antifurto-store";
 import { gravarAudit } from "@/lib/audit-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
-export const Route = createFileRoute("/painel/antifurto")({  pendingComponent: SkeletonListPage,
+export const Route = createFileRoute("/painel/antifurto")({
+  head: () => ({
+    meta: [
+      { title: "Antifurto — OmniSafe 360" },
+      { name: "description", content: "Monitoramento de perdas e alertas de antifurto por produto." },
+      { property: "og:title", content: "Antifurto — OmniSafe 360" },
+    ],
+  }),
+  pendingComponent: SkeletonListPage,
   pendingMs: 200,
   component: Antifurto,
 });

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sem conexão — OmniSafe 360</title>
+  <style>
+    :root { --bg: #0f1b2b; --fg: #e2e8f0; --muted: #64748b; --accent: #3b82f6; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           min-height: 100svh; padding: 1.5rem; text-align: center; }
+    .card { max-width: 24rem; }
+    .icon { font-size: 3rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+    p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.5rem; }
+    button { background: var(--accent); color: #fff; border: none; border-radius: 0.5rem;
+             padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 500;
+             cursor: pointer; }
+    button:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>Você está offline</h1>
+    <p>Verifique sua conexão com a internet e tente novamente. Os dados já carregados continuam disponíveis.</p>
+    <button onclick="location.reload()">Tentar novamente</button>
+  </div>
+</body>
+</html>
