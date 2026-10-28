@@ -34,6 +34,8 @@ import { Route as PainelRecebimentosRouteImport } from './routes/painel.recebime
 import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
+import { Route as PainelAuditoriaRouteImport } from './routes/painel.auditoria'
+import { Route as PainelAntifurtoRouteImport } from './routes/painel.antifurto'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -178,6 +180,16 @@ const PainelValidadesRoute = PainelValidadesRouteImport.update({
   path: '/validades',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelAuditoriaRoute = PainelAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelAntifurtoRoute = PainelAntifurtoRouteImport.update({
+  id: '/antifurto',
+  path: '/antifurto',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -278,6 +290,8 @@ export interface FileRoutesByFullPath {
   '/repositor': typeof RepositorRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/painel/alertas': typeof PainelAlertasRoute
+  '/painel/auditoria': typeof PainelAuditoriaRoute
+  '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -320,6 +334,8 @@ export interface FileRoutesByTo {
   '/configurar-loja': typeof ConfigurarLojaRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/painel/alertas': typeof PainelAlertasRoute
+  '/painel/auditoria': typeof PainelAuditoriaRoute
+  '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -366,6 +382,8 @@ export interface FileRoutesById {
   '/repositor': typeof RepositorRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/painel/alertas': typeof PainelAlertasRoute
+  '/painel/auditoria': typeof PainelAuditoriaRoute
+  '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -413,6 +431,8 @@ export interface FileRouteTypes {
     | '/repositor'
     | '/auth/callback'
     | '/painel/alertas'
+    | '/painel/auditoria'
+    | '/painel/antifurto'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -455,6 +475,8 @@ export interface FileRouteTypes {
     | '/configurar-loja'
     | '/auth/callback'
     | '/painel/alertas'
+    | '/painel/auditoria'
+    | '/painel/antifurto'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -500,6 +522,8 @@ export interface FileRouteTypes {
     | '/repositor'
     | '/auth/callback'
     | '/painel/alertas'
+    | '/painel/auditoria'
+    | '/painel/antifurto'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -610,6 +634,20 @@ declare module '@tanstack/react-router' {
       path: '/alertas'
       fullPath: '/painel/alertas'
       preLoaderRoute: typeof PainelAlertasRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/auditoria': {
+      id: '/painel/auditoria'
+      path: '/auditoria'
+      fullPath: '/painel/auditoria'
+      preLoaderRoute: typeof PainelAuditoriaRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/antifurto': {
+      id: '/painel/antifurto'
+      path: '/antifurto'
+      fullPath: '/painel/antifurto'
+      preLoaderRoute: typeof PainelAntifurtoRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/configuracoes': {
@@ -855,6 +893,8 @@ declare module '@tanstack/react-router' {
 
 interface PainelRouteChildren {
   PainelAlertasRoute: typeof PainelAlertasRoute
+  PainelAuditoriaRoute: typeof PainelAuditoriaRoute
+  PainelAntifurtoRoute: typeof PainelAntifurtoRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -886,6 +926,8 @@ interface PainelRouteChildren {
 
 const PainelRouteChildren: PainelRouteChildren = {
   PainelAlertasRoute: PainelAlertasRoute,
+  PainelAuditoriaRoute: PainelAuditoriaRoute,
+  PainelAntifurtoRoute: PainelAntifurtoRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,

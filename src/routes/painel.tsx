@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRightLeft, BarChart3, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
-  LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
+  LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, ShieldAlert, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { useTema, alternarTema } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useAuth, signOut } from "@/lib/auth";
 import { usePedidos } from "@/lib/pedidos-store";
+import { calcularAlertas } from "@/lib/antifurto-store";
 
 export const Route = createFileRoute("/painel")({ component: PainelLayout });
 
@@ -23,7 +24,7 @@ const grupos = [
   { titulo: "Visão geral", itens: [{ label: "Início", icon: LayoutDashboard, to: "/painel" as const, exact: true }] },
   { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse, to: "/painel/deposito" as const }, { label: "Gôndola", icon: Boxes, to: "/painel/gondola" as const }, { label: "Movimentações", icon: ArrowRightLeft, to: "/painel/movimentacoes" as const }, { label: "Validades", icon: CalendarClock, to: "/painel/validades" as const }, { label: "Etiquetas", icon: Tag, to: "/painel/etiquetas" as const }] },
-  { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Promoções", icon: Tag, to: "/painel/promocoes" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }, { label: "Pedidos de Compra", icon: ClipboardList, to: "/painel/pedidos" as const }] },
+  { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Promoções", icon: Tag, to: "/painel/promocoes" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }, { label: "Pedidos de Compra", icon: ClipboardList, to: "/painel/pedidos" as const }, { label: "Antifurto", icon: ShieldAlert, to: "/painel/antifurto" as const }] },
   { titulo: "Gestão", itens: [{ label: "Alertas", icon: Bell, to: "/painel/alertas" as const }, { label: "Metas", icon: Target, to: "/painel/metas" as const }, { label: "Inventário", icon: ClipboardCheck, to: "/painel/inventario" as const }, { label: "Relatórios", icon: BarChart3, to: "/painel/relatorios" as const }, { label: "Equipe", icon: Users, to: "/painel/equipe" as const }, { label: "Auditoria", icon: Shield, to: "/painel/auditoria" as const }, { label: "Configurações", icon: Settings, to: "/painel/configuracoes" as const }] },
 ];
 
@@ -80,12 +81,17 @@ function PainelLayout() {
     return dias >= config.diasAlertaPedido;
   });
 
+  const alertasAntifurto = config.alertaAntifurto
+    ? calcularAlertas(est.movs, produtos, config.limiteAntifurtoUnidades ?? 2)
+    : [];
+
   const totalAlertas =
     (config.alertaEstoqueZerado ? zerados.length : 0) +
     (config.avisoRepositor ? abaixo.length : 0) +
     (config.alertaVencimentos ? vencendo7.length : 0) +
     (config.avisoInconsistencias ? inconsAbertas.length : 0) +
-    (config.alertaPedidos ? pedidosAtencao.length : 0);
+    (config.alertaPedidos ? pedidosAtencao.length : 0) +
+    alertasAntifurto.filter((a) => a.severidade === "alto").length;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -293,6 +299,22 @@ function PainelLayout() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {config.alertaAntifurto && alertasAntifurto.filter((a) => a.severidade === "alto").length > 0 && (
+                    <div className="p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-rose-500">
+                          🔴 {alertasAntifurto.filter((a) => a.severidade === "alto").length} alerta{alertasAntifurto.filter((a) => a.severidade === "alto").length > 1 ? "s" : ""} antifurto
+                        </p>
+                        <Link to="/painel/antifurto" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                      </div>
+                      {alertasAntifurto.filter((a) => a.severidade === "alto").slice(0, 3).map((a) => (
+                        <div key={a.produtoId} className="flex justify-between border-b py-1.5 last:border-0">
+                          <span className="truncate font-medium">{a.produtoNome}</span>
+                          <span className="ml-2 shrink-0 text-rose-500">−{a.perdaAcumulada} un.</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   <div className="border-t px-4 py-2 flex items-center justify-between">
