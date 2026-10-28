@@ -138,7 +138,7 @@ function PainelLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card/90 px-4 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-10 flex items-center gap-4 border-b bg-card/90 px-4 backdrop-blur lg:px-8" style={{ minHeight: "4rem", paddingTop: "env(safe-area-inset-top, 0px)" }}>
           <button
             className="rounded-lg p-2 hover:bg-muted hidden"
             aria-label="Menu"
