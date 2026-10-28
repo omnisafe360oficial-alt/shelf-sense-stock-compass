@@ -225,7 +225,7 @@ function RepositorRepor() {
 
   const header = (titulo: string) => (
     <div className="flex items-center gap-3 border-b border-border px-4 py-3 shrink-0">
-      <button onClick={voltar} className="text-muted-foreground">
+      <button onClick={voltar} className="text-muted-foreground" aria-label="Voltar">
         <ChevronRight className="h-5 w-5 rotate-180" />
       </button>
       <p className="font-display text-sm font-semibold text-foreground">{titulo}</p>

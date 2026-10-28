@@ -253,7 +253,7 @@ function ProdutoDetalhe() {
           {!editando ? (
             <>
               <Button variant="secondary" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
-              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir produto">
+              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir produto" aria-label="Excluir produto">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </>

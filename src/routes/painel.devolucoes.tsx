@@ -255,7 +255,7 @@ function NovaDevolucaoDialog({ open, onClose }: { open: boolean; onClose: () => 
                       <td className="py-2 px-3 text-center">{item.qtd}</td>
                       <td className="py-2 px-3 text-right">{item.precoUnitario > 0 ? brl(item.qtd * item.precoUnitario) : "—"}</td>
                       <td className="py-2 px-2">
-                        <button type="button" onClick={() => setItens((prev) => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-destructive">
+                        <button type="button" onClick={() => setItens((prev) => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-destructive" aria-label="Remover item">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </td>

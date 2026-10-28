@@ -169,7 +169,7 @@ function Ficha() {
           {!editando ? (
             <>
               <Button variant="secondary" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
-              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir fornecedor">
+              <Button variant="destructive" size="icon" onClick={() => setConfirmando(true)} title="Excluir fornecedor" aria-label="Excluir fornecedor">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </>

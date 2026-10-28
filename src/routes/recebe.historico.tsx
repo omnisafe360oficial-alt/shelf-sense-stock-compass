@@ -89,7 +89,7 @@ function RecebeHistorico() {
       <div className="flex min-h-full flex-col">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => setDetalheId(null)} className="text-muted-foreground">
+            <button onClick={() => setDetalheId(null)} className="text-muted-foreground" aria-label="Voltar">
               <ChevronRight className="h-5 w-5 rotate-180" />
             </button>
             <div>

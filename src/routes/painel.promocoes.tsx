@@ -152,7 +152,7 @@ function Promocoes() {
         <div className="rounded-xl border bg-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">{editId ? "Editar promoção" : "Nova promoção"}</h2>
-            <button onClick={fecharForm} className="rounded-lg p-1 hover:bg-muted">
+            <button onClick={fecharForm} className="rounded-lg p-1 hover:bg-muted" aria-label="Fechar">
               <X className="h-4 w-4" />
             </button>
           </div>
