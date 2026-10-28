@@ -26,7 +26,23 @@ export type Produto = {
   validade?: string;
   localDeposito?: LocalDeposito;
   localGondola?: LocalGondola;
+  unidade?: string;
 };
+
+/** Unidades vendidas por peso/volume — permitem quantidade fracionada no PDV */
+export const UNIDADES_FRACIONADAS = new Set(["kg", "g", "L", "mL", "m", "m²"]);
+
+export function isFracionado(unidade?: string): boolean {
+  return UNIDADES_FRACIONADAS.has(unidade ?? "un");
+}
+
+export function stepUnidade(unidade?: string): number {
+  if (unidade === "g" || unidade === "mL") return 1;
+  if (UNIDADES_FRACIONADAS.has(unidade ?? "un")) return 0.1;
+  return 1;
+}
+
+export const UNIDADES = ["un", "kg", "g", "L", "mL", "dz", "cx", "fd", "pct", "m", "m²"] as const;
 
 export type Fornecedor = { id: string; nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };
 
