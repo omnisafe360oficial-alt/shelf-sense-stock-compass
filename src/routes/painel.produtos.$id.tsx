@@ -41,6 +41,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 
 type FormState = {
   nome: string; categoria: string; fornecedor: string; fornecedorId?: string; preco: string; custo: string; minimo: string; maximo: string;
+  minimoDeposito: string; maximoDeposito: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
@@ -93,6 +94,7 @@ function ProdutoDetalhe() {
   const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
     nome: "", categoria: "", fornecedor: "", fornecedorId: undefined, preco: "", custo: "", minimo: "", maximo: "",
+    minimoDeposito: "10", maximoDeposito: "100",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
@@ -195,6 +197,7 @@ function ProdutoDetalhe() {
       fornecedor: matchedForn?.nome ?? produto.fornecedor,
       fornecedorId: matchedForn?.id,
       preco: String(produto.preco), custo: String(produto.custoUltimaCompra ?? ""), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
+      minimoDeposito: String(produto.minimoDeposito ?? 10), maximoDeposito: String(produto.maximoDeposito ?? 100),
       depRua: ld?.rua ?? "", depPrateleira: ld?.prateleira ?? "", depNivel: ld ? String(ld.nivel) : "",
       gondCorredor: lg?.corredor ?? "", gondGondola: lg?.gondola ?? "",
       gondNivel: lg?.nivel ?? "", gondPosicao: lg ? String(lg.posicao) : "",
@@ -221,6 +224,8 @@ function ProdutoDetalhe() {
       custoUltimaCompra: f.custo ? Number(f.custo.replace(",", ".")) : produto.custoUltimaCompra,
       minimo: Number(f.minimo) || produto.minimo,
       maximo: Number(f.maximo) || 0,
+      minimoDeposito: Number(f.minimoDeposito) || 10,
+      maximoDeposito: Number(f.maximoDeposito) || 100,
       localDeposito,
       localGondola,
     });
@@ -302,7 +307,20 @@ function ProdutoDetalhe() {
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">No depósito</p>
           <p className="font-display text-2xl font-bold">{dep} un</p>
-          <p className="mt-1 text-xs text-muted-foreground">aguardando reposição</p>
+          {(() => {
+            const minDep = produto.minimoDeposito ?? 10;
+            const maxDep = produto.maximoDeposito && produto.maximoDeposito > 0 ? produto.maximoDeposito : minDep * 2;
+            const pct = maxDep > 0 ? Math.min(100, (dep / maxDep) * 100) : dep > 0 ? 100 : 0;
+            const cor = dep === 0 ? "bg-destructive" : dep <= minDep ? "bg-warning" : produto.maximoDeposito && dep >= produto.maximoDeposito ? "bg-primary" : "bg-success";
+            return (
+              <>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className={cn("h-full rounded-full transition-all", cor)} style={{ width: `${pct}%` }} />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">mín: {minDep}{produto.maximoDeposito ? ` · máx: ${produto.maximoDeposito}` : ""} un</p>
+              </>
+            );
+          })()}
         </div>
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Na gôndola</p>
@@ -508,6 +526,14 @@ function ProdutoDetalhe() {
             <div className="space-y-2">
               <Label htmlFor={`${fid}-maximo`}>Máximo na gôndola <span className="font-normal text-muted-foreground text-xs">— capacidade total da gôndola (0 = não definido)</span></Label>
               <Input id={`${fid}-maximo`} inputMode="numeric" value={f.maximo} onChange={(e) => setF({ ...f, maximo: e.target.value.replace(/\D/g, "") })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${fid}-minimoDeposito`}>Mínimo no depósito <span className="font-normal text-muted-foreground text-xs">— alerta quando cair abaixo desse valor</span></Label>
+              <Input id={`${fid}-minimoDeposito`} inputMode="numeric" value={f.minimoDeposito} onChange={(e) => setF({ ...f, minimoDeposito: e.target.value.replace(/\D/g, "") })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${fid}-maximoDeposito`}>Máximo no depósito <span className="font-normal text-muted-foreground text-xs">— capacidade total do depósito (0 = não definido)</span></Label>
+              <Input id={`${fid}-maximoDeposito`} inputMode="numeric" value={f.maximoDeposito} onChange={(e) => setF({ ...f, maximoDeposito: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>
