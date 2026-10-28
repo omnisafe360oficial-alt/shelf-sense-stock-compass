@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import {
   AlertTriangle, ArrowRightLeft, ArrowLeftRight, BarChart3, BarChart2, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
   Layers, LogOut, Menu, Moon, MoreHorizontal, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, ShieldAlert, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
@@ -97,6 +98,12 @@ function PainelLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
+      <a
+        href="#conteudo-principal"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:left-4 focus:top-4 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Pular para o conteúdo principal
+      </a>
       {sidebarAberto && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarAberto(false)} />
       )}
@@ -110,7 +117,7 @@ function PainelLayout() {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-6">
+        <nav aria-label="Navegação principal" className="flex-1 space-y-6 overflow-y-auto px-3 pb-6">
           {grupos.map((g) => (
             <div key={g.titulo}>
               <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/45">{g.titulo}</p>
@@ -361,8 +368,10 @@ function PainelLayout() {
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-8 pb-20 lg:pb-8">
-          <Outlet />
+        <main id="conteudo-principal" className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-8 pb-20 lg:pb-8">
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* Busca mobile — overlay full-screen */}
@@ -435,6 +444,7 @@ function PainelLayout() {
 
         {/* Bottom navigation — mobile only */}
         <nav
+          aria-label="Navegação rápida"
           className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t bg-card/95 backdrop-blur"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >

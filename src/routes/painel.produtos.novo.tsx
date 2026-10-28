@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import React, { useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Barcode, Boxes, Check, DollarSign, Layers, ListChecks, Truck, Warehouse } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,10 +51,11 @@ const inicial = {
 };
 
 function Campo({ label, children, dica }: { label: string; children: ReactNode; dica?: string }) {
+  const id = useId();
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
-      {children}
+      <Label htmlFor={id}>{label}</Label>
+      {React.cloneElement(children as React.ReactElement<{ id?: string }>, { id })}
       {dica && <p className="text-xs text-muted-foreground">{dica}</p>}
     </div>
   );

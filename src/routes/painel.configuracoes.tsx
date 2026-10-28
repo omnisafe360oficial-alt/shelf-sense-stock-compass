@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,11 @@ export const Route = createFileRoute("/painel/configuracoes")({
 type SetF = (k: keyof Config, v: string | number | boolean) => void;
 
 function Campo({ label, field, type = "text", f, onSet }: { label: string; field: keyof Config; type?: string; f: Config; onSet: SetF }) {
+  const id = useId();
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <Input type={type} value={String(f[field])} onChange={(e) => onSet(field, type === "number" ? Number(e.target.value) : e.target.value)} />
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type={type} value={String(f[field])} onChange={(e) => onSet(field, type === "number" ? Number(e.target.value) : e.target.value)} />
     </div>
   );
 }
