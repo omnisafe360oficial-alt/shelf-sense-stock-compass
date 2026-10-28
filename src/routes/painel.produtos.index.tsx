@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import {
   ArrowUpDown, ChevronDown, ChevronUp,
@@ -12,6 +13,8 @@ import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/produtos/")({
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   head: () => ({
     meta: [
       { title: "Produtos — OmniSafe 360" },

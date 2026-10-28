@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle, ChevronRight, Lightbulb, Package,
@@ -12,6 +13,8 @@ import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/pedidos/")({
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   head: () => ({
     meta: [
       { title: "Pedidos de Compra — OmniSafe 360" },

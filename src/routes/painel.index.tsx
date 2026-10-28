@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SkeletonDashboard } from "@/components/ui/skeleton-page";
 import { useMemo } from "react";
 import {
   AlertTriangle, ArrowDownRight, ArrowUpRight,
@@ -25,6 +26,8 @@ import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/")({
+  pendingComponent: SkeletonDashboard,
+  pendingMs: 200,
   head: () => ({
     meta: [
       { title: "Início — OmniSafe 360" },
