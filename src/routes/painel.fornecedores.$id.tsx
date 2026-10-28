@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft, Clock, Edit3, Mail, MapPin, Package, Phone,
@@ -75,11 +75,14 @@ function Ficha() {
   const est = useEstoque();
   const { pedidos } = usePedidos();
 
+  const fid = useId();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!confirmando) return;
+    cancelRef.current?.focus();
     const handle = (e: KeyboardEvent) => { if (e.key === "Escape") setConfirmando(false); };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
@@ -215,7 +218,7 @@ function Ficha() {
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="destructive" onClick={confirmarExclusao}><Trash2 className="h-4 w-4" /> Confirmar exclusão</Button>
-            <Button variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
+            <Button ref={cancelRef} variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
           </div>
         </div>
       )}
@@ -226,32 +229,32 @@ function Ficha() {
           <h2 className="text-lg font-semibold">Editar fornecedor</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label>Nome / razão social</Label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+              <Label htmlFor={`${fid}-nome`}>Nome / razão social</Label>
+              <Input id={`${fid}-nome`} value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>CNPJ / CPF</Label>
-              <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} />
+              <Label htmlFor={`${fid}-cnpj`}>CNPJ / CPF</Label>
+              <Input id={`${fid}-cnpj`} value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Contato</Label>
-              <Input value={form.contato} onChange={(e) => setForm({ ...form, contato: e.target.value })} />
+              <Label htmlFor={`${fid}-contato`}>Contato</Label>
+              <Input id={`${fid}-contato`} value={form.contato} onChange={(e) => setForm({ ...form, contato: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
+              <Label htmlFor={`${fid}-telefone`}>Telefone</Label>
+              <Input id={`${fid}-telefone`} value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>E-mail</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Label htmlFor={`${fid}-email`}>E-mail</Label>
+              <Input id={`${fid}-email`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Cidade</Label>
-              <Input value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} />
+              <Label htmlFor={`${fid}-cidade`}>Cidade</Label>
+              <Input id={`${fid}-cidade`} value={form.cidade} onChange={(e) => setForm({ ...form, cidade: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Prazo de pagamento</Label>
-              <Input value={form.prazo} onChange={(e) => setForm({ ...form, prazo: e.target.value })} placeholder="Ex.: 30 dias" />
+              <Label htmlFor={`${fid}-prazo`}>Prazo de pagamento</Label>
+              <Input id={`${fid}-prazo`} value={form.prazo} onChange={(e) => setForm({ ...form, prazo: e.target.value })} placeholder="Ex.: 30 dias" />
             </div>
           </div>
           <div className="flex justify-end gap-3 border-t pt-4">

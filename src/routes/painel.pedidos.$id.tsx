@@ -116,8 +116,10 @@ function DetalhesPedido() {
   const [qtds, setQtds] = useState<Record<string, number>>({});
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState<"cancelar" | "excluir" | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!confirmando) return;
+    cancelRef.current?.focus();
     const handle = (e: KeyboardEvent) => { if (e.key === "Escape") setConfirmando(null); };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
@@ -438,7 +440,7 @@ function DetalhesPedido() {
               {confirmando === "cancelar" ? <XCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
               {confirmando === "cancelar" ? "Confirmar cancelamento" : "Confirmar exclusão"}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirmando(null)}>Voltar</Button>
+            <Button ref={cancelRef} variant="ghost" onClick={() => setConfirmando(null)}>Voltar</Button>
           </div>
         </div>
       )}
