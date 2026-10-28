@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cadastrarFornecedor } from "@/lib/fornecedores-store";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/fornecedores/novo")({
   head: () => ({
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/painel/fornecedores/novo")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: NovoFornecedor,
 });
 

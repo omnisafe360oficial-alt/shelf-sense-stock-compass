@@ -14,6 +14,7 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { usePedidos } from "@/lib/pedidos-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/fornecedores/$id")({
   loader: ({ params }) => {
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/painel/fornecedores/$id")({
     ],
   }),
   notFoundComponent: () => <p className="text-muted-foreground">Fornecedor não encontrado.</p>,
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Ficha,
 });
 

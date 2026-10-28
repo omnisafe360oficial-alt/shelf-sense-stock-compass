@@ -4,6 +4,7 @@ import { BarChart2, TrendingUp, ShoppingBag, Package, Calendar } from "lucide-re
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/relatorio-vendas")({
   head: () => ({
@@ -12,6 +13,8 @@ export const Route = createFileRoute("/painel/relatorio-vendas")({
       { name: "description", content: "Relatório de vendas por período com receita, unidades e produtos mais vendidos." },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: RelatorioVendas,
 });
 

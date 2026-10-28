@@ -12,6 +12,7 @@ import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada } from "@/lib/estoque-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/produtos/importar")({
   head: () => ({
@@ -24,6 +25,8 @@ export const Route = createFileRoute("/painel/produtos/importar")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Importar,
 });
 

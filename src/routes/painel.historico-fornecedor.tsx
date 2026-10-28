@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Truck, ChevronDown, ChevronRight, Calendar, Package, TrendingDown, Hash } from "lucide-react";
 import { useDevolicoes } from "@/lib/devolucoes-store";
 import { brl } from "@/lib/mock-data";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/historico-fornecedor")({
   head: () => ({
@@ -11,6 +12,8 @@ export const Route = createFileRoute("/painel/historico-fornecedor")({
       { name: "description", content: "Histórico de devoluções ao fornecedor agrupado por empresa." },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: HistoricoFornecedor,
 });
 

@@ -11,6 +11,7 @@ import { useFornecedores } from "@/lib/fornecedores-store";
 import { inicializarProduto, registrarEntrada, executarTransferencia } from "@/lib/estoque-store";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/produtos/novo")({
   head: () => ({
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/painel/produtos/novo")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: NovoProduto,
 });
 

@@ -19,6 +19,7 @@ import type { PedidoStatus, ItemPedido } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
 import { lerNfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 type ConcItem = {
   item: ItemPedido;
@@ -37,6 +38,8 @@ export const Route = createFileRoute("/painel/pedidos/$id")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: DetalhesPedido,
 });
 

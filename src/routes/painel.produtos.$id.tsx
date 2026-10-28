@@ -15,6 +15,7 @@ import { useFornecedores } from "@/lib/fornecedores-store";
 import { useEstoque, ajustarEstoque, inicializarProduto } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/produtos/$id")({
   loader: ({ params }) => {
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/painel/produtos/$id")({
     ],
   }),
   notFoundComponent: () => <p className="text-muted-foreground">Produto não encontrado.</p>,
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: ProdutoDetalhe,
 });
 
