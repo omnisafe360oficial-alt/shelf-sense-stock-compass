@@ -40,7 +40,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 });
 
 type FormState = {
-  nome: string; categoria: string; fornecedor: string; fornecedorId?: string; preco: string; custo: string; minimo: string; maximo: string;
+  nome: string; codigo: string; categoria: string; fornecedor: string; fornecedorId?: string; preco: string; custo: string; minimo: string; maximo: string;
   minimoDeposito: string; maximoDeposito: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
@@ -93,7 +93,7 @@ function ProdutoDetalhe() {
   const [filtroMov, setFiltroMov] = useState<FiltroMov>("todas");
   const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
-    nome: "", categoria: "", fornecedor: "", fornecedorId: undefined, preco: "", custo: "", minimo: "", maximo: "",
+    nome: "", codigo: "", categoria: "", fornecedor: "", fornecedorId: undefined, preco: "", custo: "", minimo: "", maximo: "",
     minimoDeposito: "10", maximoDeposito: "100",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
@@ -193,7 +193,7 @@ function ProdutoDetalhe() {
       ? fornecedores.find((x) => x.id === produto.fornecedorId)
       : fornecedores.find((x) => x.nome === produto.fornecedor);
     setF({
-      nome: produto.nome, categoria: produto.categoria,
+      nome: produto.nome, codigo: produto.codigo, categoria: produto.categoria,
       fornecedor: matchedForn?.nome ?? produto.fornecedor,
       fornecedorId: matchedForn?.id,
       preco: String(produto.preco), custo: String(produto.custoUltimaCompra ?? ""), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
@@ -217,6 +217,7 @@ function ProdutoDetalhe() {
       : undefined;
     editarProduto(produto.id, {
       nome: f.nome.trim(),
+      codigo: f.codigo.trim(),
       categoria: f.categoria,
       fornecedor: f.fornecedor,
       fornecedorId: f.fornecedorId,
@@ -498,6 +499,20 @@ function ProdutoDetalhe() {
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor={`${fid}-nome`}>Nome do produto</Label>
               <Input id={`${fid}-nome`} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor={`${fid}-codigo`}>
+                Código EAN / código de barras
+                <span className="ml-1 font-normal text-muted-foreground text-xs">— EAN-8, EAN-13 ou EAN-14</span>
+              </Label>
+              <Input
+                id={`${fid}-codigo`}
+                inputMode="numeric"
+                placeholder="7891234567890"
+                className="font-mono"
+                value={f.codigo}
+                onChange={(e) => setF({ ...f, codigo: e.target.value.replace(/\D/g, "").slice(0, 14) })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor={`${fid}-custo`}>Custo de compra (R$) <span className="font-normal text-muted-foreground text-xs">— custo por unidade na última compra</span></Label>
