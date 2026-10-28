@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Calendar, Edit3,
@@ -72,6 +72,14 @@ function ProdutoDetalhe() {
 
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+
+  useEffect(() => {
+    if (!confirmando) return;
+    const handle = (e: KeyboardEvent) => { if (e.key === "Escape") setConfirmando(false); };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [confirmando]);
+
   const [ajustando, setAjustando] = useState<string | null>(null);
   const [ajusteVal, setAjusteVal] = useState("");
   const [ajusteMotivo, setAjusteMotivo] = useState("");
@@ -265,7 +273,7 @@ function ProdutoDetalhe() {
 
       {/* Confirmação de exclusão */}
       {confirmando && (
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
+        <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
           <p className="font-semibold text-destructive">Excluir "{produto.nome}"?</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Esta ação não pode ser desfeita. Todos os dados do produto serão removidos.

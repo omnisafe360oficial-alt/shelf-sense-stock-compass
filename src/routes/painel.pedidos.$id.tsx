@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle, ArrowLeft, Check, CheckCircle, Clock, Edit3, FileUp, Package,
@@ -116,6 +116,13 @@ function DetalhesPedido() {
   const [qtds, setQtds] = useState<Record<string, number>>({});
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState<"cancelar" | "excluir" | null>(null);
+  useEffect(() => {
+    if (!confirmando) return;
+    const handle = (e: KeyboardEvent) => { if (e.key === "Escape") setConfirmando(null); };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [confirmando]);
+
   const [showXml, setShowXml] = useState(false);
   const [xmlDrag, setXmlDrag] = useState(false);
   const [conciliacao, setConciliacao] = useState<ConcItem[] | null>(null);
@@ -417,7 +424,7 @@ function DetalhesPedido() {
 
       {/* Confirmação */}
       {confirmando && (
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5 space-y-3">
+        <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5 space-y-3">
           <p className="font-semibold text-destructive">
             {confirmando === "cancelar" ? `Cancelar o pedido ${pedido.numero}?` : `Excluir o pedido ${pedido.numero}?`}
           </p>

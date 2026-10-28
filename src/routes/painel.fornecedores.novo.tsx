@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useId, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft, Building2, Clock, Mail, MapPin, Phone, Save, User,
@@ -44,10 +44,11 @@ function Secao({ icon: Icon, titulo, children }: { icon: React.ElementType; titu
 }
 
 function Campo({ label, dica, children }: { label: string; dica?: string; children: React.ReactNode }) {
+  const id = useId();
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
+      <Label htmlFor={id}>{label}</Label>
+      {React.cloneElement(children as React.ReactElement<{ id?: string }>, { id })}
       {dica && <p className="text-xs text-muted-foreground">{dica}</p>}
     </div>
   );
