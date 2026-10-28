@@ -1,7 +1,11 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Edit3, GitBranch, MapPin, Plus, Save, Trash2, Warehouse, X } from "lucide-react";
+import {
+  ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Calendar, Edit3,
+  GitBranch, MapPin, Package, Plus, Save, ShoppingCart,
+  TrendingDown, TrendingUp, Trash2, Warehouse, X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,12 +41,22 @@ type FormState = {
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
 
+type FiltroMov = "todas" | "entrada" | "venda" | "transferencia" | "ajuste";
+
 const MOV_LABEL: Record<string, { t: string; ic: typeof ArrowUp; c: string }> = {
-  entrada:      { t: "Entrada no depósito", ic: ArrowDown, c: "text-success" },
-  transferencia:{ t: "Reposto na gôndola",  ic: ArrowUp,   c: "text-primary" },
-  venda:        { t: "Vendido",              ic: ArrowUp,   c: "text-muted-foreground" },
-  ajuste:       { t: "Ajuste de estoque",    ic: ArrowUpDown, c: "text-warning" },
+  entrada:      { t: "Entrada no depósito", ic: ArrowDown,    c: "text-success" },
+  transferencia:{ t: "Reposto na gôndola",  ic: ArrowUp,      c: "text-primary" },
+  venda:        { t: "Vendido",             ic: TrendingDown, c: "text-muted-foreground" },
+  ajuste:       { t: "Ajuste de estoque",   ic: ArrowUpDown,  c: "text-warning" },
 };
+
+const FILTROS: { key: FiltroMov; label: string }[] = [
+  { key: "todas",        label: "Todas" },
+  { key: "entrada",      label: "Entradas" },
+  { key: "venda",        label: "Vendas" },
+  { key: "transferencia",label: "Transferências" },
+  { key: "ajuste",       label: "Ajustes" },
+];
 
 function ProdutoDetalhe() {
   const { id } = Route.useParams();
@@ -59,6 +73,7 @@ function ProdutoDetalhe() {
   const [ajusteVal, setAjusteVal] = useState("");
   const [ajusteMotivo, setAjusteMotivo] = useState("");
   const [addingVariant, setAddingVariant] = useState(false);
+  const [filtroMov, setFiltroMov] = useState<FiltroMov>("todas");
   const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
     nome: "", categoria: "", fornecedor: "", preco: "", custo: "", minimo: "", maximo: "",
@@ -75,9 +90,32 @@ function ProdutoDetalhe() {
     () => est.lotes.filter((l) => l.produtoId === produto?.id && l.qtd > 0).sort((a, b) => a.validade.localeCompare(b.validade)),
     [est.lotes, produto?.id],
   );
-  const movsProduto = useMemo(
-    () => est.movs.filter((m) => m.produtoId === produto?.id).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15),
+
+  const todasMovsProduto = useMemo(
+    () => est.movs.filter((m) => m.produtoId === produto?.id).sort((a, b) => b.data.localeCompare(a.data)),
     [est.movs, produto?.id],
+  );
+
+  const movsFiltradas = useMemo(
+    () => filtroMov === "todas" ? todasMovsProduto : todasMovsProduto.filter((m) => m.tipo === filtroMov),
+    [todasMovsProduto, filtroMov],
+  );
+
+  // Analytics: últimos 30 dias
+  const h30 = useMemo(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10), []);
+  const vendasUlt30 = useMemo(
+    () => todasMovsProduto.filter((m) => m.tipo === "venda" && m.data.slice(0, 10) >= h30),
+    [todasMovsProduto, h30],
+  );
+  const qtdVendida30 = useMemo(() => vendasUlt30.reduce((s, m) => s + m.qtd, 0), [vendasUlt30]);
+
+  const ultimaCompra = useMemo(
+    () => todasMovsProduto.find((m) => m.tipo === "entrada"),
+    [todasMovsProduto],
+  );
+  const ultimaVenda = useMemo(
+    () => todasMovsProduto.find((m) => m.tipo === "venda"),
+    [todasMovsProduto],
   );
 
   const isVariant = !!produto?.parentId;
@@ -124,6 +162,11 @@ function ProdutoDetalhe() {
   const capacidade = produto.maximo && produto.maximo > 0 ? produto.maximo : produto.minimo > 0 ? produto.minimo * 2 : 0;
   const pctGond = capacidade > 0 ? Math.min(100, (gond / capacidade) * 100) : gond > 0 ? 100 : 0;
   const barCor = gond === 0 ? "bg-destructive" : gond <= produto.minimo ? "bg-warning" : produto.maximo && gond >= produto.maximo ? "bg-primary" : "bg-success";
+
+  const mediaDiaria = qtdVendida30 / 30;
+  const cobertura = mediaDiaria > 0 ? Math.floor(total / mediaDiaria) : null;
+  const valorEstoque = produto.custoUltimaCompra ? total * produto.custoUltimaCompra : null;
+  const receitaEst30 = qtdVendida30 * produto.preco;
 
   const abrirEdicao = () => {
     const ld = produto.localDeposito;
@@ -184,6 +227,9 @@ function ProdutoDetalhe() {
     navigate({ to: "/painel/produtos" });
   };
 
+  const fmtData = (iso: string) =>
+    new Date(iso.slice(0, 10)).toLocaleDateString("pt-BR");
+
   return (
     <div className="space-y-6">
       <Link to="/painel/produtos" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -228,8 +274,9 @@ function ProdutoDetalhe() {
         </div>
       )}
 
-      {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      {/* KPIs — 3 colunas × 2 linhas */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* Linha 1: estoque */}
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">No depósito</p>
           <p className="font-display text-2xl font-bold">{dep} un</p>
@@ -246,8 +293,16 @@ function ProdutoDetalhe() {
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Total em estoque</p>
           <p className="font-display text-2xl font-bold">{total} un</p>
-          <p className="mt-1 text-xs text-muted-foreground">depósito + gôndola</p>
+          {cobertura !== null ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              cobertura estimada: <span className={cn("font-semibold", cobertura <= 7 ? "text-destructive" : cobertura <= 15 ? "text-warning" : "text-success")}>{cobertura}d</span>
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">depósito + gôndola</p>
+          )}
         </div>
+
+        {/* Linha 2: financeiro + vendas */}
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Preço de venda</p>
           <p className="font-display text-2xl font-bold">{brl(produto.preco)}</p>
@@ -258,6 +313,103 @@ function ProdutoDetalhe() {
           ) : (
             <p className="mt-1 text-xs text-muted-foreground">por unidade</p>
           )}
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center gap-1.5 text-xs uppercase text-muted-foreground">
+            <TrendingUp className="h-3 w-3" /> Vendas — 30 dias
+          </div>
+          <p className="font-display text-2xl font-bold">{qtdVendida30} un</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            receita est.: {brl(receitaEst30)} · média: {mediaDiaria.toFixed(1)} un/dia
+          </p>
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center gap-1.5 text-xs uppercase text-muted-foreground">
+            <Package className="h-3 w-3" /> Valor em estoque
+          </div>
+          {valorEstoque !== null ? (
+            <>
+              <p className="font-display text-2xl font-bold">{brl(valorEstoque)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {total} un × {brl(produto.custoUltimaCompra!)} custo
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-display text-2xl font-bold text-muted-foreground">—</p>
+              <p className="mt-1 text-xs text-muted-foreground">cadastre o custo para calcular</p>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Atividade recente */}
+      <div className="rounded-2xl border bg-card p-5">
+        <h2 className="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Atividade recente</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/12 text-success">
+              <ShoppingCart className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">Última compra</p>
+              {ultimaCompra ? (
+                <>
+                  <p className="text-sm font-semibold">{fmtData(ultimaCompra.data)}</p>
+                  <p className="text-xs text-muted-foreground">{ultimaCompra.origem || "Fornecedor"} · {ultimaCompra.qtd} un</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma entrada</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <TrendingDown className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">Última venda</p>
+              {ultimaVenda ? (
+                <>
+                  <p className="text-sm font-semibold">{fmtData(ultimaVenda.data)}</p>
+                  <p className="text-xs text-muted-foreground">{ultimaVenda.qtd} un · {brl(ultimaVenda.qtd * produto.preco)}</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma venda</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+              <TrendingUp className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">Giro — últimos 30 dias</p>
+              <p className="text-sm font-semibold">{qtdVendida30} unidades vendidas</p>
+              <p className="text-xs text-muted-foreground">{vendasUlt30.length} operações de venda</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs text-muted-foreground">Cobertura de estoque</p>
+              {cobertura !== null ? (
+                <>
+                  <p className={cn("text-sm font-semibold", cobertura <= 7 ? "text-destructive" : cobertura <= 15 ? "text-warning" : "text-success")}>
+                    ~{cobertura} dias
+                  </p>
+                  <p className="text-xs text-muted-foreground">baseado no giro dos últimos 30d</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">Sem dados de venda</p>
+                  <p className="text-xs text-muted-foreground">nenhuma venda registrada</p>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -578,20 +730,49 @@ function ProdutoDetalhe() {
           </table>
         </div>
 
-        {/* Histórico de movimentações */}
+        {/* Histórico de movimentações com filtro */}
         <div className="rounded-2xl border bg-card overflow-hidden">
-          <h2 className="border-b p-5 font-semibold">Últimas movimentações</h2>
-          <div className="divide-y">
-            {movsProduto.length === 0 ? (
+          <div className="border-b p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Histórico de movimentações</h2>
+              <span className="text-xs text-muted-foreground">{movsFiltradas.length} registro{movsFiltradas.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {FILTROS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFiltroMov(f.key)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-semibold transition border",
+                    filtroMov === f.key
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border hover:border-primary/50",
+                  )}
+                >
+                  {f.label}
+                  {f.key !== "todas" && (
+                    <span className="ml-1 opacity-60">
+                      ({todasMovsProduto.filter((m) => m.tipo === f.key).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="divide-y max-h-[480px] overflow-y-auto">
+            {movsFiltradas.length === 0 ? (
               <p className="p-6 text-center text-sm text-muted-foreground">
-                Nenhuma movimentação registrada.
+                Nenhuma movimentação{filtroMov !== "todas" ? " deste tipo" : ""}.
               </p>
             ) : (
-              movsProduto.map((m) => {
+              movsFiltradas.map((m) => {
                 const ml = MOV_LABEL[m.tipo] ?? { t: m.tipo, ic: ArrowUpDown, c: "text-muted-foreground" };
                 const Icon = ml.ic;
-                const dataFmt = new Date(m.data.slice(0, 10)).toLocaleDateString("pt-BR");
+                const dataFmt = fmtData(m.data);
                 const hora = m.data.length >= 19 ? m.data.slice(11, 16) : "";
+                const origem = m.tipo === "entrada" && m.origem ? m.origem : null;
+                const valor = m.tipo === "venda" ? m.qtd * produto.preco : m.tipo === "entrada" && produto.custoUltimaCompra ? m.qtd * produto.custoUltimaCompra : null;
                 return (
                   <div key={m.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30">
                     <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted", ml.c)}>
@@ -599,11 +780,18 @@ function ProdutoDetalhe() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{ml.t}</p>
-                      <p className="text-xs text-muted-foreground">{m.usuario || "Sistema"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {origem ? origem : (m.usuario || "Sistema")}
+                      </p>
                     </div>
-                    <div className="text-right text-sm">
+                    <div className="text-right text-sm shrink-0">
                       <p className="font-semibold">{m.qtd > 0 ? "+" : ""}{m.qtd} un</p>
-                      <p className="text-xs text-muted-foreground">{dataFmt}{hora ? ` ${hora}` : ""}</p>
+                      {valor !== null ? (
+                        <p className="text-xs text-muted-foreground">{brl(valor)}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{dataFmt}{hora ? ` ${hora}` : ""}</p>
+                      )}
+                      {valor !== null && <p className="text-xs text-muted-foreground">{dataFmt}</p>}
                     </div>
                   </div>
                 );
