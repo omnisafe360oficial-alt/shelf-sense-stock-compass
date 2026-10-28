@@ -37,24 +37,51 @@ supabase.auth.getSession().then(({ data }) => {
     set({ session: data.session });
     carregarLoja(data.session.user.id).then(() => set({ loading: false }));
   } else {
-    // Se há um code PKCE ou token implícito na URL, o onAuthStateChange
-    // vai disparar com SIGNED_IN assim que o exchange completar.
-    // Mantemos loading: true para não redirecionar antes disso.
+    // Keep loading:true if there's an OAuth exchange in progress.
+    // Supabase may have already removed ?code= from the URL before this runs,
+    // so we also check the sessionStorage flag set by handleGoogle().
     const pendingOAuth =
       typeof window !== "undefined" &&
       (new URLSearchParams(window.location.search).has("code") ||
-        window.location.hash.includes("access_token"));
+        window.location.hash.includes("access_token") ||
+        sessionStorage.getItem("oauth_pending") === "1");
     if (!pendingOAuth) {
       set({ loading: false });
     }
   }
 });
 
-supabase.auth.onAuthStateChange((_event, session) => {
+supabase.auth.onAuthStateChange((event, session) => {
   if (session) {
-    set({ session, loading: true });
-    carregarLoja(session.user.id).then(() => set({ loading: false }));
+    if (event === "SIGNED_IN") {
+      // New sign-in (OAuth or password) — reload loja and keep spinner up
+      if (typeof window !== "undefined") sessionStorage.removeItem("oauth_pending");
+      set({ session, loading: true });
+      carregarLoja(session.user.id).then(() => set({ loading: false }));
+    } else {
+      // TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION
+      // Only call carregarLoja if this is a different user or loja hasn't been loaded yet.
+      // This avoids setting loading:true on routine token refreshes (which caused the
+      // Rules of Hooks crash in PainelLayout by toggling the early-return guard).
+      const lojaJaCarregada =
+        state.session?.user.id === session.user.id && state.lojaId !== null;
+      if (!lojaJaCarregada) {
+        set({ session, loading: true });
+        carregarLoja(session.user.id).then(() => set({ loading: false }));
+      } else {
+        set({ session });
+      }
+    }
   } else {
+    // No session. If we're waiting for an INITIAL_SESSION during an OAuth exchange,
+    // stay loading so auth.callback.tsx doesn't redirect away prematurely.
+    const oauthPending =
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("oauth_pending") === "1";
+    if (event === "INITIAL_SESSION" && oauthPending) {
+      return;
+    }
+    if (typeof window !== "undefined") sessionStorage.removeItem("oauth_pending");
     set({ session: null, lojaId: null, nomeProprietario: null, papel: null, loading: false });
     emitLojaChange(null);
   }

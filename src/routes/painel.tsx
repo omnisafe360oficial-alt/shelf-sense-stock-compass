@@ -41,6 +41,15 @@ function PainelLayout() {
   const tema = useTema();
   const { pedidos } = usePedidos();
 
+  // Hooks must be called before any early return (Rules of Hooks)
+  const [sidebarAberto, setSidebarAberto] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [buscaFocada, setBuscaFocada] = useState(false);
+  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
+  const inputMobileRef = useRef<HTMLInputElement>(null);
+  const [notifOpenPre, setNotifOpenPre] = useState(false);
+  const notifRefPre = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (auth.loading) return;
     if (!auth.session) navigate({ to: "/" });
@@ -52,14 +61,11 @@ function PainelLayout() {
 
   if (auth.loading || !auth.session) return null;
 
-  // --- Sidebar mobile ---
-  const [sidebarAberto, setSidebarAberto] = useState(false);
+  // Aliases so the rest of the component is unchanged
+  const notifOpen = notifOpenPre;
+  const setNotifOpen = setNotifOpenPre;
+  const notifRef = notifRefPre;
 
-  // --- Busca global ---
-  const [busca, setBusca] = useState("");
-  const [buscaFocada, setBuscaFocada] = useState(false);
-  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
-  const inputMobileRef = useRef<HTMLInputElement>(null);
   const resultados = busca.length >= 2
     ? produtos.filter((p) =>
         p.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -69,8 +75,6 @@ function PainelLayout() {
     : [];
 
   // --- Notificações ---
-  const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
   const fecharNotif = () => setNotifOpen(false);
 
   const abaixoTodos = abaixoDoMinimo(est.gondola);

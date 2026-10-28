@@ -42,11 +42,17 @@ function Login() {
   }
 
   async function handleGoogle() {
+    // Flag survives the Google redirect so auth.ts keeps loading:true even after
+    // Supabase removes ?code= from the URL before pendingOAuth is checked.
+    sessionStorage.setItem("oauth_pending", "1");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) toast.error(error.message);
+    if (error) {
+      sessionStorage.removeItem("oauth_pending");
+      toast.error(error.message);
+    }
   }
 
   if (auth.loading) {
