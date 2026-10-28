@@ -37,6 +37,7 @@ import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as PainelAuditoriaRouteImport } from './routes/painel.auditoria'
 import { Route as PainelAntifurtoRouteImport } from './routes/painel.antifurto'
 import { Route as PainelDevolucoesRouteImport } from './routes/painel.devolucoes'
+import { Route as PainelRelatorioVendasRouteImport } from './routes/painel.relatorio-vendas'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -196,6 +197,11 @@ const PainelDevolucoesRoute = PainelDevolucoesRouteImport.update({
   path: '/devolucoes',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelRelatorioVendasRoute = PainelRelatorioVendasRouteImport.update({
+  id: '/relatorio-vendas',
+  path: '/relatorio-vendas',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/devolucoes': typeof PainelDevolucoesRoute
+  '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/devolucoes': typeof PainelDevolucoesRoute
+  '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
   '/painel/devolucoes': typeof PainelDevolucoesRoute
+  '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/painel/auditoria'
     | '/painel/antifurto'
     | '/painel/devolucoes'
+    | '/painel/relatorio-vendas'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -488,6 +498,7 @@ export interface FileRouteTypes {
     | '/painel/auditoria'
     | '/painel/antifurto'
     | '/painel/devolucoes'
+    | '/painel/relatorio-vendas'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -536,6 +547,7 @@ export interface FileRouteTypes {
     | '/painel/auditoria'
     | '/painel/antifurto'
     | '/painel/devolucoes'
+    | '/painel/relatorio-vendas'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -667,6 +679,13 @@ declare module '@tanstack/react-router' {
       path: '/devolucoes'
       fullPath: '/painel/devolucoes'
       preLoaderRoute: typeof PainelDevolucoesRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/relatorio-vendas': {
+      id: '/painel/relatorio-vendas'
+      path: '/relatorio-vendas'
+      fullPath: '/painel/relatorio-vendas'
+      preLoaderRoute: typeof PainelRelatorioVendasRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/configuracoes': {
@@ -915,6 +934,7 @@ interface PainelRouteChildren {
   PainelAuditoriaRoute: typeof PainelAuditoriaRoute
   PainelAntifurtoRoute: typeof PainelAntifurtoRoute
   PainelDevolucoesRoute: typeof PainelDevolucoesRoute
+  PainelRelatorioVendasRoute: typeof PainelRelatorioVendasRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -949,6 +969,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelAuditoriaRoute: PainelAuditoriaRoute,
   PainelAntifurtoRoute: PainelAntifurtoRoute,
   PainelDevolucoesRoute: PainelDevolucoesRoute,
+  PainelRelatorioVendasRoute: PainelRelatorioVendasRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
