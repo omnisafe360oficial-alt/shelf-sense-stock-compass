@@ -15,6 +15,8 @@ export type Config = {
   alertaVencimentos: boolean;
   alertaPedidos: boolean;
   diasAlertaPedido: number;
+  alertaAntifurto: boolean;
+  limiteAntifurtoUnidades: number;
 };
 
 const PADRAO: Config = {
@@ -30,6 +32,8 @@ const PADRAO: Config = {
   alertaVencimentos: true,
   alertaPedidos: true,
   diasAlertaPedido: 2,
+  alertaAntifurto: true,
+  limiteAntifurtoUnidades: 2,
 };
 
 let estado: Config = { ...PADRAO };
