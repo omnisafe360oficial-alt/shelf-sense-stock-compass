@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowUpDown, Building2, Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
@@ -12,6 +13,8 @@ import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel/fornecedores/")({
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   head: () => ({
     meta: [
       { title: "Fornecedores — OmniSafe 360" },

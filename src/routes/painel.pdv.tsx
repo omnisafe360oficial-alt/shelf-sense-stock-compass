@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SkeletonPdv } from "@/components/ui/skeleton-page";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BellRing, CheckCircle2, Copy, MessageCircle, Minus, Pencil, Plus, Receipt, ScanBarcode, Trash2, X,
@@ -16,6 +17,8 @@ import { promocaoAtivaParaProduto, usePromocoes } from "@/lib/promocoes-store";
 import { HOJE } from "@/lib/computed";
 
 export const Route = createFileRoute("/painel/pdv")({
+  pendingComponent: SkeletonPdv,
+  pendingMs: 200,
   head: () => ({
     meta: [
       { title: "PDV (Caixa) — OmniSafe 360" },
