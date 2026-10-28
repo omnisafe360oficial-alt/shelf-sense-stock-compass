@@ -49,6 +49,7 @@ import { Route as RepositorIndexRouteImport } from './routes/repositor.index'
 import { Route as RepositorHistoricoRouteImport } from './routes/repositor.historico'
 import { Route as RepositorReporRouteImport } from './routes/repositor.repor'
 import { Route as RepositorTarefasRouteImport } from './routes/repositor.tarefas'
+import { Route as PainelFornecedoresNovoRouteImport } from './routes/painel.fornecedores.novo'
 import { Route as PainelFornecedoresIndexRouteImport } from './routes/painel.fornecedores.index'
 import { Route as PainelFornecedoresIdRouteImport } from './routes/painel.fornecedores.$id'
 import { Route as PainelPedidosIndexRouteImport } from './routes/painel.pedidos.index'
@@ -260,6 +261,11 @@ const RepositorTarefasRoute = RepositorTarefasRouteImport.update({
   path: '/tarefas',
   getParentRoute: () => RepositorRoute,
 } as any)
+const PainelFornecedoresNovoRoute = PainelFornecedoresNovoRouteImport.update({
+  id: '/fornecedores/novo',
+  path: '/fornecedores/novo',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelFornecedoresIndexRoute = PainelFornecedoresIndexRouteImport.update({
   id: '/fornecedores/',
   path: '/fornecedores/',
@@ -353,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/recebe/': typeof RecebeIndexRoute
   '/repositor/': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/fornecedores/novo': typeof PainelFornecedoresNovoRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
   '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/recebe': typeof RecebeIndexRoute
   '/repositor': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/fornecedores/novo': typeof PainelFornecedoresNovoRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
   '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/recebe/': typeof RecebeIndexRoute
   '/repositor/': typeof RepositorIndexRoute
   '/painel/fornecedores/$id': typeof PainelFornecedoresIdRoute
+  '/painel/fornecedores/novo': typeof PainelFornecedoresNovoRoute
   '/painel/pedidos/$id': typeof PainelPedidosIdRoute
   '/painel/pedidos/novo': typeof PainelPedidosNovoRoute
   '/painel/pedidos/sugerir': typeof PainelPedidosSugerirRoute
@@ -509,6 +518,7 @@ export interface FileRouteTypes {
     | '/recebe/'
     | '/repositor/'
     | '/painel/fornecedores/$id'
+    | '/painel/fornecedores/novo'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
     | '/painel/pedidos/sugerir'
@@ -558,6 +568,7 @@ export interface FileRouteTypes {
     | '/recebe'
     | '/repositor'
     | '/painel/fornecedores/$id'
+    | '/painel/fornecedores/novo'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
     | '/painel/pedidos/sugerir'
@@ -610,6 +621,7 @@ export interface FileRouteTypes {
     | '/recebe/'
     | '/repositor/'
     | '/painel/fornecedores/$id'
+    | '/painel/fornecedores/novo'
     | '/painel/pedidos/$id'
     | '/painel/pedidos/novo'
     | '/painel/pedidos/sugerir'
@@ -927,6 +939,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelFornecedoresIdRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/fornecedores/novo': {
+      id: '/painel/fornecedores/novo'
+      path: '/fornecedores/novo'
+      fullPath: '/painel/fornecedores/novo'
+      preLoaderRoute: typeof PainelFornecedoresNovoRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/pedidos/': {
       id: '/painel/pedidos/'
       path: '/pedidos'
@@ -1013,6 +1032,7 @@ interface PainelRouteChildren {
   PainelValidadesRoute: typeof PainelValidadesRoute
   PainelIndexRoute: typeof PainelIndexRoute
   PainelFornecedoresIdRoute: typeof PainelFornecedoresIdRoute
+  PainelFornecedoresNovoRoute: typeof PainelFornecedoresNovoRoute
   PainelPedidosIdRoute: typeof PainelPedidosIdRoute
   PainelPedidosNovoRoute: typeof PainelPedidosNovoRoute
   PainelPedidosSugerirRoute: typeof PainelPedidosSugerirRoute
@@ -1051,6 +1071,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelValidadesRoute: PainelValidadesRoute,
   PainelIndexRoute: PainelIndexRoute,
   PainelFornecedoresIdRoute: PainelFornecedoresIdRoute,
+  PainelFornecedoresNovoRoute: PainelFornecedoresNovoRoute,
   PainelPedidosIdRoute: PainelPedidosIdRoute,
   PainelPedidosNovoRoute: PainelPedidosNovoRoute,
   PainelPedidosSugerirRoute: PainelPedidosSugerirRoute,

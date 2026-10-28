@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowUpDown, Building2, Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
@@ -29,6 +29,7 @@ const FORM_VAZIO = { nome: "", cnpj: "", contato: "", telefone: "", email: "", c
 type Sort = "az" | "produtos" | "pedidos";
 
 function Fornecedores() {
+  const navigate = useNavigate();
   const fornecedores = useFornecedores();
   const produtos = useProdutos();
   const { pedidos } = usePedidos();
@@ -69,7 +70,7 @@ function Fornecedores() {
           <h1 className="text-3xl font-bold">Fornecedores</h1>
           <p className="text-muted-foreground">{fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""} cadastrado{fornecedores.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button size="lg" onClick={() => { setForm(FORM_VAZIO); setNovo(true); }}>
+        <Button size="lg" onClick={() => navigate({ to: "/painel/fornecedores/novo" })}>
           <Plus /> Novo fornecedor
         </Button>
       </div>
@@ -132,7 +133,7 @@ function Fornecedores() {
           <Building2 className="mx-auto h-10 w-10 text-muted-foreground/40" />
           <p className="mt-3 font-semibold">Nenhum fornecedor cadastrado</p>
           <p className="mt-1 text-sm text-muted-foreground">Cadastre o primeiro fornecedor para vinculá-lo a pedidos de compra.</p>
-          <Button className="mt-5" onClick={() => { setForm(FORM_VAZIO); setNovo(true); }}>
+          <Button className="mt-5" onClick={() => navigate({ to: "/painel/fornecedores/novo" })}>
             <Plus /> Novo fornecedor
           </Button>
         </div>
