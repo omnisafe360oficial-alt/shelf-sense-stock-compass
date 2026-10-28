@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCode2, FileUp, MapPin, Package, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,6 @@ type Linha = {
 
 function Importar() {
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [nota, setNota] = useState<Nfe | null>(null);
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [arrastando, setArrastando] = useState(false);
@@ -98,18 +97,18 @@ function Importar() {
       <div className="mx-auto max-w-3xl space-y-6">
         <Link to="/painel/produtos" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Produtos</Link>
         <div><h1 className="text-3xl font-bold">Importar produtos por XML</h1><p className="text-muted-foreground">Envie o XML da nota fiscal. O sistema lê fornecedor, produtos, quantidades, custos e lotes.</p></div>
-        <div
+        <label
+          htmlFor="xml-file-input"
           onDragOver={(e) => { e.preventDefault(); setArrastando(true); }}
           onDragLeave={() => setArrastando(false)}
           onDrop={(e) => { e.preventDefault(); setArrastando(false); lerArquivo(e.dataTransfer.files[0]); }}
-          onClick={() => inputRef.current?.click()}
           className={cn("flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed bg-card p-16 text-center transition", arrastando ? "border-primary bg-secondary" : "hover:border-primary/50")}
         >
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-primary-foreground"><FileUp className="h-7 w-7" /></span>
           <p className="mt-5 text-lg font-semibold">Arraste o arquivo XML aqui</p>
           <p className="text-sm text-muted-foreground">ou clique para escolher no computador</p>
-          <input ref={inputRef} type="file" accept=".xml,text/xml" className="hidden" onChange={(e) => lerArquivo(e.target.files?.[0])} />
-        </div>
+          <input id="xml-file-input" type="file" accept=".xml,text/xml" className="hidden" onChange={(e) => { lerArquivo(e.target.files?.[0]); e.currentTarget.value = ""; }} />
+        </label>
         <div className="text-center"><Button variant="outline" onClick={() => carregar(XML_EXEMPLO)}><Sparkles /> Testar com uma nota de exemplo</Button></div>
       </div>
     );

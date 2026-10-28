@@ -85,6 +85,6 @@ export function gravarAudit(entrada: Omit<AuditEntry, "id" | "data">) {
       valor_novo: novaEntrada.valorNovo ?? null,
     })
     .then(({ error }) => {
-      if (error) toast.error("Erro ao gravar auditoria: " + error.message);
+      if (error) console.warn("Erro ao gravar auditoria:", error.message);
     });
 }
