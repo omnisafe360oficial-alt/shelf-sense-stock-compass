@@ -373,12 +373,17 @@ function ResumoRelatorios() {
             ) : (
               <div className="space-y-1">
                 {alertas.vencendo.slice(0, 4).map((l) => (
-                  <div key={l.id} className="flex items-center justify-between text-xs px-1 py-0.5">
+                  <Link
+                    key={l.id}
+                    to="/painel/produtos/$id"
+                    params={{ id: l.produto.id }}
+                    className="flex items-center justify-between text-xs hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
+                  >
                     <span className="truncate text-muted-foreground">{l.produto.nome}</span>
                     <span className={`shrink-0 ml-2 font-medium ${l.dias <= 3 ? "text-red-600" : "text-orange-500"}`}>
-                      {l.dias}d
+                      {l.dias <= 0 ? "vencido" : `${l.dias}d`}
                     </span>
-                  </div>
+                  </Link>
                 ))}
                 {alertas.vencendo.length > 4 && (
                   <p className="text-xs text-muted-foreground pl-1">+{alertas.vencendo.length - 4} outros</p>
@@ -393,7 +398,8 @@ function ResumoRelatorios() {
       <div>
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Acesso rápido</p>
         <div className="flex flex-wrap gap-2">
-          {[
+          [
+            { label: "Produtos", to: "/painel/produtos", icon: <Package className="w-3.5 h-3.5" /> },
             { label: "Relatórios analíticos", to: "/painel/relatorios", icon: <BarChart3 className="w-3.5 h-3.5" /> },
             { label: "Rel. Vendas", to: "/painel/relatorio-vendas", icon: <BarChart2 className="w-3.5 h-3.5" /> },
             { label: "Rel. Compras", to: "/painel/relatorio-compras", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
