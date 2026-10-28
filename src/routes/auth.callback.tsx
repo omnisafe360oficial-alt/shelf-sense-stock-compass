@@ -17,6 +17,18 @@ function AuthCallback() {
   const auth = useAuth();
   const attempted = useRef(false);
 
+  // Handle ?error= params Google sends when the user cancels or OAuth fails.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    if (err) {
+      sessionStorage.removeItem("oauth_pending");
+      const desc = params.get("error_description");
+      toast.error(desc ? decodeURIComponent(desc.replace(/\+/g, " ")) : "Falha ao autenticar com Google");
+      navigate({ to: "/", replace: true });
+    }
+  }, [navigate]);
+
   // Troca explícita do code PKCE — garante que funciona mesmo
   // se detectSessionInUrl não processou antes do componente montar.
   useEffect(() => {
@@ -29,6 +41,7 @@ function AuthCallback() {
 
     supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
       if (error && error.message !== "code already used") {
+        sessionStorage.removeItem("oauth_pending");
         toast.error("Falha ao autenticar: " + error.message);
         navigate({ to: "/", replace: true });
       }
@@ -47,6 +60,7 @@ function AuthCallback() {
       // Só redireciona para login se não há código em processamento
       const hasCode = new URLSearchParams(window.location.search).has("code");
       if (!hasCode) {
+        sessionStorage.removeItem("oauth_pending");
         navigate({ to: "/", replace: true });
       }
     }
