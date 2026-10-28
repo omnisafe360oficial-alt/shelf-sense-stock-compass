@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useEquipe, alterarPapel, alterarStatus, PAPEIS, type Papel } from "@/lib/equipe-store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/equipe")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/painel/equipe")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Equipe,
 });
 

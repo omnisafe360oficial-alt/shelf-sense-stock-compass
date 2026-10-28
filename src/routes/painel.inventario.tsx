@@ -10,11 +10,14 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useAuth } from "@/lib/auth";
 import { HOJE } from "@/lib/computed";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/inventario")({
   head: () => ({
     meta: [{ title: "Inventário Periódico — OmniSafe 360" }],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Inventario,
 });
 

@@ -6,6 +6,7 @@ import { TransferirDialog } from "@/components/estoque/TransferirDialog";
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/gondola")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/painel/gondola")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Gondola,
 });
 

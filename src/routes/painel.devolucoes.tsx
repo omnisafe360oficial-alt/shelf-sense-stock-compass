@@ -12,8 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDevolicoes, registrarDevolucao, type MotivoDevolucao, type NovaDevolicaoItem } from "@/lib/devolucoes-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
-export const Route = createFileRoute("/painel/devolucoes")({
+export const Route = createFileRoute("/painel/devolucoes")({  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Devolucoes,
 });
 

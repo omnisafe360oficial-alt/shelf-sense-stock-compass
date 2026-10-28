@@ -4,6 +4,7 @@ import { ArrowDownToLine, ArrowRightLeft, Download, ShoppingCart, Wrench } from 
 import { useEstoque, type Mov } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 function exportCsv(rows: string[][], filename: string) {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/painel/movimentacoes")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Movimentacoes,
 });
 

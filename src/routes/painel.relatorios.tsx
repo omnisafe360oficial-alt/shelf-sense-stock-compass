@@ -11,6 +11,7 @@ import { useProdutos, getProdutos } from "@/lib/produtos-store";
 import { useRecebeEstado } from "@/lib/recebe-store";
 import { useRepositorEstado } from "@/lib/repositor-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/relatorios")({
   head: () => ({
@@ -22,6 +23,8 @@ export const Route = createFileRoute("/painel/relatorios")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Relatorios,
 });
 

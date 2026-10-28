@@ -11,11 +11,14 @@ import { useEstoque } from "@/lib/estoque-store";
 import { vendasHoje, vendasPeriodo, vendasPorDia, HOJE } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/metas")({
   head: () => ({
     meta: [{ title: "Metas de Vendas — OmniSafe 360" }],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Metas,
 });
 
