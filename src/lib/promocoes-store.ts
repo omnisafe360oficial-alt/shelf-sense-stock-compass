@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { toast } from "sonner";
+import { supabase } from "./supabase";
 import { getLojaId, onLojaChange } from "./loja-resolver";
 
 export type TipoDesconto = "pct" | "fixo";
@@ -22,25 +24,41 @@ let estado: Estado = { ...VAZIO };
 const ouvintes = new Set<() => void>();
 const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
 
-function chave(lojaId: string) { return `omni-promocoes-${lojaId}`; }
+function mapRow(r: Record<string, unknown>): Promocao {
+  return {
+    id: r.id as string,
+    nome: (r.nome as string) ?? "",
+    descricao: (r.descricao as string) ?? "",
+    tipo: (r.tipo as TipoDesconto) ?? "pct",
+    valor: Number(r.valor ?? 0),
+    dataInicio: (r.data_inicio as string) ?? "",
+    dataFim: (r.data_fim as string) ?? "",
+    todos: Boolean(r.todos),
+    produtoIds: (r.produto_ids as string[]) ?? [],
+  };
+}
 
-function carregar() {
-  const lojaId = getLojaId();
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+async function carregar(lojaId: string) {
+  const { data, error } = await supabase
+    .from("promocoes")
+    .select("id, nome, descricao, tipo, valor, data_inicio, data_fim, todos, produto_ids")
+    .eq("loja_id", lojaId)
+    .order("data_inicio");
+  if (error) { toast.error("Erro ao carregar promoções"); return; }
+  emitir({ promocoes: (data ?? []).map((r) => mapRow(r as Record<string, unknown>)) });
+}
+
+onLojaChange(async (lojaId) => {
+  if (realtimeChannel) { await supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
   if (!lojaId) { emitir({ ...VAZIO }); return; }
-  try {
-    const raw = localStorage.getItem(chave(lojaId));
-    emitir(raw ? (JSON.parse(raw) as Estado) : { ...VAZIO });
-  } catch { emitir({ ...VAZIO }); }
-}
-
-function persistir() {
-  const lojaId = getLojaId();
-  if (!lojaId) return;
-  try { localStorage.setItem(chave(lojaId), JSON.stringify(estado)); } catch {}
-}
-
-onLojaChange(() => carregar());
-carregar();
+  await carregar(lojaId);
+  realtimeChannel = supabase
+    .channel(`promocoes-${lojaId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "promocoes", filter: `loja_id=eq.${lojaId}` }, () => carregar(lojaId))
+    .subscribe();
+});
 
 export function usePromocoes() {
   return useSyncExternalStore(
@@ -50,22 +68,39 @@ export function usePromocoes() {
 }
 
 export function addPromocao(p: Omit<Promocao, "id">): void {
-  const nova: Promocao = { ...p, id: crypto.randomUUID() };
-  emitir({ ...estado, promocoes: [...estado.promocoes, nova] });
-  persistir();
+  const id = crypto.randomUUID();
+  emitir({ promocoes: [...estado.promocoes, { ...p, id }] });
+  const lojaId = getLojaId();
+  if (!lojaId) return;
+  supabase
+    .from("promocoes")
+    .insert({ id, loja_id: lojaId, nome: p.nome, descricao: p.descricao, tipo: p.tipo, valor: p.valor, data_inicio: p.dataInicio, data_fim: p.dataFim, todos: p.todos, produto_ids: p.produtoIds })
+    .then(({ error }) => { if (error) toast.error("Erro ao criar promoção: " + error.message); });
 }
 
 export function updatePromocao(parcial: Partial<Promocao> & { id: string }): void {
-  emitir({
-    ...estado,
-    promocoes: estado.promocoes.map((p) => p.id === parcial.id ? { ...p, ...parcial } : p),
-  });
-  persistir();
+  emitir({ promocoes: estado.promocoes.map((p) => p.id === parcial.id ? { ...p, ...parcial } : p) });
+  const lojaId = getLojaId();
+  if (!lojaId) return;
+  const payload: Record<string, unknown> = {};
+  if (parcial.nome !== undefined) payload.nome = parcial.nome;
+  if (parcial.descricao !== undefined) payload.descricao = parcial.descricao;
+  if (parcial.tipo !== undefined) payload.tipo = parcial.tipo;
+  if (parcial.valor !== undefined) payload.valor = parcial.valor;
+  if (parcial.dataInicio !== undefined) payload.data_inicio = parcial.dataInicio;
+  if (parcial.dataFim !== undefined) payload.data_fim = parcial.dataFim;
+  if (parcial.todos !== undefined) payload.todos = parcial.todos;
+  if (parcial.produtoIds !== undefined) payload.produto_ids = parcial.produtoIds;
+  supabase.from("promocoes").update(payload).eq("id", parcial.id)
+    .then(({ error }) => { if (error) toast.error("Erro ao atualizar promoção: " + error.message); });
 }
 
 export function removePromocao(id: string): void {
-  emitir({ ...estado, promocoes: estado.promocoes.filter((p) => p.id !== id) });
-  persistir();
+  emitir({ promocoes: estado.promocoes.filter((p) => p.id !== id) });
+  const lojaId = getLojaId();
+  if (!lojaId) return;
+  supabase.from("promocoes").delete().eq("id", id)
+    .then(({ error }) => { if (error) toast.error("Erro ao excluir promoção: " + error.message); });
 }
 
 export function getPromocoes(): Promocao[] { return estado.promocoes; }
