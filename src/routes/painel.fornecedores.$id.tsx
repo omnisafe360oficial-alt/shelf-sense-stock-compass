@@ -3,7 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft, Clock, Edit3, Mail, MapPin, Package, Phone,
-  Save, ShoppingCart, Trash2, User, X, TrendingUp, AlertTriangle,
+  Save, ShoppingCart, Trash2, User, X, TrendingUp, AlertTriangle, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,7 +125,16 @@ function Ficha() {
     const ultimaCompra = recebidos[0] ?? null;
     const pedidoMaisAntigo = pendentes.sort((a, b) => a.dataEmissao.localeCompare(b.dataEmissao))[0] ?? null;
 
-    return { pendentes: pendentes.length, volumeTotal, ticketMedio, valorEstoque, prodsBaixo, ultimaCompra, pedidoMaisAntigo };
+    // Score de qualidade do fornecedor (0–100)
+    const naoCancelados = todosPedidos.filter((p) => p.status !== "cancelado" && p.status !== "rascunho");
+    const taxaEntrega = naoCancelados.length > 0 ? (recebidos.length / naoCancelados.length) * 100 : 0;
+    const taxaParcial = naoCancelados.length > 0 ? (naoCancelados.filter((p) => p.status === "parcial").length / naoCancelados.length) * 100 : 0;
+    const atrasados = pendentes.filter((p) => p.dataPrevista && p.dataPrevista < new Date().toISOString().slice(0, 10)).length;
+    const taxaAtraso = pendentes.length > 0 ? (atrasados / pendentes.length) * 100 : 0;
+    const scoreQualidade = naoCancelados.length === 0 ? null :
+      Math.round(Math.max(0, taxaEntrega * 0.6 - taxaParcial * 0.2 - taxaAtraso * 0.2));
+
+    return { pendentes: pendentes.length, volumeTotal, ticketMedio, valorEstoque, prodsBaixo, ultimaCompra, pedidoMaisAntigo, scoreQualidade, taxaEntrega, taxaParcial, taxaAtraso };
   }, [todosPedidos, itens, est]);
 
   if (!f) return <p className="text-muted-foreground">Fornecedor não encontrado.</p>;
@@ -321,6 +330,50 @@ function Ficha() {
           )}
         </div>
       </div>
+
+      {/* Score de Qualidade */}
+      {stats.scoreQualidade !== null && (
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="h-4 w-4 text-amber-500" />
+            <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Score de Qualidade do Fornecedor</h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-8">
+            <div className="flex flex-col items-center">
+              <div className={`text-5xl font-bold ${stats.scoreQualidade >= 70 ? "text-green-600 dark:text-green-400" : stats.scoreQualidade >= 40 ? "text-amber-500" : "text-destructive"}`}>
+                {stats.scoreQualidade}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">/ 100</p>
+              <p className={`text-xs font-semibold mt-1 ${stats.scoreQualidade >= 70 ? "text-green-600 dark:text-green-400" : stats.scoreQualidade >= 40 ? "text-amber-500" : "text-destructive"}`}>
+                {stats.scoreQualidade >= 70 ? "Bom fornecedor" : stats.scoreQualidade >= 40 ? "Regular" : "Atenção necessária"}
+              </p>
+            </div>
+            <div className="flex-1 grid grid-cols-3 gap-4 min-w-0">
+              <div>
+                <p className="text-xs text-muted-foreground">Taxa de entrega</p>
+                <p className="text-lg font-bold">{stats.taxaEntrega.toFixed(0)}%</p>
+                <p className="text-xs text-muted-foreground">pedidos recebidos</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Entregas parciais</p>
+                <p className={`text-lg font-bold ${stats.taxaParcial > 20 ? "text-amber-500" : ""}`}>{stats.taxaParcial.toFixed(0)}%</p>
+                <p className="text-xs text-muted-foreground">do total enviado</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Pedidos atrasados</p>
+                <p className={`text-lg font-bold ${stats.taxaAtraso > 0 ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>{stats.taxaAtraso.toFixed(0)}%</p>
+                <p className="text-xs text-muted-foreground">em aberto vencidos</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 w-full bg-muted rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all ${stats.scoreQualidade >= 70 ? "bg-green-500" : stats.scoreQualidade >= 40 ? "bg-amber-400" : "bg-destructive"}`}
+              style={{ width: `${stats.scoreQualidade}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Layout duas colunas: contato + produtos */}
       <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">

@@ -98,6 +98,56 @@ export function vendasPeriodo(movs: Mov[], inicio: string, fim: string): number 
     .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
+export type Classe = "A" | "B" | "C";
+
+export function classificarABC(
+  items: { id: string; vendas30: number }[],
+): Record<string, Classe> {
+  const total = items.reduce((s, x) => s + x.vendas30, 0);
+  const sorted = [...items].sort((a, b) => b.vendas30 - a.vendas30);
+  const resultado: Record<string, Classe> = {};
+  let acumulado = 0;
+  for (const item of sorted) {
+    acumulado += item.vendas30;
+    const pct = total > 0 ? acumulado / total : 0;
+    resultado[item.id] = pct <= 0.8 ? "A" : pct <= 0.95 ? "B" : "C";
+  }
+  return resultado;
+}
+
+export type ScoreDivergencia = {
+  usuario: string;
+  totalContagens: number;
+  totalDivergencias: number;
+  mediaAbsoluta: number;
+  taxaAcuracia: number;
+};
+
+export function calcularScoreDivergencia(
+  registros: { usuario: string; contado: number; esperado: number }[],
+): ScoreDivergencia[] {
+  const porUsuario = new Map<string, { contagens: number; divergencias: number; somaAbsoluta: number }>();
+  for (const r of registros) {
+    const key = r.usuario || "Desconhecido";
+    const cur = porUsuario.get(key) ?? { contagens: 0, divergencias: 0, somaAbsoluta: 0 };
+    const dif = Math.abs(r.contado - r.esperado);
+    porUsuario.set(key, {
+      contagens: cur.contagens + 1,
+      divergencias: cur.divergencias + (dif > 0 ? 1 : 0),
+      somaAbsoluta: cur.somaAbsoluta + dif,
+    });
+  }
+  return [...porUsuario.entries()]
+    .map(([usuario, s]) => ({
+      usuario,
+      totalContagens: s.contagens,
+      totalDivergencias: s.divergencias,
+      mediaAbsoluta: s.contagens > 0 ? s.somaAbsoluta / s.contagens : 0,
+      taxaAcuracia: s.contagens > 0 ? ((s.contagens - s.divergencias) / s.contagens) * 100 : 100,
+    }))
+    .sort((a, b) => b.taxaAcuracia - a.taxaAcuracia);
+}
+
 export type SugestaoPedido = {
   produto: Produto;
   gondolaAtual: number;
