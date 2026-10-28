@@ -48,7 +48,7 @@ onLojaChange(async (lojaId) => {
   }
   const { data } = await supabase
     .from("lojas")
-    .select("nome_loja, cnpj, cidade, uf, aviso_vencimento_1, aviso_vencimento_urgente, estoque_minimo_padrao, email_notificacoes, telefone_whatsapp, resumo_diario, avisos_whatsapp, margem_padrao, tolerancia_conferencia, locais_deposito, sugestao_promocao, bloquear_vencido, aviso_repositor, aviso_inconsistencias, alerta_estoque_zerado, alerta_vencimentos, alerta_pedidos, dias_alerta_pedido")
+    .select("nome_loja, cnpj, cidade, uf, aviso_vencimento_1, aviso_vencimento_urgente, estoque_minimo_padrao, email_notificacoes, telefone_whatsapp, resumo_diario, avisos_whatsapp, margem_padrao, tolerancia_conferencia, locais_deposito, sugestao_promocao, bloquear_vencido, aviso_repositor, aviso_inconsistencias, alerta_estoque_zerado, alerta_vencimentos, alerta_pedidos, dias_alerta_pedido, alerta_antifurto, limite_antifurto_unidades")
     .eq("id", lojaId)
     .single();
   if (data) {
@@ -76,6 +76,8 @@ onLojaChange(async (lojaId) => {
       alertaVencimentos: data.alerta_vencimentos ?? true,
       alertaPedidos: data.alerta_pedidos ?? true,
       diasAlertaPedido: data.dias_alerta_pedido ?? 2,
+      alertaAntifurto: data.alerta_antifurto ?? true,
+      limiteAntifurtoUnidades: data.limite_antifurto_unidades ?? 2,
     };
     notificar();
   }
@@ -120,6 +122,8 @@ export function salvarConfig(parcial: Partial<Config>): void {
       alerta_vencimentos: estado.alertaVencimentos,
       alerta_pedidos: estado.alertaPedidos,
       dias_alerta_pedido: estado.diasAlertaPedido,
+      alerta_antifurto: estado.alertaAntifurto,
+      limite_antifurto_unidades: estado.limiteAntifurtoUnidades,
     })
     .eq("id", lojaId)
     .then(({ error }) => {
