@@ -111,6 +111,37 @@ export function cadastrarVariante(parentId: string, dados: Omit<Produto, "id" | 
   return cadastrarProduto({ ...dados, deposito: 0, gondola: 0, parentId });
 }
 
+export function cadastrarProdutosBatch(lista: Omit<Produto, "id">[]): string[] {
+  if (lista.length === 0) return [];
+  const lojaId = getLojaId();
+  if (!lojaId) {
+    toast.error("Sessão não identificada — faça login novamente para salvar produtos.");
+    return [];
+  }
+  const ids = lista.map(() => crypto.randomUUID());
+  estado = [...estado, ...lista.map((dados, i) => ({ ...dados, id: ids[i] }))];
+  notificar();
+  supabase
+    .from("produtos")
+    .insert(
+      ids.map((id, i) => {
+        const d = lista[i];
+        return {
+          id, loja_id: lojaId,
+          nome: d.nome, codigo: d.codigo, categoria: d.categoria,
+          fornecedor_nome: d.fornecedor, preco_venda: d.preco,
+          minimo: d.minimo, maximo_gondola: d.maximo ?? 0,
+          custo_ultima_compra: d.custoUltimaCompra ?? 0,
+          validade_padrao_dias: d.validade ?? null,
+          local_deposito: d.localDeposito ?? null, local_gondola: d.localGondola ?? null,
+          unidade: d.unidade ?? "un", parent_id: d.parentId ?? null, variante: d.variante ?? "",
+        };
+      })
+    )
+    .then(({ error }) => { if (error) toast.error("Erro ao salvar produtos: " + error.message); });
+  return ids;
+}
+
 export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): void {
   estado = estado.map((p) => (p.id === id ? { ...p, ...dados } : p));
   notificar();
