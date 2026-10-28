@@ -57,6 +57,8 @@ function PainelLayout() {
   // --- Busca global ---
   const [busca, setBusca] = useState("");
   const [buscaFocada, setBuscaFocada] = useState(false);
+  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
+  const inputMobileRef = useRef<HTMLInputElement>(null);
   const resultados = busca.length >= 2
     ? produtos.filter((p) =>
         p.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -179,9 +181,18 @@ function PainelLayout() {
             )}
           </div>
 
+          {/* Busca — mobile only */}
+          <button
+            className="ml-auto lg:hidden rounded-lg p-2 hover:bg-muted"
+            aria-label="Buscar"
+            onClick={() => { setBuscaMobileAberta(true); setTimeout(() => inputMobileRef.current?.focus(), 50); }}
+          >
+            <Search className="h-5 w-5" />
+          </button>
+
           {/* Tema */}
           <button
-            className="ml-auto rounded-lg p-2 hover:bg-muted"
+            className="rounded-lg p-2 hover:bg-muted"
             aria-label={tema === "escuro" ? "Modo claro" : "Modo escuro"}
             onClick={alternarTema}
           >
@@ -353,6 +364,74 @@ function PainelLayout() {
         <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-8 pb-20 lg:pb-8">
           <Outlet />
         </main>
+
+        {/* Busca mobile — overlay full-screen */}
+        {buscaMobileAberta && (
+          <div
+            className="fixed inset-0 z-50 flex flex-col bg-background lg:hidden"
+            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          >
+            {/* Barra de busca */}
+            <div className="flex items-center gap-2 border-b px-4 py-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  ref={inputMobileRef}
+                  placeholder="Buscar produto, código ou categoria…"
+                  className="h-11 pl-9"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <button
+                className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-primary"
+                onClick={() => { setBuscaMobileAberta(false); setBusca(""); }}
+              >
+                Cancelar
+              </button>
+            </div>
+
+            {/* Resultados */}
+            <div className="flex-1 overflow-y-auto">
+              {busca.length < 2 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+                  <Search className="h-10 w-10 opacity-30" />
+                  <p className="text-sm">Digite ao menos 2 caracteres</p>
+                </div>
+              ) : resultados.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+                  <Package className="h-10 w-10 opacity-30" />
+                  <p className="text-sm">Nenhum produto encontrado</p>
+                </div>
+              ) : (
+                <ul>
+                  {resultados.map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        to="/painel/produtos/$id"
+                        params={{ id: p.id }}
+                        className="flex items-center gap-4 px-5 py-4 hover:bg-muted active:bg-muted border-b last:border-0"
+                        onClick={() => { setBuscaMobileAberta(false); setBusca(""); }}
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                          <Package className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{p.nome}</p>
+                          <p className="text-xs text-muted-foreground">{p.codigo} · {p.categoria}</p>
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {est.gondola[p.id] ?? 0} un.
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Bottom navigation — mobile only */}
         <nav
