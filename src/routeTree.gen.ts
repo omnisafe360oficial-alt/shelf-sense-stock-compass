@@ -40,6 +40,7 @@ import { Route as PainelDevolucoesRouteImport } from './routes/painel.devolucoes
 import { Route as PainelRelatorioVendasRouteImport } from './routes/painel.relatorio-vendas'
 import { Route as PainelHistoricoFornecedorRouteImport } from './routes/painel.historico-fornecedor'
 import { Route as PainelRelatorioComprasRouteImport } from './routes/painel.relatorio-compras'
+import { Route as PainelResumoRelatoriosRouteImport } from './routes/painel.resumo-relatorios'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -214,6 +215,11 @@ const PainelRelatorioComprasRoute = PainelRelatorioComprasRouteImport.update({
   path: '/relatorio-compras',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelResumoRelatoriosRoute = PainelResumoRelatoriosRouteImport.update({
+  id: '/resumo-relatorios',
+  path: '/resumo-relatorios',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/relatorio-compras': typeof PainelRelatorioComprasRoute
+  '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/relatorio-compras': typeof PainelRelatorioComprasRoute
+  '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -420,6 +428,7 @@ export interface FileRoutesById {
   '/painel/relatorio-vendas': typeof PainelRelatorioVendasRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/relatorio-compras': typeof PainelRelatorioComprasRoute
+  '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/painel/relatorio-vendas'
     | '/painel/historico-fornecedor'
     | '/painel/relatorio-compras'
+    | '/painel/resumo-relatorios'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/painel/relatorio-vendas'
     | '/painel/historico-fornecedor'
     | '/painel/relatorio-compras'
+    | '/painel/resumo-relatorios'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/painel/relatorio-vendas'
     | '/painel/historico-fornecedor'
     | '/painel/relatorio-compras'
+    | '/painel/resumo-relatorios'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -724,6 +736,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorio-compras'
       fullPath: '/painel/relatorio-compras'
       preLoaderRoute: typeof PainelRelatorioComprasRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/resumo-relatorios': {
+      id: '/painel/resumo-relatorios'
+      path: '/resumo-relatorios'
+      fullPath: '/painel/resumo-relatorios'
+      preLoaderRoute: typeof PainelResumoRelatoriosRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/configuracoes': {
@@ -975,6 +994,7 @@ interface PainelRouteChildren {
   PainelRelatorioVendasRoute: typeof PainelRelatorioVendasRoute
   PainelHistoricoFornecedorRoute: typeof PainelHistoricoFornecedorRoute
   PainelRelatorioComprasRoute: typeof PainelRelatorioComprasRoute
+  PainelResumoRelatoriosRoute: typeof PainelResumoRelatoriosRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -1012,6 +1032,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelRelatorioVendasRoute: PainelRelatorioVendasRoute,
   PainelHistoricoFornecedorRoute: PainelHistoricoFornecedorRoute,
   PainelRelatorioComprasRoute: PainelRelatorioComprasRoute,
+  PainelResumoRelatoriosRoute: PainelResumoRelatoriosRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
