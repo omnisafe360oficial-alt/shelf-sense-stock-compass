@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   ArrowUpDown, ChevronDown, ChevronUp,
-  FileCode2, Package, Plus, Search, X,
+  FileCode2, GitBranch, Package, Plus, Search, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -342,15 +342,21 @@ function Produtos() {
                 const s       = situacao(dep, gond, p.minimo);
                 const valor   = (dep + gond) * p.preco;
                 return (
-                  <tr key={p.id} className="hover:bg-muted/40 transition">
+                  <tr key={p.id} className={cn("hover:bg-muted/40 transition", p.parentId ? "bg-muted/20" : "")}>
                     <td className="px-4 py-3">
                       <Link
                         to="/painel/produtos/$id"
                         params={{ id: p.id }}
                         className="group block"
                       >
-                        <p className="font-semibold group-hover:text-primary transition">{p.nome}</p>
-                        <p className="font-mono text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          {p.parentId && <GitBranch className="h-3 w-3 text-primary/60 shrink-0" />}
+                          <p className="font-semibold group-hover:text-primary transition">{p.nome}</p>
+                          {p.variante && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary shrink-0">{p.variante}</span>
+                          )}
+                        </div>
+                        <p className={cn("font-mono text-xs text-muted-foreground", p.parentId ? "ml-5" : "")}>
                           {p.codigo} · {p.categoria}
                         </p>
                       </Link>

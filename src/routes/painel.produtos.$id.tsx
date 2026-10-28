@@ -1,14 +1,14 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Edit3, MapPin, Save, Trash2, Warehouse, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Edit3, GitBranch, MapPin, Plus, Save, Trash2, Warehouse, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { brl, categorias, type LocalDeposito, type LocalGondola } from "@/lib/mock-data";
-import { useProdutos, getProdutos, editarProduto, excluirProduto } from "@/lib/produtos-store";
+import { brl, categorias, UNIDADES, type LocalDeposito, type LocalGondola } from "@/lib/mock-data";
+import { useProdutos, getProdutos, editarProduto, excluirProduto, cadastrarVariante } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
-import { useEstoque, ajustarEstoque } from "@/lib/estoque-store";
+import { useEstoque, ajustarEstoque, inicializarProduto } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
 import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
 
@@ -58,6 +58,8 @@ function ProdutoDetalhe() {
   const [ajustando, setAjustando] = useState<string | null>(null);
   const [ajusteVal, setAjusteVal] = useState("");
   const [ajusteMotivo, setAjusteMotivo] = useState("");
+  const [addingVariant, setAddingVariant] = useState(false);
+  const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
     nome: "", categoria: "", fornecedor: "", preco: "", minimo: "", maximo: "",
     depRua: "", depPrateleira: "", depNivel: "",
@@ -77,6 +79,36 @@ function ProdutoDetalhe() {
     () => est.movs.filter((m) => m.produtoId === produto?.id).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15),
     [est.movs, produto?.id],
   );
+
+  const isVariant = !!produto?.parentId;
+  const parentProd = isVariant ? todos.find((p) => p.id === produto?.parentId) : null;
+  const variantes = useMemo(
+    () => produto && !isVariant ? todos.filter((p) => p.parentId === produto.id) : [],
+    [todos, produto, isVariant],
+  );
+
+  const salvarVariante = () => {
+    if (!vf.variante.trim()) { toast.error("Informe o nome da variante (ex.: Azul - G)."); return; }
+    if (!vf.codigo.trim()) { toast.error("Informe o código de barras da variante."); return; }
+    if (!produto) return;
+    const novoId = cadastrarVariante(produto.id, {
+      nome: produto.nome,
+      codigo: vf.codigo.trim(),
+      variante: vf.variante.trim(),
+      categoria: produto.categoria,
+      fornecedor: produto.fornecedor,
+      preco: Number(vf.preco.replace(",", ".")) || produto.preco,
+      minimo: produto.minimo,
+      maximo: produto.maximo,
+      unidade: vf.unidade,
+      localDeposito: produto.localDeposito,
+      localGondola: produto.localGondola,
+    });
+    inicializarProduto(novoId);
+    toast.success(`Variante "${vf.variante}" criada.`);
+    setVf({ variante: "", codigo: "", preco: "", unidade: "un" });
+    setAddingVariant(false);
+  };
 
   if (!produto) return <p className="text-muted-foreground">Produto não encontrado.</p>;
 
@@ -346,6 +378,96 @@ function ProdutoDetalhe() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Variante: link para produto pai */}
+      {isVariant && parentProd && (
+        <div className="flex items-center gap-2 rounded-xl border bg-card px-5 py-3 text-sm">
+          <GitBranch className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-muted-foreground">Variante de</span>
+          <Link to="/painel/produtos/$id" params={{ id: parentProd.id }} className="font-medium hover:underline text-primary">
+            {parentProd.nome}
+          </Link>
+          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{produto.variante}</span>
+        </div>
+      )}
+
+      {/* Variantes do produto pai */}
+      {!isVariant && (
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <div className="flex items-center justify-between border-b px-5 py-4">
+            <div className="flex items-center gap-2">
+              <GitBranch className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">Variantes <span className="text-muted-foreground font-normal text-sm">({variantes.length})</span></h2>
+            </div>
+            {!addingVariant && (
+              <Button variant="outline" size="sm" onClick={() => setAddingVariant(true)}>
+                <Plus className="h-3.5 w-3.5" /> Nova variante
+              </Button>
+            )}
+          </div>
+
+          {addingVariant && (
+            <div className="border-b bg-muted/30 p-5 space-y-4">
+              <p className="text-sm font-medium">Nova variante de <span className="text-primary">{produto.nome}</span></p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Nome da variante <span className="text-muted-foreground font-normal text-xs">Ex.: Azul - G, 200ml, Chocolate</span></Label>
+                  <Input placeholder="Ex.: Vermelho - M" value={vf.variante} onChange={(e) => setVf({ ...vf, variante: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Código de barras</Label>
+                  <Input placeholder="EAN-13" value={vf.codigo} onChange={(e) => setVf({ ...vf, codigo: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Preço de venda (R$) <span className="text-muted-foreground font-normal text-xs">— deixe em branco para herdar do pai</span></Label>
+                  <Input inputMode="decimal" placeholder={String(produto.preco)} value={vf.preco} onChange={(e) => setVf({ ...vf, preco: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Unidade</Label>
+                  <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={vf.unidade} onChange={(e) => setVf({ ...vf, unidade: e.target.value })}>
+                    {UNIDADES.map((u) => <option key={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={salvarVariante}><Save className="h-3.5 w-3.5" /> Criar variante</Button>
+                <Button variant="ghost" size="sm" onClick={() => setAddingVariant(false)}>Cancelar</Button>
+              </div>
+            </div>
+          )}
+
+          {variantes.length === 0 && !addingVariant ? (
+            <p className="px-5 py-6 text-sm text-muted-foreground">Nenhuma variante cadastrada. Use "Nova variante" para adicionar tamanhos, cores ou sabores.</p>
+          ) : (
+            <div className="divide-y">
+              {variantes.map((v) => {
+                const vGond = est.gondola[v.id] ?? 0;
+                const vDep = est.lotes.filter((l) => l.produtoId === v.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
+                return (
+                  <Link
+                    key={v.id}
+                    to="/painel/produtos/$id"
+                    params={{ id: v.id }}
+                    className="flex items-center justify-between px-5 py-3 hover:bg-muted/40 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary shrink-0">{v.variante}</span>
+                      <span className="font-mono text-xs text-muted-foreground truncate">{v.codigo}</span>
+                    </div>
+                    <div className="flex items-center gap-6 text-sm shrink-0">
+                      <span className="text-muted-foreground">{brl(v.preco)}</span>
+                      <div className="text-right">
+                        <p className="font-medium">{vGond} na gôndola</p>
+                        <p className="text-xs text-muted-foreground">{vDep} no depósito</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

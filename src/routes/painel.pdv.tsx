@@ -317,7 +317,10 @@ function Pdv() {
                       )}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{p.nome}</p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="truncate font-medium">{p.nome}</p>
+                          {p.variante && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">{p.variante}</span>}
+                        </div>
                         <p className="font-mono text-xs text-muted-foreground">{p.codigo} · {p.categoria}</p>
                       </div>
                       <div className="shrink-0 text-right">
@@ -398,7 +401,10 @@ function Pdv() {
                         {/* main row */}
                         <div className="flex items-center gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold">{p.nome}</p>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="truncate font-semibold">{p.nome}</p>
+                              {p.variante && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">{p.variante}</span>}
+                            </div>
                             <p className="font-mono text-xs text-muted-foreground">
                               {p.codigo} ·{" "}
                               {temDesc ? (
