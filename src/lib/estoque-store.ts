@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type Lote = { id: string; produtoId: string; lote: string; validade: string; qtd: number; local: string };
 export type Mov = { id: string; data: string; tipo: "entrada" | "transferencia" | "venda" | "ajuste"; produtoId: string; lote?: string; qtd: number; origem: string; destino: string; usuario: string; precoUnitario?: number };
@@ -218,6 +219,13 @@ export function fecharVenda(itens: ItemVenda[], caixa: string, minimos: Record<s
       persistirGondola(lojaId, i.produtoId, r.estado.gondola[i.produtoId] ?? 0);
     }
     for (const m of r.estado.movs.slice(0, itens.length)) persistirMov(lojaId, m);
+    const total = itens.reduce((s, i) => s + (i.preco ?? 0) * i.qtd, 0);
+    gravarAudit({
+      acao: "venda",
+      modulo: "PDV",
+      descricao: `Venda de ${itens.length} item(s) no caixa ${caixa}. Total: R$ ${total.toFixed(2).replace(".", ",")}`,
+      usuarioNome: `Caixa · ${caixa}`,
+    });
   }
   return r.repor;
 }

@@ -4,6 +4,7 @@ import type { Produto } from "./mock-data";
 
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 let estado: Produto[] = [];
 const ouvintes = new Set<() => void>();
@@ -95,6 +96,7 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         unidade: dados.unidade ?? "un",
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar produto: " + error.message); });
+    gravarAudit({ acao: "criar", modulo: "Produtos", descricao: `Produto "${dados.nome}" cadastrado.`, usuarioNome: "Sistema", produtoId: id, produtoNome: dados.nome });
   } else {
     toast.error("Sessão não identificada — faça login novamente para salvar produtos.");
   }
@@ -118,15 +120,18 @@ export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): 
     if ("localDeposito" in dados) payload.local_deposito = dados.localDeposito ?? null;
     if ("localGondola" in dados) payload.local_gondola = dados.localGondola ?? null;
     if (dados.unidade !== undefined) payload.unidade = dados.unidade;
+    const nomeProd = estado.find((p) => p.id === id)?.nome ?? id;
     supabase
       .from("produtos")
       .update(payload)
       .eq("id", id)
       .then(({ error }) => { if (error) toast.error("Erro ao atualizar produto: " + error.message); });
+    gravarAudit({ acao: "editar", modulo: "Produtos", descricao: `Produto "${nomeProd}" editado.`, usuarioNome: "Sistema", produtoId: id, produtoNome: nomeProd });
   }
 }
 
 export function excluirProduto(id: string): void {
+  const nomeProd = estado.find((p) => p.id === id)?.nome ?? id;
   estado = estado.filter((p) => p.id !== id);
   notificar();
   const lojaId = getLojaId();
@@ -136,5 +141,6 @@ export function excluirProduto(id: string): void {
       .delete()
       .eq("id", id)
       .then(({ error }) => { if (error) toast.error("Erro ao excluir produto: " + error.message); });
+    gravarAudit({ acao: "excluir", modulo: "Produtos", descricao: `Produto "${nomeProd}" excluído.`, usuarioNome: "Sistema", produtoId: id, produtoNome: nomeProd });
   }
 }
