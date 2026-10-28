@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { usePedidos, criarPedido } from "@/lib/pedidos-store";
 import type { PedidoStatus } from "@/lib/pedidos-store";
 import { useEstoque } from "@/lib/estoque-store";
-import { sugestoesPedido, HOJE as HOJE_COMPUTED } from "@/lib/computed";
+import { abaixoDoMinimo, HOJE as HOJE_COMPUTED } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -91,9 +91,10 @@ function PedidosPage() {
   const [q, setQ] = useState("");
   const [criando, setCriando] = useState(false);
 
-  const sugestoes = useMemo(
-    () => sugestoesPedido(est.movs, est.gondola),
-    [est.movs, est.gondola],
+  // Produtos com estoque abaixo do mínimo (lógica simples, não depende de vendas)
+  const abaixoMinimo = useMemo(
+    () => abaixoDoMinimo(est.gondola),
+    [est.gondola],
   );
 
   const idsComPedidoAberto = useMemo(() => {
@@ -103,34 +104,35 @@ function PedidosPage() {
     return ids;
   }, [pedidos]);
 
+  // Só mostra os que ainda não têm pedido aberto
   const produtosSemPedido = useMemo(
-    () => sugestoes.filter((s) => !idsComPedidoAberto.has(s.produto.id)),
-    [sugestoes, idsComPedidoAberto],
+    () => abaixoMinimo.filter((p) => !idsComPedidoAberto.has(p.id)),
+    [abaixoMinimo, idsComPedidoAberto],
   );
 
   async function criarPedidosAutomaticos() {
     if (produtosSemPedido.length === 0) return;
     setCriando(true);
     const porFornecedor: Record<string, typeof produtosSemPedido> = {};
-    for (const s of produtosSemPedido) {
-      const forn = s.produto.fornecedor || "Sem fornecedor";
-      (porFornecedor[forn] = porFornecedor[forn] ?? []).push(s);
+    for (const p of produtosSemPedido) {
+      const forn = p.fornecedor || "Sem fornecedor";
+      (porFornecedor[forn] = porFornecedor[forn] ?? []).push(p);
     }
     const dp = new Date(HOJE_COMPUTED);
     dp.setDate(dp.getDate() + 7);
     const dataPrevista = dp.toISOString().slice(0, 10);
     let count = 0;
     for (const [fornNome, itens] of Object.entries(porFornecedor)) {
-      const fornId = itens.find((s) => s.produto.fornecedorId)?.produto.fornecedorId;
+      const fornId = itens.find((p) => p.fornecedorId)?.fornecedorId;
       criarPedido({
         fornecedorId: fornId,
         fornecedorNome: fornNome === "Sem fornecedor" ? "" : fornNome,
         dataPrevista,
         observacao: "Gerado automaticamente — estoque abaixo do mínimo",
-        itens: itens.map((s) => ({
-          produtoId: s.produto.id,
-          qtdSolicitada: s.qtdSugerida,
-          precoUnitario: s.produto.preco,
+        itens: itens.map((p) => ({
+          produtoId: p.id,
+          qtdSolicitada: Math.max(1, p.minimo - (est.gondola[p.id] ?? 0)),
+          precoUnitario: p.preco,
           unidade: "un",
         })),
       });
@@ -215,18 +217,18 @@ function PedidosPage() {
         </Button>
       </div>
       <div className="border-t border-warning/20 divide-y divide-warning/10 max-h-56 overflow-y-auto">
-        {produtosSemPedido.slice(0, 8).map((s) => (
-          <div key={s.produto.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
+        {produtosSemPedido.slice(0, 8).map((p) => (
+          <div key={p.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
             <div className="min-w-0">
-              <span className="font-medium truncate">{s.produto.nome}</span>
-              {s.produto.fornecedor && (
-                <span className="ml-2 text-xs text-muted-foreground">{s.produto.fornecedor}</span>
+              <span className="font-medium truncate">{p.nome}</span>
+              {p.fornecedor && (
+                <span className="ml-2 text-xs text-muted-foreground">{p.fornecedor}</span>
               )}
             </div>
             <div className="ml-4 shrink-0 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>Estoque: <strong className="text-warning">{s.gondolaAtual}</strong> / mín {s.produto.minimo}</span>
+              <span>Estoque: <strong className="text-warning">{est.gondola[p.id] ?? 0}</strong> / mín {p.minimo}</span>
               <span className="rounded-full bg-warning/15 px-2 py-0.5 font-semibold text-warning">
-                pedir {s.qtdSugerida}
+                pedir {Math.max(1, p.minimo - (est.gondola[p.id] ?? 0))}
               </span>
             </div>
           </div>
