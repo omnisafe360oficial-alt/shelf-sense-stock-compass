@@ -124,7 +124,7 @@ function persistirLote(lojaId: string, lote: Lote) {
 function persistirMov(lojaId: string, mov: Mov) {
   supabase
     .from("movimentacoes")
-    .insert({ id: mov.id, loja_id: lojaId, data: mov.data, tipo: mov.tipo, produto_id: mov.produtoId, lote: mov.lote ?? null, qtd: mov.qtd, origem: mov.origem, destino: mov.destino, usuario_nome: mov.usuario, preco_unitario: mov.precoUnitario ?? 0 })
+    .insert({ id: mov.id, loja_id: lojaId, data: mov.data, tipo: mov.tipo, produto_id: mov.produtoId, lote: mov.lote ?? "", qtd: mov.qtd, origem: mov.origem, destino: mov.destino, usuario_nome: mov.usuario, preco_unitario: mov.precoUnitario ?? 0 })
     .then(({ error }) => { if (error) toast.error("Erro ao registrar movimentação: " + error.message); });
 }
 
