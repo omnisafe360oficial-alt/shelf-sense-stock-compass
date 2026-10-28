@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import React, { useId, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Building2, Clock, Mail, MapPin, Phone, Save, User,
+  ArrowLeft, Building2, Clock, Mail, MapPin, MessageCircle, Phone, Save, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/painel/fornecedores/novo")({
 });
 
 const INICIAL = {
-  nome: "", cnpj: "", contato: "", telefone: "", email: "", cidade: "", prazo: "",
+  nome: "", cnpj: "", contato: "", telefone: "", whatsapp: "", email: "", cidade: "", prazo: "",
 };
 
 function Secao({ icon: Icon, titulo, children }: { icon: React.ElementType; titulo: string; children: React.ReactNode }) {
@@ -71,6 +71,7 @@ function NovoFornecedor() {
       cnpj: f.cnpj.trim(),
       contato: f.contato.trim(),
       telefone: f.telefone.trim(),
+      whatsapp: f.whatsapp.trim(),
       email: f.email.trim(),
       cidade: f.cidade.trim(),
       prazo: f.prazo.trim(),
@@ -146,6 +147,18 @@ function NovoFornecedor() {
                 onChange={set("telefone")}
                 placeholder="(11) 99999-9999"
                 className="pl-9"
+              />
+            </div>
+          </Campo>
+          <Campo label="WhatsApp" dica="Com DDI e DDD — ex: 5511999998888. Usado para enviar pedidos.">
+            <div className="relative">
+              <MessageCircle className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={f.whatsapp}
+                onChange={set("whatsapp")}
+                placeholder="5511999998888"
+                className="pl-9"
+                inputMode="numeric"
               />
             </div>
           </Campo>

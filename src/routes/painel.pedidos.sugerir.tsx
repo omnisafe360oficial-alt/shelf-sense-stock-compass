@@ -90,7 +90,9 @@ function SugerirPedidoPage() {
 
     let count = 0;
     for (const [fornNome, itens] of Object.entries(porFornecedor)) {
+      const fornId = itens.find((s) => s.produto.fornecedorId)?.produto.fornecedorId;
       criarPedido({
+        fornecedorId: fornId,
         fornecedorNome: fornNome === "Sem fornecedor" ? "" : fornNome,
         dataPrevista,
         observacao: "Gerado por sugestão automática de pedido",

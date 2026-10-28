@@ -17,6 +17,7 @@ export type Produto = {
   codigo: string;
   categoria: string;
   fornecedor: string;
+  fornecedorId?: string;
   preco: number;
   deposito: number;
   gondola: number;
@@ -46,7 +47,7 @@ export function stepUnidade(unidade?: string): number {
 
 export const UNIDADES = ["un", "kg", "g", "L", "mL", "dz", "cx", "fd", "pct", "m", "m²"] as const;
 
-export type Fornecedor = { id: string; nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };
+export type Fornecedor = { id: string; nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string; whatsapp?: string };
 
 export const fornecedores: Fornecedor[] = [
   { id: "f1", nome: "Unilever Brasil", cnpj: "61.068.276/0001-04", contato: "Carlos Mendes", telefone: "(11) 3568-8000", email: "pedidos@unilever.com.br", cidade: "São Paulo · SP", prazo: "28 dias" },
