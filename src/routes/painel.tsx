@@ -9,7 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
-import { abaixoDoMinimo, lotesVencendo, HOJE, sugestoesPedido } from "@/lib/computed";
+import { abaixoDoMinimo, abaixoDoMinimoDeposito, lotesVencendo, HOJE, sugestoesPedido } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
@@ -81,6 +81,14 @@ function PainelLayout() {
   const zerados = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) === 0);
   const abaixo = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) > 0);
   const vencendo7 = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
+  const depositoBaixo = abaixoDoMinimoDeposito(est.lotes);
+  const totaisDeposito = (() => {
+    const t: Record<string, number> = {};
+    for (const l of est.lotes) {
+      if (l.qtd > 0) t[l.produtoId] = (t[l.produtoId] ?? 0) + l.qtd;
+    }
+    return t;
+  })();
   const inconsAbertas = op.inconsistencias.filter((i) => i.status === "aberta");
   const pedidosAtencao = pedidos.filter((p) => {
     if (!["rascunho", "enviado"].includes(p.status)) return false;
@@ -104,7 +112,8 @@ function PainelLayout() {
     (config.avisoInconsistencias ? inconsAbertas.length : 0) +
     (config.alertaPedidos ? pedidosAtencao.length : 0) +
     produtosParaPedirCount +
-    alertasAntifurto.filter((a) => a.severidade === "alto").length;
+    alertasAntifurto.filter((a) => a.severidade === "alto").length +
+    depositoBaixo.length;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -247,6 +256,23 @@ function PainelLayout() {
                     </div>
                   ) : (
                     <div className="max-h-[70vh] overflow-y-auto divide-y text-sm">
+                      {depositoBaixo.length > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+                              🔵 {depositoBaixo.length} depósito{depositoBaixo.length > 1 ? "s" : ""} abaixo do mínimo
+                            </p>
+                            <Link to="/painel/deposito" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
+                          {depositoBaixo.slice(0, 3).map((p) => (
+                            <div key={p.id} className="flex justify-between border-b py-1.5 last:border-0">
+                              <span className="truncate font-medium">{p.nome}</span>
+                              <span className="ml-2 shrink-0 text-muted-foreground">{totaisDeposito[p.id] ?? 0}/{p.minimoDeposito ?? 10}</span>
+                            </div>
+                          ))}
+                          {depositoBaixo.length > 3 && <p className="mt-1 text-xs text-muted-foreground">+{depositoBaixo.length - 3} outros</p>}
+                        </div>
+                      )}
                       {config.alertaEstoqueZerado && zerados.length > 0 && (
                         <div className="p-3">
                           <div className="mb-2 flex items-center justify-between">

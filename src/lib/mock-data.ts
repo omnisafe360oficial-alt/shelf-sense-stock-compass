@@ -23,6 +23,8 @@ export type Produto = {
   gondola: number;
   minimo: number;
   maximo?: number;
+  minimoDeposito?: number;
+  maximoDeposito?: number;
   custoUltimaCompra?: number;
   validade?: string;
   localDeposito?: LocalDeposito;

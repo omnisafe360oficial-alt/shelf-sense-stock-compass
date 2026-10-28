@@ -76,12 +76,24 @@ function Deposito() {
       <div className="space-y-4">
         {lista.map(({ p, lotes }) => {
           const total = lotes.reduce((t, l) => t + l.qtd, 0);
+          const minDep = p.minimoDeposito ?? 10;
+          const maxDep = p.maximoDeposito && p.maximoDeposito > 0 ? p.maximoDeposito : minDep * 2;
+          const pctDep = maxDep > 0 ? Math.min(100, (total / maxDep) * 100) : total > 0 ? 100 : 0;
+          const corDep = total === 0 ? "bg-destructive" : total <= minDep ? "bg-warning" : "bg-success";
+          const corTexto = total === 0 ? "text-destructive" : total <= minDep ? "text-warning" : "";
           return (
             <div key={p.id} className="rounded-2xl border bg-card">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
                 <div><p className="font-semibold">{p.nome}</p><p className="font-mono text-xs text-muted-foreground">{p.codigo}</p></div>
                 <div className="flex items-center gap-6">
-                  <div className="text-right"><p className="text-xs text-muted-foreground">No depósito</p><p className="font-display text-xl font-bold">{total}</p></div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">No depósito</p>
+                    <p className={cn("font-display text-xl font-bold", corTexto)}>{total}</p>
+                    <div className="mt-1 h-1.5 w-20 overflow-hidden rounded-full bg-muted ml-auto">
+                      <div className={cn("h-full rounded-full transition-all", corDep)} style={{ width: `${pctDep}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">mín {minDep}{p.maximoDeposito ? ` · máx ${p.maximoDeposito}` : ""}</p>
+                  </div>
                   <div className="text-right"><p className="text-xs text-muted-foreground">Na gôndola</p><p className="font-display text-xl font-bold">{s.gondola[p.id] ?? 0}</p></div>
                   <Button variant="outline" disabled={!total} onClick={() => setTransf(p.id)}><ArrowRightLeft /> Levar à gôndola</Button>
                 </div>

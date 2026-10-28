@@ -56,6 +56,17 @@ export function abaixoDoMinimo(gondola: Record<string, number>): Produto[] {
     .sort((a, b) => (gondola[a.id] ?? 0) / a.minimo - (gondola[b.id] ?? 0) / b.minimo);
 }
 
+export function abaixoDoMinimoDeposito(lotes: Lote[]): Produto[] {
+  const totais: Record<string, number> = {};
+  for (const l of lotes) {
+    if (l.qtd > 0) totais[l.produtoId] = (totais[l.produtoId] ?? 0) + l.qtd;
+  }
+  const min = (p: Produto) => p.minimoDeposito ?? 10;
+  return getProdutos()
+    .filter((p) => (totais[p.id] ?? 0) <= min(p))
+    .sort((a, b) => (totais[a.id] ?? 0) / min(a) - (totais[b.id] ?? 0) / min(b));
+}
+
 export type LoteInfo = Lote & { produto: Produto; dias: number; faixa: Faixa };
 
 export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {

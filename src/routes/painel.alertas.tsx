@@ -10,7 +10,7 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { usePedidos } from "@/lib/pedidos-store";
 import {
-  abaixoDoMinimo, diasSemVenda, lotesVencendo, vendasPorProduto, HOJE,
+  abaixoDoMinimo, abaixoDoMinimoDeposito, diasSemVenda, lotesVencendo, vendasPorProduto, HOJE,
 } from "@/lib/computed";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -47,6 +47,11 @@ function Alertas() {
     const abaixoTodos = abaixoDoMinimo(est.gondola);
     const zerados = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) === 0);
     const abaixo = abaixoTodos.filter((p) => (est.gondola[p.id] ?? 0) > 0);
+    const totaisDeposito: Record<string, number> = {};
+    for (const l of est.lotes) {
+      if (l.qtd > 0) totaisDeposito[l.produtoId] = (totaisDeposito[l.produtoId] ?? 0) + l.qtd;
+    }
+    const depositoBaixo = abaixoDoMinimoDeposito(est.lotes);
     const vencendo = lotesVencendo(est.lotes, config.avisoVencimentoUrgente);
     const inconsAntigas = op.inconsistencias.filter((i) => {
       if (i.status !== "aberta") return false;
@@ -64,6 +69,17 @@ function Alertas() {
     const paradoHaDias = parados.filter((p) => vendasMap[p.id]);
 
     return [
+      {
+        id: "deposito-baixo",
+        titulo: "Depósito abaixo do mínimo",
+        cor: "text-primary",
+        icone: <Package className="h-4 w-4" />,
+        link: "/painel/deposito",
+        itens: depositoBaixo.map((p) => ({
+          label: p.nome,
+          detalhe: `${totaisDeposito[p.id] ?? 0} / mín ${p.minimoDeposito ?? 10} un`,
+        })),
+      },
       {
         id: "zerado",
         titulo: "Estoque zerado na gôndola",

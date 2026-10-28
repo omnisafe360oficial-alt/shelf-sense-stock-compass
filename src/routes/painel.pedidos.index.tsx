@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { usePedidos, criarPedido } from "@/lib/pedidos-store";
 import type { PedidoStatus } from "@/lib/pedidos-store";
 import { useEstoque } from "@/lib/estoque-store";
-import { abaixoDoMinimo, HOJE as HOJE_COMPUTED } from "@/lib/computed";
+import { abaixoDoMinimo, abaixoDoMinimoDeposito, HOJE as HOJE_COMPUTED } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +97,19 @@ function PedidosPage() {
     [est.gondola],
   );
 
+  const totaisDeposito = useMemo(() => {
+    const t: Record<string, number> = {};
+    for (const l of est.lotes) {
+      if (l.qtd > 0) t[l.produtoId] = (t[l.produtoId] ?? 0) + l.qtd;
+    }
+    return t;
+  }, [est.lotes]);
+
+  const abaixoMinimoDeposito = useMemo(
+    () => abaixoDoMinimoDeposito(est.lotes),
+    [est.lotes],
+  );
+
   const idsComPedidoAberto = useMemo(() => {
     const abertos = pedidos.filter((p) => !["recebido", "cancelado"].includes(p.status));
     const ids = new Set<string>();
@@ -104,10 +117,14 @@ function PedidosPage() {
     return ids;
   }, [pedidos]);
 
-  // Só mostra os que ainda não têm pedido aberto
   const produtosSemPedido = useMemo(
     () => abaixoMinimo.filter((p) => !idsComPedidoAberto.has(p.id)),
     [abaixoMinimo, idsComPedidoAberto],
+  );
+
+  const produtosDepositoSemPedido = useMemo(
+    () => abaixoMinimoDeposito.filter((p) => !idsComPedidoAberto.has(p.id)),
+    [abaixoMinimoDeposito, idsComPedidoAberto],
   );
 
   async function criarPedidosAutomaticos() {
@@ -140,6 +157,39 @@ function PedidosPage() {
     }
     setCriando(false);
     toast.success(`${count} rascunho${count !== 1 ? "s" : ""} criado${count !== 1 ? "s" : ""} automaticamente!`);
+    navigate({ to: "/painel/pedidos" });
+  }
+
+  async function criarPedidosDeposito() {
+    if (produtosDepositoSemPedido.length === 0) return;
+    setCriando(true);
+    const porFornecedor: Record<string, typeof produtosDepositoSemPedido> = {};
+    for (const p of produtosDepositoSemPedido) {
+      const forn = p.fornecedor || "Sem fornecedor";
+      (porFornecedor[forn] = porFornecedor[forn] ?? []).push(p);
+    }
+    const dp = new Date(HOJE_COMPUTED);
+    dp.setDate(dp.getDate() + 7);
+    const dataPrevista = dp.toISOString().slice(0, 10);
+    let count = 0;
+    for (const [fornNome, itens] of Object.entries(porFornecedor)) {
+      const fornId = itens.find((p) => p.fornecedorId)?.fornecedorId;
+      criarPedido({
+        fornecedorId: fornId,
+        fornecedorNome: fornNome === "Sem fornecedor" ? "" : fornNome,
+        dataPrevista,
+        observacao: "Gerado automaticamente — depósito abaixo do mínimo",
+        itens: itens.map((p) => ({
+          produtoId: p.id,
+          qtdSolicitada: Math.max(1, (p.minimoDeposito ?? 10) - (totaisDeposito[p.id] ?? 0)),
+          precoUnitario: p.preco,
+          unidade: "un",
+        })),
+      });
+      count++;
+    }
+    setCriando(false);
+    toast.success(`${count} rascunho${count !== 1 ? "s" : ""} de depósito criado${count !== 1 ? "s" : ""}!`);
     navigate({ to: "/painel/pedidos" });
   }
 
@@ -243,11 +293,63 @@ function PedidosPage() {
     </div>
   );
 
+  const alertaDeposito = produtosDepositoSemPedido.length > 0 && (
+    <div className="rounded-2xl border border-primary/30 bg-primary/5 overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4">
+        <div className="flex items-start gap-3">
+          <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div>
+            <p className="font-semibold text-primary">
+              {produtosDepositoSemPedido.length} produto{produtosDepositoSemPedido.length !== 1 ? "s" : ""} com depósito abaixo do mínimo
+            </p>
+            <p className="text-sm text-muted-foreground">
+              O estoque do depósito está baixo — crie rascunhos de compra automaticamente.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={criarPedidosDeposito}
+          disabled={criando}
+          variant="outline"
+          className="shrink-0 border-primary/40 text-primary hover:bg-primary/10"
+        >
+          <Sparkles className="h-4 w-4" />
+          {criando ? "Criando…" : "Criar pedidos (depósito)"}
+        </Button>
+      </div>
+      <div className="border-t border-primary/15 divide-y divide-primary/10 max-h-56 overflow-y-auto">
+        {produtosDepositoSemPedido.slice(0, 8).map((p) => (
+          <div key={p.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
+            <div className="min-w-0">
+              <span className="font-medium truncate">{p.nome}</span>
+              {p.fornecedor && (
+                <span className="ml-2 text-xs text-muted-foreground">{p.fornecedor}</span>
+              )}
+            </div>
+            <div className="ml-4 shrink-0 flex items-center gap-3 text-xs text-muted-foreground">
+              <span>Depósito: <strong className="text-primary">{totaisDeposito[p.id] ?? 0}</strong> / mín {p.minimoDeposito ?? 10}</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+                pedir {Math.max(1, (p.minimoDeposito ?? 10) - (totaisDeposito[p.id] ?? 0))}
+              </span>
+            </div>
+          </div>
+        ))}
+        {produtosDepositoSemPedido.length > 8 && (
+          <div className="px-5 py-2 text-xs text-muted-foreground">
+            +{produtosDepositoSemPedido.length - 8} outros —{" "}
+            <Link to="/painel/pedidos/sugerir" className="text-primary hover:underline">ver todos</Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (pedidos.length === 0) {
     return (
       <div className="space-y-6">
         {cabecalho}
         {alertaReposicao}
+        {alertaDeposito}
         {produtosSemPedido.length === 0 && (
           <div className="rounded-2xl border border-dashed bg-card py-20 text-center">
             <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/30" />
@@ -273,6 +375,7 @@ function PedidosPage() {
     <div className="space-y-6">
       {cabecalho}
       {alertaReposicao}
+      {alertaDeposito}
 
       {/* Banner de pedidos atrasados */}
       {atrasados.length > 0 && (
