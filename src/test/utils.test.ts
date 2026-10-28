@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { brl, isFracionado, situacao, stepUnidade, type Produto } from "@/lib/mock-data";
-import { vendasPorProduto, diasSemVenda } from "@/lib/computed";
-import { calcularAlertas } from "@/lib/antifurto-store";
+import { vendasPorProduto, diasSemVenda, classificarABC, calcularScoreDivergencia } from "@/lib/computed";
+import { calcularAlertas, calcularAlertasPorFuncionario } from "@/lib/antifurto-store";
 import type { Mov } from "@/lib/estoque-store";
 
 // ─── brl ─────────────────────────────────────────────────────────────────────
@@ -253,5 +253,190 @@ describe("calcularAlertas", () => {
     ];
     expect(calcularAlertas(movs, prods, 2)[0].perdaAcumulada).toBe(6);
     expect(calcularAlertas(movs, prods, 2)[0].ocorrencias).toBe(2);
+  });
+});
+
+// ─── calcularAlertasPorFuncionario ───────────────────────────────────────────
+
+const makeAjusteUser = (produtoId: string, qtd: number, daysAgo: number, usuario: string): Mov => ({
+  id: `aj-${produtoId}-${daysAgo}-${usuario}`,
+  tipo: "ajuste",
+  produtoId,
+  qtd,
+  data: new Date(Date.now() - daysAgo * 86_400_000).toISOString(),
+  usuario,
+  origem: "deposito",
+  destino: "ajuste",
+});
+
+describe("calcularAlertasPorFuncionario", () => {
+  it("returns empty array when no negative adjustments", () => {
+    const movs = [makeAjusteUser("p1", 5, 1, "Ana")];
+    expect(calcularAlertasPorFuncionario(movs)).toEqual([]);
+  });
+
+  it("ignores adjustments older than 30 days", () => {
+    const movs = [makeAjusteUser("p1", -10, 35, "Ana")];
+    expect(calcularAlertasPorFuncionario(movs)).toEqual([]);
+  });
+
+  it("ignores adjustments below limiar", () => {
+    const movs = [makeAjusteUser("p1", -1, 1, "Ana")];
+    expect(calcularAlertasPorFuncionario(movs, 2)).toEqual([]);
+  });
+
+  it("groups by usuario and sums losses", () => {
+    const movs = [
+      makeAjusteUser("p1", -3, 1, "Ana"),
+      makeAjusteUser("p2", -4, 2, "Ana"),
+    ];
+    const result = calcularAlertasPorFuncionario(movs, 2);
+    expect(result).toHaveLength(1);
+    expect(result[0].funcionario).toBe("Ana");
+    expect(result[0].perdaAcumulada).toBe(7);
+    expect(result[0].ocorrencias).toBe(2);
+    expect(result[0].produtosAfetados).toBe(2);
+  });
+
+  it("assigns severidade alto when perdaAcumulada >= 10", () => {
+    const movs = [makeAjusteUser("p1", -12, 1, "Bob")];
+    expect(calcularAlertasPorFuncionario(movs, 2)[0].severidade).toBe("alto");
+  });
+
+  it("assigns severidade médio when perdaAcumulada in [5, 10)", () => {
+    const movs = [makeAjusteUser("p1", -7, 1, "Bob")];
+    expect(calcularAlertasPorFuncionario(movs, 2)[0].severidade).toBe("médio");
+  });
+
+  it("assigns severidade baixo when perdaAcumulada in [limiar, 5)", () => {
+    const movs = [makeAjusteUser("p1", -3, 1, "Bob")];
+    expect(calcularAlertasPorFuncionario(movs, 2)[0].severidade).toBe("baixo");
+  });
+
+  it("sorts by perdaAcumulada descending", () => {
+    const movs = [
+      makeAjusteUser("p1", -3, 1, "Ana"),
+      makeAjusteUser("p1", -10, 1, "Bob"),
+    ];
+    const result = calcularAlertasPorFuncionario(movs, 2);
+    expect(result[0].funcionario).toBe("Bob");
+    expect(result[1].funcionario).toBe("Ana");
+  });
+
+  it("ignores movements without usuario (empty string filtered out)", () => {
+    const mov: Mov = { id: "m1", tipo: "ajuste", produtoId: "p1", qtd: -5, data: new Date().toISOString(), usuario: "", origem: "deposito", destino: "ajuste" };
+    expect(calcularAlertasPorFuncionario([mov], 2)).toEqual([]);
+  });
+});
+
+// ─── classificarABC ──────────────────────────────────────────────────────────
+
+describe("classificarABC", () => {
+  it("returns empty record for empty array", () => {
+    expect(classificarABC([])).toEqual({});
+  });
+
+  it("classifies all items as A when all zero sales", () => {
+    const items = [{ id: "p1", vendas30: 0 }, { id: "p2", vendas30: 0 }];
+    const result = classificarABC(items);
+    expect(result["p1"]).toBe("A");
+    expect(result["p2"]).toBe("A");
+  });
+
+  it("classifies top 80% by value as A", () => {
+    const items = [
+      { id: "p1", vendas30: 80 },
+      { id: "p2", vendas30: 10 },
+      { id: "p3", vendas30: 10 },
+    ];
+    const result = classificarABC(items);
+    expect(result["p1"]).toBe("A");
+  });
+
+  it("classifies items between 80% and 95% as B", () => {
+    const items = [
+      { id: "p1", vendas30: 80 },
+      { id: "p2", vendas30: 15 },
+      { id: "p3", vendas30: 5 },
+    ];
+    const result = classificarABC(items);
+    expect(result["p2"]).toBe("B");
+  });
+
+  it("classifies items beyond 95% as C", () => {
+    const items = [
+      { id: "p1", vendas30: 80 },
+      { id: "p2", vendas30: 15 },
+      { id: "p3", vendas30: 5 },
+    ];
+    const result = classificarABC(items);
+    expect(result["p3"]).toBe("C");
+  });
+
+  it("assigns every id a class", () => {
+    const items = [{ id: "x", vendas30: 100 }, { id: "y", vendas30: 1 }];
+    const result = classificarABC(items);
+    expect(Object.keys(result)).toHaveLength(2);
+  });
+});
+
+// ─── calcularScoreDivergencia ────────────────────────────────────────────────
+
+describe("calcularScoreDivergencia", () => {
+  it("returns empty array for empty input", () => {
+    expect(calcularScoreDivergencia([])).toEqual([]);
+  });
+
+  it("computes 100% accuracy when no divergences", () => {
+    const result = calcularScoreDivergencia([{ usuario: "Ana", contado: 10, esperado: 10 }]);
+    expect(result[0].taxaAcuracia).toBe(100);
+    expect(result[0].totalDivergencias).toBe(0);
+    expect(result[0].mediaAbsoluta).toBe(0);
+  });
+
+  it("computes 0% accuracy when every count diverges", () => {
+    const registros = [
+      { usuario: "Bob", contado: 5, esperado: 10 },
+      { usuario: "Bob", contado: 3, esperado: 8 },
+    ];
+    const result = calcularScoreDivergencia(registros);
+    expect(result[0].taxaAcuracia).toBe(0);
+    expect(result[0].totalDivergencias).toBe(2);
+  });
+
+  it("computes partial accuracy correctly", () => {
+    const registros = [
+      { usuario: "Carol", contado: 10, esperado: 10 },
+      { usuario: "Carol", contado: 8, esperado: 10 },
+      { usuario: "Carol", contado: 10, esperado: 10 },
+      { usuario: "Carol", contado: 10, esperado: 10 },
+    ];
+    const result = calcularScoreDivergencia(registros);
+    expect(result[0].taxaAcuracia).toBe(75);
+    expect(result[0].mediaAbsoluta).toBe(0.5);
+  });
+
+  it("groups by usuario", () => {
+    const registros = [
+      { usuario: "Ana", contado: 10, esperado: 10 },
+      { usuario: "Bob", contado: 5, esperado: 10 },
+    ];
+    const result = calcularScoreDivergencia(registros);
+    expect(result).toHaveLength(2);
+  });
+
+  it("sorts by taxaAcuracia descending", () => {
+    const registros = [
+      { usuario: "Bad", contado: 1, esperado: 10 },
+      { usuario: "Good", contado: 10, esperado: 10 },
+    ];
+    const result = calcularScoreDivergencia(registros);
+    expect(result[0].usuario).toBe("Good");
+    expect(result[1].usuario).toBe("Bad");
+  });
+
+  it("uses 'Desconhecido' for empty usuario", () => {
+    const result = calcularScoreDivergencia([{ usuario: "", contado: 5, esperado: 10 }]);
+    expect(result[0].usuario).toBe("Desconhecido");
   });
 });

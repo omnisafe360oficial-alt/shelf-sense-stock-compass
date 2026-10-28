@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   BarChart2, CheckCircle2, ChevronDown, ChevronRight,
-  RotateCcw, ShieldCheck,
+  History, RotateCcw, ShieldCheck, Star,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useProdutos } from "@/lib/produtos-store";
 import { useEstoque, ajustarEstoque } from "@/lib/estoque-store";
 import { useAuth } from "@/lib/auth";
-import { vendasPorProduto } from "@/lib/computed";
+import { vendasPorProduto, classificarABC, calcularScoreDivergencia, type Classe, type ScoreDivergencia } from "@/lib/computed";
 import { getLojaId } from "@/lib/loja-resolver";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/painel/contagem-rotativa")({
   component: ContagemRotativa,
 });
 
-type Classe = "A" | "B" | "C";
 type ItemABC = { produtoId: string; nome: string; categoria: string; qtdAtual: number; vendas30: number; classe: Classe };
 
 const COR_CLASSE: Record<Classe, string> = {
@@ -42,28 +41,34 @@ const DESC_CLASSE: Record<Classe, string> = {
   C: "Baixa rotatividade — contar semestralmente",
 };
 
-function classificarABC(items: { id: string; vendas30: number }[]): Record<string, Classe> {
-  const total = items.reduce((s, x) => s + x.vendas30, 0);
-  const sorted = [...items].sort((a, b) => b.vendas30 - a.vendas30);
-  const resultado: Record<string, Classe> = {};
-  let acumulado = 0;
-  for (const item of sorted) {
-    acumulado += item.vendas30;
-    const pct = total > 0 ? acumulado / total : 0;
-    resultado[item.id] = pct <= 0.8 ? "A" : pct <= 0.95 ? "B" : "C";
-  }
-  return resultado;
-}
-
 function ContagemRotativa() {
   const produtos = useProdutos();
   const est = useEstoque();
   const auth = useAuth();
+  const [aba, setAba] = useState<"contagem" | "score">("contagem");
   const [filtroClasse, setFiltroClasse] = useState<Classe | "todas">("A");
   const [busca, setBusca] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
   const [contando, setContando] = useState<Record<string, string>>({});
   const [salvando, setSalvando] = useState<string | null>(null);
+  const [scores, setScores] = useState<ScoreDivergencia[]>([]);
+  const [loadingScores, setLoadingScores] = useState(false);
+
+  useEffect(() => {
+    async function carregarScores() {
+      setLoadingScores(true);
+      try {
+        const { data } = await supabase
+          .from("contagem_rotativa")
+          .select("usuario, contado, esperado")
+          .eq("concluido", true);
+        if (data) setScores(calcularScoreDivergencia(data));
+      } finally {
+        setLoadingScores(false);
+      }
+    }
+    carregarScores();
+  }, []);
 
   const vendasMap = vendasPorProduto(est.movs);
 
@@ -149,6 +154,92 @@ function ContagemRotativa() {
         </Link>
       </div>
 
+      {/* Abas */}
+      <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1 w-fit">
+        <button
+          onClick={() => setAba("contagem")}
+          className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition flex items-center gap-1.5", aba === "contagem" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+        >
+          <RotateCcw className="h-4 w-4" />
+          Contagem ABC
+        </button>
+        <button
+          onClick={() => setAba("score")}
+          className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition flex items-center gap-1.5", aba === "score" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+        >
+          <Star className="h-4 w-4" />
+          Score por Funcionário
+        </button>
+      </div>
+
+      {aba === "score" && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Star className="h-4 w-4 text-primary" />
+              Score de Divergência por Conferência
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Acurácia de cada funcionário nas contagens rotativas registradas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loadingScores ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">Carregando…</div>
+            ) : scores.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground text-sm">
+                <History className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                Nenhuma contagem registrada ainda. Registre contagens na aba "Contagem ABC".
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">#</th>
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Funcionário</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Contagens</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Divergências</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Média absoluta</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Acurácia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scores.map((s, idx) => (
+                      <tr key={s.usuario} className="border-b last:border-0 hover:bg-muted/40 transition-colors">
+                        <td className="py-3 px-4 text-muted-foreground text-xs">{idx + 1}</td>
+                        <td className="py-3 px-4 font-medium">{s.usuario}</td>
+                        <td className="py-3 px-4 text-center">{s.totalContagens}</td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={cn("font-semibold", s.totalDivergencias > 0 ? "text-destructive" : "text-green-600 dark:text-green-400")}>
+                            {s.totalDivergencias}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">{s.mediaAbsoluta.toFixed(1)} un.</td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full transition-all", s.taxaAcuracia >= 90 ? "bg-green-500" : s.taxaAcuracia >= 70 ? "bg-amber-500" : "bg-destructive")}
+                                style={{ width: `${s.taxaAcuracia}%` }}
+                              />
+                            </div>
+                            <span className={cn("text-xs font-bold min-w-10", s.taxaAcuracia >= 90 ? "text-green-600 dark:text-green-400" : s.taxaAcuracia >= 70 ? "text-amber-600 dark:text-amber-400" : "text-destructive")}>
+                              {s.taxaAcuracia.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {aba === "contagem" && <>
       {/* KPIs por classe */}
       <div className="grid grid-cols-3 gap-4">
         {(["A", "B", "C"] as Classe[]).map((cls) => (
@@ -312,6 +403,7 @@ function ContagemRotativa() {
         Classe A = top 80% do faturamento · Classe B = 80–95% · Classe C = os demais.
         Baseado em vendas dos últimos 30 dias.
       </p>
+      </>}
     </div>
   );
 }
