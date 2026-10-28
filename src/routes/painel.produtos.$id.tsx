@@ -32,7 +32,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 });
 
 type FormState = {
-  nome: string; categoria: string; fornecedor: string; preco: string; minimo: string; maximo: string;
+  nome: string; categoria: string; fornecedor: string; preco: string; custo: string; minimo: string; maximo: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
@@ -61,7 +61,7 @@ function ProdutoDetalhe() {
   const [addingVariant, setAddingVariant] = useState(false);
   const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
-    nome: "", categoria: "", fornecedor: "", preco: "", minimo: "", maximo: "",
+    nome: "", categoria: "", fornecedor: "", preco: "", custo: "", minimo: "", maximo: "",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
@@ -130,7 +130,7 @@ function ProdutoDetalhe() {
     const lg = produto.localGondola;
     setF({
       nome: produto.nome, categoria: produto.categoria, fornecedor: produto.fornecedor,
-      preco: String(produto.preco), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
+      preco: String(produto.preco), custo: String(produto.custoUltimaCompra ?? ""), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
       depRua: ld?.rua ?? "", depPrateleira: ld?.prateleira ?? "", depNivel: ld ? String(ld.nivel) : "",
       gondCorredor: lg?.corredor ?? "", gondGondola: lg?.gondola ?? "",
       gondNivel: lg?.nivel ?? "", gondPosicao: lg ? String(lg.posicao) : "",
@@ -153,6 +153,7 @@ function ProdutoDetalhe() {
       categoria: f.categoria,
       fornecedor: f.fornecedor,
       preco: Number(f.preco.replace(",", ".")) || produto.preco,
+      custoUltimaCompra: f.custo ? Number(f.custo.replace(",", ".")) : produto.custoUltimaCompra,
       minimo: Number(f.minimo) || produto.minimo,
       maximo: Number(f.maximo) || 0,
       localDeposito,
@@ -250,7 +251,13 @@ function ProdutoDetalhe() {
         <div className="rounded-2xl border bg-card p-5">
           <p className="text-xs uppercase text-muted-foreground">Preço de venda</p>
           <p className="font-display text-2xl font-bold">{brl(produto.preco)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">por unidade</p>
+          {produto.custoUltimaCompra ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              custo: {brl(produto.custoUltimaCompra)} · margem: {(((produto.preco - produto.custoUltimaCompra) / produto.preco) * 100).toFixed(1)}%
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">por unidade</p>
+          )}
         </div>
       </div>
 
@@ -264,9 +271,25 @@ function ProdutoDetalhe() {
               <Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Preço de venda (R$)</Label>
-              <Input inputMode="decimal" value={f.preco} onChange={(e) => setF({ ...f, preco: e.target.value })} />
+              <Label>Custo de compra (R$) <span className="font-normal text-muted-foreground text-xs">— custo por unidade na última compra</span></Label>
+              <Input inputMode="decimal" placeholder="0,00" value={f.custo} onChange={(e) => setF({ ...f, custo: e.target.value })} />
             </div>
+            <div className="space-y-2">
+              <Label>Preço de venda (R$)</Label>
+              <Input inputMode="decimal" placeholder="0,00" value={f.preco} onChange={(e) => setF({ ...f, preco: e.target.value })} />
+            </div>
+            {(() => {
+              const custo = Number(f.custo.replace(",", "."));
+              const venda = Number(f.preco.replace(",", "."));
+              const margem = custo > 0 && venda > 0 ? ((venda - custo) / venda) * 100 : null;
+              return margem !== null ? (
+                <div className={cn("sm:col-span-2 rounded-xl p-4 text-sm", margem < 10 ? "bg-destructive/10" : "bg-success/12")}>
+                  <p className="text-xs text-muted-foreground">Margem calculada</p>
+                  <p className="font-display text-2xl font-bold">{margem.toFixed(1)}%</p>
+                  <p className="text-xs text-muted-foreground">Lucro de {brl(venda - custo)} por {produto.unidade ?? "un"}</p>
+                </div>
+              ) : null;
+            })()}
             <div className="space-y-2">
               <Label>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
               <Input inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
