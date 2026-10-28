@@ -244,6 +244,50 @@ export function registrarEntrada(produtoId: string, qtd: number, lote: string, v
   }
 }
 
+// ─── Importação em lote ───────────────────────────────────────────────────────
+
+export function importarEstoqueBatch(
+  entradas: Array<{ produtoId: string; qtd: number; lote: string; validade: string; origem: string; usuario: string; local?: string }>
+) {
+  if (entradas.length === 0) return;
+  const lojaId = getLojaId();
+  if (!lojaId) return;
+
+  const agora = new Date().toISOString().slice(0, 16);
+  const novoLotes: Lote[] = entradas.map((e) => ({
+    id: crypto.randomUUID(), produtoId: e.produtoId,
+    lote: e.lote, validade: e.validade, qtd: e.qtd, local: e.local ?? "Depósito",
+  }));
+  const novosMovs: Mov[] = entradas.map((e) => ({
+    id: crypto.randomUUID(), data: agora, tipo: "entrada" as const,
+    produtoId: e.produtoId, lote: e.lote, qtd: e.qtd,
+    origem: e.origem, destino: "Depósito", usuario: e.usuario,
+  }));
+
+  const novaGondola = { ...estado.gondola };
+  const idsNovos = [...new Set(entradas.map((e) => e.produtoId))].filter((id) => novaGondola[id] === undefined);
+  for (const id of idsNovos) novaGondola[id] = 0;
+
+  emitir({ ...estado, lotes: [...estado.lotes, ...novoLotes], gondola: novaGondola, movs: [...novosMovs, ...estado.movs] });
+
+  supabase.from("lotes")
+    .upsert(novoLotes.map((l) => ({ id: l.id, loja_id: lojaId, produto_id: l.produtoId, lote: l.lote, validade: l.validade, qtd: l.qtd, local: l.local })))
+    .then(({ error }) => { if (error) toast.error("Erro ao salvar lotes: " + error.message); });
+
+  supabase.from("movimentacoes")
+    .insert(novosMovs.map((m) => ({ id: m.id, loja_id: lojaId, data: m.data, tipo: m.tipo, produto_id: m.produtoId, lote: m.lote ?? "", qtd: m.qtd, origem: m.origem, destino: m.destino, usuario_nome: m.usuario, preco_unitario: 0 })))
+    .then(({ error }) => { if (error) toast.error("Erro ao registrar movimentações: " + error.message); });
+
+  if (idsNovos.length > 0) {
+    supabase.from("gondola")
+      .upsert(
+        idsNovos.map((id) => ({ loja_id: lojaId, produto_id: id, qtd_gondola: 0, updated_at: new Date().toISOString() })),
+        { onConflict: "loja_id,produto_id" }
+      )
+      .then(({ error }) => { if (error) toast.error("Erro ao salvar gôndola: " + error.message); });
+  }
+}
+
 // ─── Ajuste de gôndola ────────────────────────────────────────────────────────
 
 export function ajustarGondola(produtoId: string, contado: number, motivo: string) {

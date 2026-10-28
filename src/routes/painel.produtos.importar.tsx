@@ -7,9 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
 import { getConfig } from "@/lib/config-store";
-import { getProdutos, cadastrarProduto, editarProduto } from "@/lib/produtos-store";
+import { getProdutos, cadastrarProduto, editarProduto, cadastrarProdutosBatch } from "@/lib/produtos-store";
 import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
-import { inicializarProduto, registrarEntrada } from "@/lib/estoque-store";
+import { importarEstoqueBatch } from "@/lib/estoque-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -138,29 +138,40 @@ function Importar() {
             if (!fornecedorExiste) {
               cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" });
             }
-            linhas.forEach((l) => {
-              const qtdTotal = l.qtdCompra * l.porEmbalagem;
-              if (l.existente) {
-                const p = getProdutos().find((x) => x.codigo === l.codigo);
-                if (p && qtdTotal > 0) {
-                  editarProduto(p.id, { custoUltimaCompra: l.custoUnit, maximo: Number(l.maximo) || 0, ...(l.atualizarVenda ? { preco: Number(l.venda) } : {}) });
-                  registrarEntrada(p.id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
-                }
-              } else {
-                const novoProd: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, maximo: Number(l.maximo) || 0, custoUltimaCompra: l.custoUnit };
-                if (!l.semValidade && l.validade) novoProd.validade = l.validade;
-                const id = cadastrarProduto(novoProd);
-                inicializarProduto(id);
-                if (qtdTotal > 0) {
-                  registrarEntrada(id, qtdTotal, l.lote, l.validade, nota.numero, "Importação XML", localDeposito);
-                }
-              }
+
+            const linhasNovas = linhas.filter((l) => !l.existente);
+            const linhasExist = linhas.filter((l) => l.existente);
+
+            // Atualiza produtos existentes individualmente (geralmente poucos)
+            for (const l of linhasExist) {
+              const p = getProdutos().find((x) => x.codigo === l.codigo);
+              if (p) editarProduto(p.id, { custoUltimaCompra: l.custoUnit, maximo: Number(l.maximo) || 0, ...(l.atualizarVenda ? { preco: Number(l.venda) } : {}) });
+            }
+
+            // Cadastra todos os produtos novos em um único request ao Supabase
+            const novosProds = linhasNovas.map((l) => {
+              const prod: Parameters<typeof cadastrarProduto>[0] = { nome: l.nome, codigo: l.codigo, categoria: "Outros", fornecedor: nota.fornecedor.nome, preco: Number(l.venda) || 0, deposito: 0, gondola: 0, minimo: Number(l.minimo) || 0, maximo: Number(l.maximo) || 0, custoUltimaCompra: l.custoUnit };
+              if (!l.semValidade && l.validade) prod.validade = l.validade;
+              return prod;
             });
-            const novos = linhas.filter((l) => !l.existente).length;
-            const atualizados = linhas.filter((l) => l.existente).length;
-            const totalUnidades = linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem, 0);
-            const valorNota = linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem * l.custoUnit, 0);
-            setResumo({ novos, atualizados, totalUnidades, valorNota });
+            const novosIds = cadastrarProdutosBatch(novosProds);
+
+            // Monta mapa código → id para todas as linhas
+            const idPorCodigo = new Map<string, string>();
+            for (let i = 0; i < linhasNovas.length; i++) idPorCodigo.set(linhasNovas[i].codigo, novosIds[i]);
+            for (const l of linhasExist) {
+              const p = getProdutos().find((x) => x.codigo === l.codigo);
+              if (p) idPorCodigo.set(l.codigo, p.id);
+            }
+
+            // Envia lotes + movimentos + gôndola em um único request por tabela
+            const entradas = linhas
+              .filter((l) => l.qtdCompra * l.porEmbalagem > 0)
+              .map((l) => ({ produtoId: idPorCodigo.get(l.codigo) ?? "", qtd: l.qtdCompra * l.porEmbalagem, lote: l.lote, validade: l.validade, origem: nota.numero, usuario: "Importação XML", local: localDeposito }))
+              .filter((e) => e.produtoId);
+            importarEstoqueBatch(entradas);
+
+            setResumo({ novos: linhasNovas.length, atualizados: linhasExist.length, totalUnidades: linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem, 0), valorNota: linhas.reduce((t, l) => t + l.qtdCompra * l.porEmbalagem * l.custoUnit, 0) });
           }}>
             {pendentes > 0 ? <><AlertTriangle className="h-4 w-4" /> Importar assim mesmo</> : <><Check className="h-4 w-4" /> Confirmar importação</>}
           </Button>
