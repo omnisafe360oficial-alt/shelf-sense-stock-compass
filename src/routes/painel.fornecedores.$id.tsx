@@ -1,7 +1,10 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Edit3, Mail, MapPin, Package, Phone, Save, ShoppingCart, Trash2, User, X } from "lucide-react";
+import {
+  ArrowLeft, Clock, Edit3, Mail, MapPin, Package, Phone,
+  Save, ShoppingCart, Trash2, User, X, TrendingUp, AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,12 +36,13 @@ export const Route = createFileRoute("/painel/fornecedores/$id")({
 });
 
 type FForm = { nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };
+type FiltroPed = "todos" | "aberto" | "recebido" | "cancelado";
 
 const STATUS_LABEL: Record<string, string> = {
   rascunho: "Rascunho",
   enviado: "Enviado",
   confirmado: "Confirmado",
-  parcial: "Parcialmente recebido",
+  parcial: "Parc. recebido",
   recebido: "Recebido",
   cancelado: "Cancelado",
 };
@@ -50,6 +54,13 @@ const STATUS_COR: Record<string, string> = {
   recebido: "bg-success/12 text-success",
   cancelado: "bg-destructive/10 text-destructive",
 };
+
+const FILTROS_PED: { key: FiltroPed; label: string }[] = [
+  { key: "todos", label: "Todos" },
+  { key: "aberto", label: "Em aberto" },
+  { key: "recebido", label: "Recebidos" },
+  { key: "cancelado", label: "Cancelados" },
+];
 
 function Ficha() {
   const { id } = Route.useParams();
@@ -64,18 +75,46 @@ function Ficha() {
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [form, setForm] = useState<FForm>({ nome: "", cnpj: "", contato: "", telefone: "", email: "", cidade: "", prazo: "" });
+  const [filtroPed, setFiltroPed] = useState<FiltroPed>("todos");
 
-  const mesPedidos = useMemo(() => {
+  const todosPedidos = useMemo(() => {
     if (!f) return [];
     return pedidos.filter((p) => p.fornecedorId === f.id).sort((a, b) => b.dataEmissao.localeCompare(a.dataEmissao));
   }, [pedidos, f]);
 
+  const pedidosFiltrados = useMemo(() => {
+    if (filtroPed === "todos") return todosPedidos;
+    if (filtroPed === "aberto") return todosPedidos.filter((p) => ["enviado", "confirmado", "parcial"].includes(p.status));
+    if (filtroPed === "recebido") return todosPedidos.filter((p) => p.status === "recebido");
+    return todosPedidos.filter((p) => p.status === "cancelado");
+  }, [todosPedidos, filtroPed]);
+
   const itens = useMemo(() => (f ? produtos.filter((p) => p.fornecedor === f.nome) : []), [produtos, f]);
 
-  if (!f) return <p className="text-muted-foreground">Fornecedor não encontrado.</p>;
+  const stats = useMemo(() => {
+    const pendentes = todosPedidos.filter((p) => ["enviado", "confirmado", "parcial"].includes(p.status));
+    const recebidos = todosPedidos.filter((p) => p.status === "recebido");
+    const volumeTotal = todosPedidos.reduce((s, p) => s + p.total, 0);
+    const ticketMedio = recebidos.length > 0 ? recebidos.reduce((s, p) => s + p.total, 0) / recebidos.length : 0;
 
-  const pendentes = mesPedidos.filter((p) => ["enviado", "confirmado", "parcial"].includes(p.status));
-  const totalPedidos = mesPedidos.reduce((s, p) => s + p.total, 0);
+    const valorEstoque = itens.reduce((s, p) => {
+      const dep = est.lotes.filter((l) => l.produtoId === p.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
+      const gond = est.gondola[p.id] ?? 0;
+      return s + (dep + gond) * (p.custoUltimaCompra ?? 0);
+    }, 0);
+
+    const prodsBaixo = itens.filter((p) => {
+      const gond = est.gondola[p.id] ?? 0;
+      return gond <= p.minimo;
+    });
+
+    const ultimaCompra = recebidos[0] ?? null;
+    const pedidoMaisAntigo = pendentes.sort((a, b) => a.dataEmissao.localeCompare(b.dataEmissao))[0] ?? null;
+
+    return { pendentes: pendentes.length, volumeTotal, ticketMedio, valorEstoque, prodsBaixo, ultimaCompra, pedidoMaisAntigo };
+  }, [todosPedidos, itens, est]);
+
+  if (!f) return <p className="text-muted-foreground">Fornecedor não encontrado.</p>;
 
   const abrirEdicao = () => {
     setForm({ nome: f.nome, cnpj: f.cnpj, contato: f.contato, telefone: f.telefone, email: f.email, cidade: f.cidade, prazo: f.prazo });
@@ -120,6 +159,7 @@ function Ficha() {
           <div>
             <h1 className="text-3xl font-bold">{f.nome}</h1>
             {f.cnpj && <p className="font-mono text-sm text-primary-foreground/75">CNPJ {f.cnpj}</p>}
+            {f.cidade && <p className="text-sm text-primary-foreground/60">{f.cidade}</p>}
           </div>
         </div>
         <div className="flex gap-2">
@@ -137,17 +177,20 @@ function Ficha() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {[
-          { icon: Package, l: "Produtos", v: itens.length },
-          { icon: ShoppingCart, l: "Pedidos total", v: mesPedidos.length },
-          { icon: ShoppingCart, l: "Em aberto", v: pendentes.length },
-          { icon: ShoppingCart, l: "Volume total", v: brl(totalPedidos) },
-        ].map(({ icon: Icon, l, v }) => (
+          { icon: Package, l: "Produtos", v: itens.length, sub: "fornecidos" },
+          { icon: TrendingUp, l: "Valor em estoque", v: brl(stats.valorEstoque), sub: "custo × qtd" },
+          { icon: ShoppingCart, l: "Total de pedidos", v: todosPedidos.length, sub: "desde o início" },
+          { icon: ShoppingCart, l: "Em aberto", v: stats.pendentes, sub: "aguardando entrega", alerta: stats.pendentes > 0 },
+          { icon: TrendingUp, l: "Volume comprado", v: brl(stats.volumeTotal), sub: "todos os pedidos" },
+          { icon: TrendingUp, l: "Ticket médio", v: stats.ticketMedio > 0 ? brl(stats.ticketMedio) : "—", sub: "por pedido recebido" },
+        ].map(({ icon: Icon, l, v, sub, alerta }) => (
           <div key={l} className="rounded-xl border bg-card px-4 py-4">
-            <Icon className="h-4 w-4 text-primary mb-1.5" />
+            <Icon className={cn("h-4 w-4 mb-1.5", alerta ? "text-warning" : "text-primary")} />
             <p className="text-xl font-bold">{v}</p>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">{l}</p>
+            <p className="text-xs font-medium text-foreground/80">{l}</p>
+            <p className="text-xs text-muted-foreground">{sub}</p>
           </div>
         ))}
       </div>
@@ -207,9 +250,67 @@ function Ficha() {
         </div>
       )}
 
-      {/* Layout duas colunas */}
+      {/* Atividade recente */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* Última compra */}
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Última compra</p>
+          {stats.ultimaCompra ? (
+            <>
+              <Link to="/painel/pedidos/$id" params={{ id: stats.ultimaCompra.id }} className="font-semibold hover:text-primary">
+                {stats.ultimaCompra.numero}
+              </Link>
+              <p className="mt-0.5 text-xl font-bold">{brl(stats.ultimaCompra.total)}</p>
+              <p className="text-sm text-muted-foreground">
+                {new Date(stats.ultimaCompra.dataEmissao).toLocaleDateString("pt-BR")}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum pedido recebido ainda.</p>
+          )}
+        </div>
+
+        {/* Pedido pendente mais antigo */}
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Pedido mais antigo em aberto</p>
+          {stats.pedidoMaisAntigo ? (
+            <>
+              <Link to="/painel/pedidos/$id" params={{ id: stats.pedidoMaisAntigo.id }} className="font-semibold hover:text-primary">
+                {stats.pedidoMaisAntigo.numero}
+              </Link>
+              <p className="mt-0.5 text-xl font-bold">{brl(stats.pedidoMaisAntigo.total)}</p>
+              <p className="text-sm text-muted-foreground">
+                Emitido em {new Date(stats.pedidoMaisAntigo.dataEmissao).toLocaleDateString("pt-BR")}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum pedido em aberto.</p>
+          )}
+        </div>
+
+        {/* Alertas de estoque */}
+        <div className="rounded-2xl border bg-card p-5">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Produtos com estoque baixo</p>
+          {stats.prodsBaixo.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
+                <p className="text-xl font-bold">{stats.prodsBaixo.length}</p>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {stats.prodsBaixo.slice(0, 2).map((p) => p.nome).join(", ")}
+                {stats.prodsBaixo.length > 2 && ` +${stats.prodsBaixo.length - 2}`}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Todos os produtos estão bem abastecidos.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Layout duas colunas: contato + produtos */}
       <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
-        {/* Contato */}
+        {/* Dados de contato */}
         <div className="space-y-4 rounded-2xl border bg-card p-6">
           <h2 className="font-semibold">Dados de contato</h2>
           {info.length > 0 ? (
@@ -235,107 +336,135 @@ function Ficha() {
         {/* Produtos fornecidos */}
         <div className="rounded-2xl border bg-card overflow-hidden">
           <h2 className="border-b p-5 text-lg font-semibold">
-            Produtos fornecidos <span className="text-muted-foreground font-normal text-base">({itens.length})</span>
+            Produtos fornecidos{" "}
+            <span className="text-muted-foreground font-normal text-base">({itens.length})</span>
           </h2>
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-5 py-3">Produto</th>
-                <th className="px-5 py-3 text-right">Preço</th>
-                <th className="px-5 py-3 text-right">Estoque</th>
-                <th className="px-5 py-3 text-right">Situação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {itens.map((p) => {
-                const dep = est.lotes.filter((l) => l.produtoId === p.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
-                const gond = est.gondola[p.id] ?? 0;
-                const total = dep + gond;
-                const sit: "ok" | "baixo" | "sem" = total === 0 ? "sem" : gond <= p.minimo ? "baixo" : "ok";
-                const labels = { ok: "Estoque ok", baixo: "Repor gôndola", sem: "Sem estoque" };
-                const cores = { ok: "bg-success/12 text-success", baixo: "bg-warning/15 text-warning", sem: "bg-destructive/10 text-destructive" };
-                return (
-                  <tr key={p.id}>
-                    <td className="px-5 py-3">
-                      <Link to="/painel/produtos/$id" params={{ id: p.id }} className="group">
-                        <p className="font-semibold group-hover:text-primary">{p.nome}</p>
-                        <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3 text-right">{brl(p.preco)}</td>
-                    <td className="px-5 py-3 text-right">{total} un</td>
-                    <td className="px-5 py-3 text-right">
-                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", cores[sit])}>
-                        {labels[sit]}
-                      </span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3">Produto</th>
+                  <th className="px-5 py-3 text-right">Preço</th>
+                  <th className="px-5 py-3 text-right">Custo</th>
+                  <th className="px-5 py-3 text-right">Estoque</th>
+                  <th className="px-5 py-3 text-right">Situação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {itens.map((p) => {
+                  const dep = est.lotes.filter((l) => l.produtoId === p.id && l.qtd > 0).reduce((t, l) => t + l.qtd, 0);
+                  const gond = est.gondola[p.id] ?? 0;
+                  const total = dep + gond;
+                  const sit: "ok" | "baixo" | "sem" = total === 0 ? "sem" : gond <= p.minimo ? "baixo" : "ok";
+                  const labels = { ok: "Estoque ok", baixo: "Repor gôndola", sem: "Sem estoque" };
+                  const cores = { ok: "bg-success/12 text-success", baixo: "bg-warning/15 text-warning", sem: "bg-destructive/10 text-destructive" };
+                  return (
+                    <tr key={p.id} className="hover:bg-muted/20">
+                      <td className="px-5 py-3">
+                        <Link to="/painel/produtos/$id" params={{ id: p.id }} className="group">
+                          <p className="font-semibold group-hover:text-primary">{p.nome}</p>
+                          <p className="font-mono text-xs text-muted-foreground">{p.codigo}</p>
+                        </Link>
+                      </td>
+                      <td className="px-5 py-3 text-right">{brl(p.preco)}</td>
+                      <td className="px-5 py-3 text-right text-muted-foreground">
+                        {p.custoUltimaCompra ? brl(p.custoUltimaCompra) : "—"}
+                      </td>
+                      <td className="px-5 py-3 text-right">{total} un</td>
+                      <td className="px-5 py-3 text-right">
+                        <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", cores[sit])}>
+                          {labels[sit]}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {itens.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      Nenhum produto vinculado a este fornecedor.
                     </td>
                   </tr>
-                );
-              })}
-              {itens.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                    Nenhum produto vinculado a este fornecedor.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Histórico de pedidos */}
       <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="flex items-center justify-between border-b p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
           <h2 className="text-lg font-semibold">
-            Pedidos de compra <span className="text-muted-foreground font-normal text-base">({mesPedidos.length})</span>
+            Pedidos de compra{" "}
+            <span className="text-muted-foreground font-normal text-base">({todosPedidos.length})</span>
           </h2>
-          <Link
-            to="/painel/pedidos/novo"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <ShoppingCart className="h-4 w-4" /> Novo pedido
-          </Link>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
+              {FILTROS_PED.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFiltroPed(key)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium transition",
+                    filtroPed === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <Link
+              to="/painel/pedidos/novo"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <ShoppingCart className="h-4 w-4" /> Novo pedido
+            </Link>
+          </div>
         </div>
-        {mesPedidos.length === 0 ? (
+        {pedidosFiltrados.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
-            Nenhum pedido de compra com este fornecedor ainda.
+            {todosPedidos.length === 0
+              ? "Nenhum pedido de compra com este fornecedor ainda."
+              : "Nenhum pedido neste filtro."}
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-5 py-3">Número</th>
-                <th className="px-5 py-3">Emissão</th>
-                <th className="px-5 py-3">Prev. entrega</th>
-                <th className="px-5 py-3 text-right">Total</th>
-                <th className="px-5 py-3 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {mesPedidos.map((p) => (
-                <tr key={p.id} className="hover:bg-muted/20">
-                  <td className="px-5 py-3">
-                    <Link to="/painel/pedidos/$id" params={{ id: p.id }} className="font-semibold hover:text-primary">
-                      {p.numero}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {p.dataEmissao ? new Date(p.dataEmissao).toLocaleDateString("pt-BR") : "—"}
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {p.dataPrevista ? new Date(p.dataPrevista).toLocaleDateString("pt-BR") : "—"}
-                  </td>
-                  <td className="px-5 py-3 text-right font-semibold">{brl(p.total)}</td>
-                  <td className="px-5 py-3 text-right">
-                    <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_COR[p.status] ?? "bg-muted text-muted-foreground")}>
-                      {STATUS_LABEL[p.status] ?? p.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/30 text-left text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-5 py-3">Número</th>
+                  <th className="px-5 py-3">Emissão</th>
+                  <th className="px-5 py-3">Prev. entrega</th>
+                  <th className="px-5 py-3 text-right">Total</th>
+                  <th className="px-5 py-3 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y">
+                {pedidosFiltrados.map((p) => (
+                  <tr key={p.id} className="hover:bg-muted/20">
+                    <td className="px-5 py-3">
+                      <Link to="/painel/pedidos/$id" params={{ id: p.id }} className="font-semibold hover:text-primary">
+                        {p.numero}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {p.dataEmissao ? new Date(p.dataEmissao).toLocaleDateString("pt-BR") : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {p.dataPrevista ? new Date(p.dataPrevista).toLocaleDateString("pt-BR") : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold">{brl(p.total)}</td>
+                    <td className="px-5 py-3 text-right">
+                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_COR[p.status] ?? "bg-muted text-muted-foreground")}>
+                        {STATUS_LABEL[p.status] ?? p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
