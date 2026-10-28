@@ -7,6 +7,7 @@ import { TransferirDialog } from "@/components/estoque/TransferirDialog";
 import { useEstoque, diasAte, exibirValidade, faixaValidade, type Faixa } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/estoque")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/painel/estoque")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Estoque,
 });
 

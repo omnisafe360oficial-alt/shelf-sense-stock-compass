@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { lotesFefo, useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { conferirReposicao, useOperacao } from "@/lib/operacao-store";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/reposicao")({
   head: () => ({
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/painel/reposicao")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Reposicao,
 });
 

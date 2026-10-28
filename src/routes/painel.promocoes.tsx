@@ -12,11 +12,14 @@ import { useProdutos } from "@/lib/produtos-store";
 import { HOJE } from "@/lib/computed";
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/mock-data";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/promocoes")({
   head: () => ({
     meta: [{ title: "Promoções — OmniSafe 360" }],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Promocoes,
 });
 

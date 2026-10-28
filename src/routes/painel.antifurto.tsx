@@ -11,8 +11,10 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { calcularAlertas, type AlertaAntifurto } from "@/lib/antifurto-store";
 import { gravarAudit } from "@/lib/audit-store";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
-export const Route = createFileRoute("/painel/antifurto")({
+export const Route = createFileRoute("/painel/antifurto")({  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Antifurto,
 });
 

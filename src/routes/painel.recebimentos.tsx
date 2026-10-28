@@ -11,6 +11,7 @@ import { conferirNota, emUnidades, useOperacao } from "@/lib/operacao-store";
 import { useRecebeEstado } from "@/lib/recebe-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/recebimentos")({
   head: () => ({
@@ -22,6 +23,8 @@ export const Route = createFileRoute("/painel/recebimentos")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Recebimentos,
 });
 

@@ -3,8 +3,13 @@ import { useState, useMemo } from "react";
 import { ClipboardList, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuditLog, type AuditEntry } from "@/lib/audit-store";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
-export const Route = createFileRoute("/painel/auditoria")({ component: Auditoria });
+export const Route = createFileRoute("/painel/auditoria")({
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
+  component: Auditoria,
+});
 
 const MODULOS = ["Todos", "Produtos", "PDV", "Estoque", "Configurações"];
 const ACOES = ["Todas", "criar", "editar", "excluir", "venda", "ajuste", "entrada"];

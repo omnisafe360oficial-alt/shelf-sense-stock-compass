@@ -8,6 +8,7 @@ import { brl } from "@/lib/mock-data";
 import { useProdutos } from "@/lib/produtos-store";
 import { diasAte, exibirValidade, faixaValidade, registrarPerda, useEstoque, type Faixa, type TipoPerda } from "@/lib/estoque-store";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 const TIPOS_PERDA: { id: TipoPerda; label: string }[] = [
   { id: "vencido", label: "Vencido" },
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/painel/validades")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Validades,
 });
 

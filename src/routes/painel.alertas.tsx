@@ -13,11 +13,14 @@ import {
   abaixoDoMinimo, diasSemVenda, lotesVencendo, vendasPorProduto, HOJE,
 } from "@/lib/computed";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/alertas")({
   head: () => ({
     meta: [{ title: "Central de Alertas — OmniSafe 360" }],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: Alertas,
 });
 

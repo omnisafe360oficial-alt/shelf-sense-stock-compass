@@ -398,7 +398,7 @@ function ResumoRelatorios() {
       <div>
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Acesso rápido</p>
         <div className="flex flex-wrap gap-2">
-          [
+          {[
             { label: "Produtos", to: "/painel/produtos", icon: <Package className="w-3.5 h-3.5" /> },
             { label: "Relatórios analíticos", to: "/painel/relatorios", icon: <BarChart3 className="w-3.5 h-3.5" /> },
             { label: "Rel. Vendas", to: "/painel/relatorio-vendas", icon: <BarChart2 className="w-3.5 h-3.5" /> },
