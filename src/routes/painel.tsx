@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, ArrowRightLeft, ArrowLeftRight, BarChart3, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
+  AlertTriangle, ArrowRightLeft, ArrowLeftRight, BarChart3, BarChart2, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
   LogOut, Menu, Moon, Package, PackageOpen, RefreshCw, ScanBarcode, Search, Settings, ShoppingCart, ShieldAlert, Sun, Tag, Target, Truck, Users, Warehouse, X, Shield,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
@@ -25,7 +25,7 @@ const grupos = [
   { titulo: "Cadastros", itens: [{ label: "Produtos", icon: Package, to: "/painel/produtos" as const }, { label: "Fornecedores", icon: Truck, to: "/painel/fornecedores" as const }] },
   { titulo: "Estoque", itens: [{ label: "Depósito", icon: Warehouse, to: "/painel/deposito" as const }, { label: "Gôndola", icon: Boxes, to: "/painel/gondola" as const }, { label: "Movimentações", icon: ArrowRightLeft, to: "/painel/movimentacoes" as const }, { label: "Validades", icon: CalendarClock, to: "/painel/validades" as const }, { label: "Etiquetas", icon: Tag, to: "/painel/etiquetas" as const }] },
   { titulo: "Operação", itens: [{ label: "PDV", icon: ScanBarcode, to: "/painel/pdv" as const }, { label: "Promoções", icon: Tag, to: "/painel/promocoes" as const }, { label: "Reposição", icon: RefreshCw, to: "/painel/reposicao" as const }, { label: "Recebimentos", icon: PackageOpen, to: "/painel/recebimentos" as const }, { label: "Inconsistências", icon: AlertTriangle, to: "/painel/inconsistencias" as const }, { label: "Pedidos de Compra", icon: ClipboardList, to: "/painel/pedidos" as const }, { label: "Devoluções", icon: ArrowLeftRight, to: "/painel/devolucoes" as const }, { label: "Antifurto", icon: ShieldAlert, to: "/painel/antifurto" as const }] },
-  { titulo: "Gestão", itens: [{ label: "Alertas", icon: Bell, to: "/painel/alertas" as const }, { label: "Metas", icon: Target, to: "/painel/metas" as const }, { label: "Inventário", icon: ClipboardCheck, to: "/painel/inventario" as const }, { label: "Relatórios", icon: BarChart3, to: "/painel/relatorios" as const }, { label: "Equipe", icon: Users, to: "/painel/equipe" as const }, { label: "Auditoria", icon: Shield, to: "/painel/auditoria" as const }, { label: "Configurações", icon: Settings, to: "/painel/configuracoes" as const }] },
+  { titulo: "Gestão", itens: [{ label: "Alertas", icon: Bell, to: "/painel/alertas" as const }, { label: "Metas", icon: Target, to: "/painel/metas" as const }, { label: "Inventário", icon: ClipboardCheck, to: "/painel/inventario" as const }, { label: "Relatórios", icon: BarChart3, to: "/painel/relatorios" as const }, { label: "Rel. Vendas", icon: BarChart2, to: "/painel/relatorio-vendas" as const }, { label: "Equipe", icon: Users, to: "/painel/equipe" as const }, { label: "Auditoria", icon: Shield, to: "/painel/auditoria" as const }, { label: "Configurações", icon: Settings, to: "/painel/configuracoes" as const }] },
 ];
 
 function PainelLayout() {
