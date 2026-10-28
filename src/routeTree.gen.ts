@@ -36,6 +36,7 @@ import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as PainelAuditoriaRouteImport } from './routes/painel.auditoria'
 import { Route as PainelAntifurtoRouteImport } from './routes/painel.antifurto'
+import { Route as PainelDevolucoesRouteImport } from './routes/painel.devolucoes'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
 import { Route as RecebeHistoricoRouteImport } from './routes/recebe.historico'
 import { Route as RecebePedidosRouteImport } from './routes/recebe.pedidos'
@@ -190,6 +191,11 @@ const PainelAntifurtoRoute = PainelAntifurtoRouteImport.update({
   path: '/antifurto',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelDevolucoesRoute = PainelDevolucoesRouteImport.update({
+  id: '/devolucoes',
+  path: '/devolucoes',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RecebeIndexRoute = RecebeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/painel/alertas': typeof PainelAlertasRoute
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
+  '/painel/devolucoes': typeof PainelDevolucoesRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/painel/alertas': typeof PainelAlertasRoute
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
+  '/painel/devolucoes': typeof PainelDevolucoesRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -384,6 +392,7 @@ export interface FileRoutesById {
   '/painel/alertas': typeof PainelAlertasRoute
   '/painel/auditoria': typeof PainelAuditoriaRoute
   '/painel/antifurto': typeof PainelAntifurtoRoute
+  '/painel/devolucoes': typeof PainelDevolucoesRoute
   '/painel/configuracoes': typeof PainelConfiguracoesRoute
   '/painel/deposito': typeof PainelDepositoRoute
   '/painel/equipe': typeof PainelEquipeRoute
@@ -433,6 +442,7 @@ export interface FileRouteTypes {
     | '/painel/alertas'
     | '/painel/auditoria'
     | '/painel/antifurto'
+    | '/painel/devolucoes'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/painel/alertas'
     | '/painel/auditoria'
     | '/painel/antifurto'
+    | '/painel/devolucoes'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -524,6 +535,7 @@ export interface FileRouteTypes {
     | '/painel/alertas'
     | '/painel/auditoria'
     | '/painel/antifurto'
+    | '/painel/devolucoes'
     | '/painel/configuracoes'
     | '/painel/deposito'
     | '/painel/equipe'
@@ -648,6 +660,13 @@ declare module '@tanstack/react-router' {
       path: '/antifurto'
       fullPath: '/painel/antifurto'
       preLoaderRoute: typeof PainelAntifurtoRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/devolucoes': {
+      id: '/painel/devolucoes'
+      path: '/devolucoes'
+      fullPath: '/painel/devolucoes'
+      preLoaderRoute: typeof PainelDevolucoesRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/configuracoes': {
@@ -895,6 +914,7 @@ interface PainelRouteChildren {
   PainelAlertasRoute: typeof PainelAlertasRoute
   PainelAuditoriaRoute: typeof PainelAuditoriaRoute
   PainelAntifurtoRoute: typeof PainelAntifurtoRoute
+  PainelDevolucoesRoute: typeof PainelDevolucoesRoute
   PainelConfiguracoesRoute: typeof PainelConfiguracoesRoute
   PainelDepositoRoute: typeof PainelDepositoRoute
   PainelEquipeRoute: typeof PainelEquipeRoute
@@ -928,6 +948,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelAlertasRoute: PainelAlertasRoute,
   PainelAuditoriaRoute: PainelAuditoriaRoute,
   PainelAntifurtoRoute: PainelAntifurtoRoute,
+  PainelDevolucoesRoute: PainelDevolucoesRoute,
   PainelConfiguracoesRoute: PainelConfiguracoesRoute,
   PainelDepositoRoute: PainelDepositoRoute,
   PainelEquipeRoute: PainelEquipeRoute,
