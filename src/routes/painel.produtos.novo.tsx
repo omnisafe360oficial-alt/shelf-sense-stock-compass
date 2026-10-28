@@ -46,7 +46,8 @@ const inicial = {
   custo: "", venda: "",
   lote: "", validade: "", qtdDeposito: "",
   depRua: "", depPrateleira: "", depNivel: "",
-  qtdGondola: "", minimo: "", maximo: "",
+  minimoDeposito: "10", maximoDeposito: "100",
+  qtdGondola: "", minimo: "5", maximo: "50",
   gondCorredor: "", gondGondola: "", gondNivel: "" as "" | "Alto" | "Médio" | "Baixo", gondPosicao: "",
 };
 
@@ -111,6 +112,8 @@ function NovoProduto() {
       gondola: 0,
       minimo: num(f.minimo),
       maximo: num(f.maximo) || 0,
+      minimoDeposito: num(f.minimoDeposito) || 10,
+      maximoDeposito: num(f.maximoDeposito) || 100,
       validade: f.validade || undefined,
       localDeposito,
       localGondola,
@@ -230,6 +233,8 @@ function NovoProduto() {
               <Campo label="Lote" dica="Opcional para produtos sem vencimento."><Input value={f.lote} onChange={set("lote")} placeholder="Ex.: L2310A" className="font-mono" /></Campo>
               <Campo label="Data de validade" dica="Deixe em branco para produtos sem vencimento."><Input type="date" value={f.validade} onChange={set("validade")} /></Campo>
               <Campo label={`Quantidade no depósito (${f.unidade})`}><Input inputMode="numeric" value={f.qtdDeposito} onChange={set("qtdDeposito")} placeholder="0" /></Campo>
+              <Campo label="Mínimo no depósito" dica="Alerta quando cair abaixo desse valor."><Input inputMode="numeric" value={f.minimoDeposito} onChange={(e) => setF({ ...f, minimoDeposito: e.target.value.replace(/\D/g, "") })} placeholder="10" /></Campo>
+              <Campo label="Máximo no depósito" dica="Capacidade total do depósito para este produto."><Input inputMode="numeric" value={f.maximoDeposito} onChange={(e) => setF({ ...f, maximoDeposito: e.target.value.replace(/\D/g, "") })} placeholder="100" /></Campo>
               <div className="sm:col-span-2">
                 <p className="mb-3 text-sm font-semibold text-muted-foreground">Localização no depósito <span className="font-normal">(opcional)</span></p>
                 <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-3">
@@ -285,6 +290,7 @@ function NovoProduto() {
                 ["Custo / venda", `${brl(custo)} → ${brl(venda)}`],
                 ["Lote / validade", `${f.lote} · ${f.validade.split("-").reverse().join("/")}`],
                 ["Depósito", `${f.qtdDeposito} ${f.unidade}`],
+                ["Depósito — mín./máx.", `mín. ${num(f.minimoDeposito)} · máx. ${num(f.maximoDeposito)}`],
                 ["Local depósito", f.depRua ? `Rua ${f.depRua} · Prat. ${f.depPrateleira} · Nív. ${f.depNivel}` : "Não informado"],
                 ["Gôndola", `${f.qtdGondola} · mín. ${f.minimo}${f.maximo ? ` · máx. ${f.maximo}` : ""}`],
                 ["Local gôndola", f.gondCorredor ? `Corr. ${f.gondCorredor} · ${f.gondGondola} · ${f.gondNivel} · Pos. ${f.gondPosicao}` : "Não informado"],
