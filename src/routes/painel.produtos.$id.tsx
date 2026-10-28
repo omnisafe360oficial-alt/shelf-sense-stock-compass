@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Calendar, Edit3,
@@ -70,11 +70,14 @@ function ProdutoDetalhe() {
   const fornecedores = useFornecedores();
   const est = useEstoque();
 
+  const fid = useId();
   const [editando, setEditando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!confirmando) return;
+    cancelRef.current?.focus();
     const handle = (e: KeyboardEvent) => { if (e.key === "Escape") setConfirmando(false); };
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
@@ -280,7 +283,7 @@ function ProdutoDetalhe() {
           </p>
           <div className="mt-4 flex gap-3">
             <Button variant="destructive" onClick={confirmarExclusao}><Trash2 className="h-4 w-4" /> Confirmar exclusão</Button>
-            <Button variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
+            <Button ref={cancelRef} variant="ghost" onClick={() => setConfirmando(false)}>Cancelar</Button>
           </div>
         </div>
       )}
@@ -430,16 +433,16 @@ function ProdutoDetalhe() {
           <h2 className="text-lg font-semibold">Editar produto</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <Label>Nome do produto</Label>
-              <Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
+              <Label htmlFor={`${fid}-nome`}>Nome do produto</Label>
+              <Input id={`${fid}-nome`} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Custo de compra (R$) <span className="font-normal text-muted-foreground text-xs">— custo por unidade na última compra</span></Label>
-              <Input inputMode="decimal" placeholder="0,00" value={f.custo} onChange={(e) => setF({ ...f, custo: e.target.value })} />
+              <Label htmlFor={`${fid}-custo`}>Custo de compra (R$) <span className="font-normal text-muted-foreground text-xs">— custo por unidade na última compra</span></Label>
+              <Input id={`${fid}-custo`} inputMode="decimal" placeholder="0,00" value={f.custo} onChange={(e) => setF({ ...f, custo: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Preço de venda (R$)</Label>
-              <Input inputMode="decimal" placeholder="0,00" value={f.preco} onChange={(e) => setF({ ...f, preco: e.target.value })} />
+              <Label htmlFor={`${fid}-preco`}>Preço de venda (R$)</Label>
+              <Input id={`${fid}-preco`} inputMode="decimal" placeholder="0,00" value={f.preco} onChange={(e) => setF({ ...f, preco: e.target.value })} />
             </div>
             {(() => {
               const custo = Number(f.custo.replace(",", "."));
@@ -454,12 +457,12 @@ function ProdutoDetalhe() {
               ) : null;
             })()}
             <div className="space-y-2">
-              <Label>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
-              <Input inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
+              <Label htmlFor={`${fid}-minimo`}>Mínimo na gôndola <span className="font-normal text-muted-foreground text-xs">— quando atingir esse número, o repositor é avisado</span></Label>
+              <Input id={`${fid}-minimo`} inputMode="numeric" value={f.minimo} onChange={(e) => setF({ ...f, minimo: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
-              <Label>Máximo na gôndola <span className="font-normal text-muted-foreground text-xs">— capacidade total da gôndola (0 = não definido)</span></Label>
-              <Input inputMode="numeric" value={f.maximo} onChange={(e) => setF({ ...f, maximo: e.target.value.replace(/\D/g, "") })} />
+              <Label htmlFor={`${fid}-maximo`}>Máximo na gôndola <span className="font-normal text-muted-foreground text-xs">— capacidade total da gôndola (0 = não definido)</span></Label>
+              <Input id={`${fid}-maximo`} inputMode="numeric" value={f.maximo} onChange={(e) => setF({ ...f, maximo: e.target.value.replace(/\D/g, "") })} />
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>
@@ -473,8 +476,8 @@ function ProdutoDetalhe() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Fornecedor</Label>
-              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={f.fornecedor}
+              <Label htmlFor={`${fid}-fornecedor`}>Fornecedor</Label>
+              <select id={`${fid}-fornecedor`} className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={f.fornecedor}
                 onChange={(e) => setF({ ...f, fornecedor: e.target.value })}>
                 <option value="">(sem fornecedor)</option>
                 {fornecedores.map((x) => <option key={x.id} value={x.nome}>{x.nome}</option>)}
@@ -487,9 +490,9 @@ function ProdutoDetalhe() {
               Onde fica no depósito <span className="font-normal">(opcional — ajuda o repositor a encontrar)</span>
             </p>
             <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-3">
-              <div className="space-y-2"><Label>Rua</Label><Input value={f.depRua} onChange={(e) => setF({ ...f, depRua: e.target.value })} placeholder="Ex.: A" /></div>
-              <div className="space-y-2"><Label>Prateleira</Label><Input value={f.depPrateleira} onChange={(e) => setF({ ...f, depPrateleira: e.target.value })} placeholder="Ex.: B3" /></div>
-              <div className="space-y-2"><Label>Nível</Label><Input inputMode="numeric" value={f.depNivel} onChange={(e) => setF({ ...f, depNivel: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 2" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-depRua`}>Rua</Label><Input id={`${fid}-depRua`} value={f.depRua} onChange={(e) => setF({ ...f, depRua: e.target.value })} placeholder="Ex.: A" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-depPrateleira`}>Prateleira</Label><Input id={`${fid}-depPrateleira`} value={f.depPrateleira} onChange={(e) => setF({ ...f, depPrateleira: e.target.value })} placeholder="Ex.: B3" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-depNivel`}>Nível</Label><Input id={`${fid}-depNivel`} inputMode="numeric" value={f.depNivel} onChange={(e) => setF({ ...f, depNivel: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 2" /></div>
             </div>
           </div>
 
@@ -498,8 +501,8 @@ function ProdutoDetalhe() {
               Onde fica na gôndola <span className="font-normal">(opcional)</span>
             </p>
             <div className="grid gap-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-4">
-              <div className="space-y-2"><Label>Corredor</Label><Input value={f.gondCorredor} onChange={(e) => setF({ ...f, gondCorredor: e.target.value })} placeholder="Ex.: 3" /></div>
-              <div className="space-y-2"><Label>Gôndola</Label><Input value={f.gondGondola} onChange={(e) => setF({ ...f, gondGondola: e.target.value })} placeholder="Ex.: G2" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-gondCorredor`}>Corredor</Label><Input id={`${fid}-gondCorredor`} value={f.gondCorredor} onChange={(e) => setF({ ...f, gondCorredor: e.target.value })} placeholder="Ex.: 3" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-gondGondola`}>Gôndola</Label><Input id={`${fid}-gondGondola`} value={f.gondGondola} onChange={(e) => setF({ ...f, gondGondola: e.target.value })} placeholder="Ex.: G2" /></div>
               <div className="space-y-2">
                 <Label>Altura</Label>
                 <div className="flex gap-1.5">
@@ -511,7 +514,7 @@ function ProdutoDetalhe() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-2"><Label>Posição</Label><Input inputMode="numeric" value={f.gondPosicao} onChange={(e) => setF({ ...f, gondPosicao: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 4" /></div>
+              <div className="space-y-2"><Label htmlFor={`${fid}-gondPosicao`}>Posição</Label><Input id={`${fid}-gondPosicao`} inputMode="numeric" value={f.gondPosicao} onChange={(e) => setF({ ...f, gondPosicao: e.target.value.replace(/\D/g, "") })} placeholder="Ex.: 4" /></div>
             </div>
           </div>
 
@@ -601,20 +604,20 @@ function ProdutoDetalhe() {
               <p className="text-sm font-medium">Nova variante de <span className="text-primary">{produto.nome}</span></p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>Nome da variante <span className="text-muted-foreground font-normal text-xs">Ex.: Azul - G, 200ml, Chocolate</span></Label>
-                  <Input placeholder="Ex.: Vermelho - M" value={vf.variante} onChange={(e) => setVf({ ...vf, variante: e.target.value })} />
+                  <Label htmlFor={`${fid}-variantNome`}>Nome da variante <span className="text-muted-foreground font-normal text-xs">Ex.: Azul - G, 200ml, Chocolate</span></Label>
+                  <Input id={`${fid}-variantNome`} placeholder="Ex.: Vermelho - M" value={vf.variante} onChange={(e) => setVf({ ...vf, variante: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Código de barras</Label>
-                  <Input placeholder="EAN-13" value={vf.codigo} onChange={(e) => setVf({ ...vf, codigo: e.target.value })} />
+                  <Label htmlFor={`${fid}-variantCodigo`}>Código de barras</Label>
+                  <Input id={`${fid}-variantCodigo`} placeholder="EAN-13" value={vf.codigo} onChange={(e) => setVf({ ...vf, codigo: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Preço de venda (R$) <span className="text-muted-foreground font-normal text-xs">— deixe em branco para herdar do pai</span></Label>
-                  <Input inputMode="decimal" placeholder={String(produto.preco)} value={vf.preco} onChange={(e) => setVf({ ...vf, preco: e.target.value })} />
+                  <Label htmlFor={`${fid}-variantPreco`}>Preço de venda (R$) <span className="text-muted-foreground font-normal text-xs">— deixe em branco para herdar do pai</span></Label>
+                  <Input id={`${fid}-variantPreco`} inputMode="decimal" placeholder={String(produto.preco)} value={vf.preco} onChange={(e) => setVf({ ...vf, preco: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Unidade</Label>
-                  <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={vf.unidade} onChange={(e) => setVf({ ...vf, unidade: e.target.value })}>
+                  <Label htmlFor={`${fid}-variantUnidade`}>Unidade</Label>
+                  <select id={`${fid}-variantUnidade`} className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={vf.unidade} onChange={(e) => setVf({ ...vf, unidade: e.target.value })}>
                     {UNIDADES.map((u) => <option key={u}>{u}</option>)}
                   </select>
                 </div>
