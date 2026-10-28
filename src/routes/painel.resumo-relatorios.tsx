@@ -10,6 +10,7 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useDevolicoes } from "@/lib/devolucoes-store";
 import { brl } from "@/lib/mock-data";
 import { abaixoDoMinimo, lotesVencendo, HOJE, faturamentoMes } from "@/lib/computed";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/resumo-relatorios")({
   head: () => ({
@@ -18,6 +19,8 @@ export const Route = createFileRoute("/painel/resumo-relatorios")({
       { name: "description", content: "Painel central com resumo de vendas, compras, devoluções e alertas de estoque." },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: ResumoRelatorios,
 });
 

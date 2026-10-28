@@ -8,9 +8,12 @@ import { criarPedido } from "@/lib/pedidos-store";
 import { sugestoesPedido, HOJE } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/pedidos/sugerir")({
   head: () => ({ meta: [{ title: "Sugestão de Pedido — OmniSafe 360" }] }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: SugerirPedidoPage,
 });
 

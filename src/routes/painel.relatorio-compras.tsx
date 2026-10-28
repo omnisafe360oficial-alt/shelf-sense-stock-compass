@@ -4,6 +4,7 @@ import { ShoppingCart, Calendar, Package, TrendingDown, ChevronDown, ChevronRigh
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/relatorio-compras")({
   head: () => ({
@@ -12,6 +13,8 @@ export const Route = createFileRoute("/painel/relatorio-compras")({
       { name: "description", content: "Relatório de compras por fornecedor com unidades recebidas, valor estimado e histórico de entradas." },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: RelatorioCompras,
 });
 

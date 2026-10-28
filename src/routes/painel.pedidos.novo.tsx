@@ -11,6 +11,7 @@ import { criarPedido } from "@/lib/pedidos-store";
 import type { ItemPedido } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/pedidos/novo")({
   head: () => ({
@@ -22,6 +23,8 @@ export const Route = createFileRoute("/painel/pedidos/novo")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  pendingComponent: SkeletonListPage,
+  pendingMs: 200,
   component: NovoPedido,
 });
 
