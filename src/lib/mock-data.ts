@@ -27,6 +27,8 @@ export type Produto = {
   localDeposito?: LocalDeposito;
   localGondola?: LocalGondola;
   unidade?: string;
+  parentId?: string;
+  variante?: string;
 };
 
 /** Unidades vendidas por peso/volume — permitem quantidade fracionada no PDV */

@@ -29,6 +29,8 @@ function mapDoBanco(row: Record<string, unknown>): Produto {
     localDeposito: (row.local_deposito as Produto["localDeposito"]) ?? undefined,
     localGondola: (row.local_gondola as Produto["localGondola"]) ?? undefined,
     unidade: (row.unidade as string) ?? "un",
+    parentId: (row.parent_id as string) ?? undefined,
+    variante: (row.variante as string) || undefined,
   };
 }
 
@@ -37,7 +39,7 @@ let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 async function carregarProdutos(lojaId: string) {
   const { data, error } = await supabase
     .from("produtos")
-    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, maximo_gondola, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, unidade, lotes(qtd), gondola(qtd_gondola)")
+    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, maximo_gondola, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, unidade, parent_id, variante, lotes(qtd), gondola(qtd_gondola)")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar produtos"); return; }
@@ -94,6 +96,8 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         local_deposito: dados.localDeposito ?? null,
         local_gondola: dados.localGondola ?? null,
         unidade: dados.unidade ?? "un",
+        parent_id: dados.parentId ?? null,
+        variante: dados.variante ?? "",
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar produto: " + error.message); });
     gravarAudit({ acao: "criar", modulo: "Produtos", descricao: `Produto "${dados.nome}" cadastrado.`, usuarioNome: "Sistema", produtoId: id, produtoNome: dados.nome });
@@ -101,6 +105,10 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
     toast.error("Sessão não identificada — faça login novamente para salvar produtos.");
   }
   return id;
+}
+
+export function cadastrarVariante(parentId: string, dados: Omit<Produto, "id" | "deposito" | "gondola">): string {
+  return cadastrarProduto({ ...dados, deposito: 0, gondola: 0, parentId });
 }
 
 export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): void {
@@ -120,6 +128,7 @@ export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): 
     if ("localDeposito" in dados) payload.local_deposito = dados.localDeposito ?? null;
     if ("localGondola" in dados) payload.local_gondola = dados.localGondola ?? null;
     if (dados.unidade !== undefined) payload.unidade = dados.unidade;
+    if (dados.variante !== undefined) payload.variante = dados.variante;
     const nomeProd = estado.find((p) => p.id === id)?.nome ?? id;
     supabase
       .from("produtos")
