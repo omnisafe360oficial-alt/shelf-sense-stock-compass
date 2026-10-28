@@ -18,6 +18,7 @@ function mapDoBanco(row: Record<string, unknown>): Fornecedor {
     email: (row.email as string) ?? "",
     cidade: (row.cidade as string) ?? "",
     prazo: (row.prazo as string) ?? "",
+    whatsapp: (row.whatsapp as string) ?? "",
   };
 }
 
@@ -26,7 +27,7 @@ let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 async function carregarFornecedores(lojaId: string) {
   const { data, error } = await supabase
     .from("fornecedores")
-    .select("id, nome, cnpj_cpf, contato, telefone, email, cidade, prazo")
+    .select("id, nome, cnpj_cpf, contato, telefone, email, cidade, prazo, whatsapp")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar fornecedores"); return; }
@@ -78,6 +79,7 @@ export function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): string {
         email: dados.email,
         cidade: dados.cidade,
         prazo: dados.prazo,
+        whatsapp: dados.whatsapp ?? null,
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar fornecedor: " + error.message); });
   }
@@ -110,6 +112,7 @@ export function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id
     if (dados.email !== undefined) payload.email = dados.email;
     if (dados.cidade !== undefined) payload.cidade = dados.cidade;
     if (dados.prazo !== undefined) payload.prazo = dados.prazo;
+    if (dados.whatsapp !== undefined) payload.whatsapp = dados.whatsapp;
     supabase
       .from("fornecedores")
       .update(payload)

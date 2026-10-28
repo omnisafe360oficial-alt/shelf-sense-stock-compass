@@ -104,6 +104,7 @@ function NovoProduto() {
       codigo: f.codigo,
       categoria: f.categoria,
       fornecedor: fornecedorNome ?? "",
+      fornecedorId: f.novoFornecedor ? undefined : (f.fornecedorId || undefined),
       preco: venda,
       custoUltimaCompra: custo > 0 ? custo : undefined,
       deposito: 0,

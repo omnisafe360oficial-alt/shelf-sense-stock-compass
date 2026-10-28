@@ -19,6 +19,7 @@ function mapDoBanco(row: Record<string, unknown>): Produto {
     codigo: (row.codigo as string) ?? "",
     categoria: (row.categoria as string) ?? "",
     fornecedor: (row.fornecedor_nome as string) ?? "",
+    fornecedorId: (row.fornecedor_id as string) ?? undefined,
     preco: (row.preco_venda as number) ?? 0,
     deposito: lotes.reduce((s, l) => s + (l.qtd ?? 0), 0),
     gondola: gondola[0]?.qtd_gondola ?? 0,
@@ -39,7 +40,7 @@ let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 async function carregarProdutos(lojaId: string) {
   const { data, error } = await supabase
     .from("produtos")
-    .select("id, nome, codigo, categoria, fornecedor_nome, preco_venda, minimo, maximo_gondola, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, unidade, parent_id, variante, lotes(qtd), gondola(qtd_gondola)")
+    .select("id, nome, codigo, categoria, fornecedor_nome, fornecedor_id, preco_venda, minimo, maximo_gondola, custo_ultima_compra, validade_padrao_dias, local_deposito, local_gondola, unidade, parent_id, variante, lotes(qtd), gondola(qtd_gondola)")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar produtos"); return; }
@@ -88,6 +89,7 @@ export function cadastrarProduto(dados: Omit<Produto, "id">): string {
         codigo: dados.codigo,
         categoria: dados.categoria,
         fornecedor_nome: dados.fornecedor,
+        fornecedor_id: dados.fornecedorId ?? null,
         preco_venda: dados.preco,
         minimo: dados.minimo,
         maximo_gondola: dados.maximo ?? 0,
@@ -129,7 +131,7 @@ export function cadastrarProdutosBatch(lista: Omit<Produto, "id">[]): string[] {
         return {
           id, loja_id: lojaId,
           nome: d.nome, codigo: d.codigo, categoria: d.categoria,
-          fornecedor_nome: d.fornecedor, preco_venda: d.preco,
+          fornecedor_nome: d.fornecedor, fornecedor_id: d.fornecedorId ?? null, preco_venda: d.preco,
           minimo: d.minimo, maximo_gondola: d.maximo ?? 0,
           custo_ultima_compra: d.custoUltimaCompra ?? 0,
           validade_padrao_dias: d.validade ?? null,
@@ -152,6 +154,7 @@ export function editarProduto(id: string, dados: Partial<Omit<Produto, "id">>): 
     if (dados.codigo !== undefined) payload.codigo = dados.codigo;
     if (dados.categoria !== undefined) payload.categoria = dados.categoria;
     if (dados.fornecedor !== undefined) payload.fornecedor_nome = dados.fornecedor;
+    if ("fornecedorId" in dados) payload.fornecedor_id = dados.fornecedorId ?? null;
     if (dados.preco !== undefined) payload.preco_venda = dados.preco;
     if (dados.minimo !== undefined) payload.minimo = dados.minimo;
     if (dados.maximo !== undefined) payload.maximo_gondola = dados.maximo;

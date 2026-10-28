@@ -40,7 +40,7 @@ export const Route = createFileRoute("/painel/produtos/$id")({
 });
 
 type FormState = {
-  nome: string; categoria: string; fornecedor: string; preco: string; custo: string; minimo: string; maximo: string;
+  nome: string; categoria: string; fornecedor: string; fornecedorId?: string; preco: string; custo: string; minimo: string; maximo: string;
   depRua: string; depPrateleira: string; depNivel: string;
   gondCorredor: string; gondGondola: string; gondNivel: "" | "Alto" | "Médio" | "Baixo"; gondPosicao: string;
 };
@@ -92,7 +92,7 @@ function ProdutoDetalhe() {
   const [filtroMov, setFiltroMov] = useState<FiltroMov>("todas");
   const [vf, setVf] = useState({ variante: "", codigo: "", preco: "", unidade: "un" });
   const [f, setF] = useState<FormState>({
-    nome: "", categoria: "", fornecedor: "", preco: "", custo: "", minimo: "", maximo: "",
+    nome: "", categoria: "", fornecedor: "", fornecedorId: undefined, preco: "", custo: "", minimo: "", maximo: "",
     depRua: "", depPrateleira: "", depNivel: "",
     gondCorredor: "", gondGondola: "", gondNivel: "", gondPosicao: "",
   });
@@ -187,8 +187,13 @@ function ProdutoDetalhe() {
   const abrirEdicao = () => {
     const ld = produto.localDeposito;
     const lg = produto.localGondola;
+    const matchedForn = produto.fornecedorId
+      ? fornecedores.find((x) => x.id === produto.fornecedorId)
+      : fornecedores.find((x) => x.nome === produto.fornecedor);
     setF({
-      nome: produto.nome, categoria: produto.categoria, fornecedor: produto.fornecedor,
+      nome: produto.nome, categoria: produto.categoria,
+      fornecedor: matchedForn?.nome ?? produto.fornecedor,
+      fornecedorId: matchedForn?.id,
       preco: String(produto.preco), custo: String(produto.custoUltimaCompra ?? ""), minimo: String(produto.minimo), maximo: String(produto.maximo ?? 0),
       depRua: ld?.rua ?? "", depPrateleira: ld?.prateleira ?? "", depNivel: ld ? String(ld.nivel) : "",
       gondCorredor: lg?.corredor ?? "", gondGondola: lg?.gondola ?? "",
@@ -211,6 +216,7 @@ function ProdutoDetalhe() {
       nome: f.nome.trim(),
       categoria: f.categoria,
       fornecedor: f.fornecedor,
+      fornecedorId: f.fornecedorId,
       preco: Number(f.preco.replace(",", ".")) || produto.preco,
       custoUltimaCompra: f.custo ? Number(f.custo.replace(",", ".")) : produto.custoUltimaCompra,
       minimo: Number(f.minimo) || produto.minimo,
@@ -516,10 +522,13 @@ function ProdutoDetalhe() {
             </div>
             <div className="space-y-2">
               <Label htmlFor={`${fid}-fornecedor`}>Fornecedor</Label>
-              <select id={`${fid}-fornecedor`} className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={f.fornecedor}
-                onChange={(e) => setF({ ...f, fornecedor: e.target.value })}>
+              <select id={`${fid}-fornecedor`} className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={f.fornecedorId ?? ""}
+                onChange={(e) => {
+                  const sel = fornecedores.find((x) => x.id === e.target.value);
+                  setF({ ...f, fornecedor: sel?.nome ?? "", fornecedorId: sel?.id });
+                }}>
                 <option value="">(sem fornecedor)</option>
-                {fornecedores.map((x) => <option key={x.id} value={x.nome}>{x.nome}</option>)}
+                {fornecedores.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
               </select>
             </div>
           </div>

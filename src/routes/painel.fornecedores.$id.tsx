@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Clock, Edit3, Mail, MapPin, Package, Phone,
+  ArrowLeft, Clock, Edit3, Mail, MapPin, MessageCircle, Package, Phone,
   Save, ShoppingCart, Trash2, User, X, TrendingUp, AlertTriangle, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/painel/fornecedores/$id")({
   component: Ficha,
 });
 
-type FForm = { nome: string; cnpj: string; contato: string; telefone: string; email: string; cidade: string; prazo: string };
+type FForm = { nome: string; cnpj: string; contato: string; telefone: string; whatsapp: string; email: string; cidade: string; prazo: string };
 type FiltroPed = "todos" | "aberto" | "recebido" | "cancelado";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -88,7 +88,7 @@ function Ficha() {
     return () => window.removeEventListener("keydown", handle);
   }, [confirmando]);
 
-  const [form, setForm] = useState<FForm>({ nome: "", cnpj: "", contato: "", telefone: "", email: "", cidade: "", prazo: "" });
+  const [form, setForm] = useState<FForm>({ nome: "", cnpj: "", contato: "", telefone: "", whatsapp: "", email: "", cidade: "", prazo: "" });
   const [filtroPed, setFiltroPed] = useState<FiltroPed>("todos");
 
   const todosPedidos = useMemo(() => {
@@ -103,7 +103,7 @@ function Ficha() {
     return todosPedidos.filter((p) => p.status === "cancelado");
   }, [todosPedidos, filtroPed]);
 
-  const itens = useMemo(() => (f ? produtos.filter((p) => p.fornecedor === f.nome) : []), [produtos, f]);
+  const itens = useMemo(() => (f ? produtos.filter((p) => p.fornecedorId === f.id || (!p.fornecedorId && p.fornecedor === f.nome)) : []), [produtos, f]);
 
   const stats = useMemo(() => {
     const pendentes = todosPedidos.filter((p) => ["enviado", "confirmado", "parcial"].includes(p.status));
@@ -140,7 +140,7 @@ function Ficha() {
   if (!f) return <p className="text-muted-foreground">Fornecedor não encontrado.</p>;
 
   const abrirEdicao = () => {
-    setForm({ nome: f.nome, cnpj: f.cnpj, contato: f.contato, telefone: f.telefone, email: f.email, cidade: f.cidade, prazo: f.prazo });
+    setForm({ nome: f.nome, cnpj: f.cnpj, contato: f.contato, telefone: f.telefone, whatsapp: f.whatsapp ?? "", email: f.email, cidade: f.cidade, prazo: f.prazo });
     setEditando(true);
   };
 
@@ -162,6 +162,7 @@ function Ficha() {
   const info = [
     f.contato && { icon: User, l: "Contato", v: f.contato },
     f.telefone && { icon: Phone, l: "Telefone", v: f.telefone },
+    f.whatsapp && { icon: MessageCircle, l: "WhatsApp", v: f.whatsapp },
     f.email && { icon: Mail, l: "E-mail", v: f.email },
     f.cidade && { icon: MapPin, l: "Cidade", v: f.cidade },
     f.prazo && { icon: Clock, l: "Prazo de pagamento", v: f.prazo },
@@ -252,6 +253,10 @@ function Ficha() {
             <div className="space-y-2">
               <Label htmlFor={`${fid}-telefone`}>Telefone</Label>
               <Input id={`${fid}-telefone`} value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${fid}-whatsapp`}>WhatsApp <span className="text-xs font-normal text-muted-foreground">(com DDI e DDD)</span></Label>
+              <Input id={`${fid}-whatsapp`} value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} placeholder="5511999998888" inputMode="numeric" />
             </div>
             <div className="space-y-2">
               <Label htmlFor={`${fid}-email`}>E-mail</Label>
