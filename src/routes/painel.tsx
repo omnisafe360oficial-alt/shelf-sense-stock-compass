@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import {
   AlertTriangle, ArrowRightLeft, ArrowLeftRight, BarChart3, BarChart2, Bell, Boxes, CalendarClock, ClipboardCheck, ClipboardList, LayoutDashboard,
@@ -9,7 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
-import { abaixoDoMinimo, lotesVencendo, HOJE } from "@/lib/computed";
+import { abaixoDoMinimo, lotesVencendo, HOJE, sugestoesPedido } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
@@ -88,6 +88,11 @@ function PainelLayout() {
     return dias >= config.diasAlertaPedido;
   });
 
+  const produtosParaPedirCount = useMemo(
+    () => (config.alertaPedidos ? sugestoesPedido(est.movs, est.gondola).length : 0),
+    [est.movs, est.gondola, config.alertaPedidos],
+  );
+
   const alertasAntifurto = config.alertaAntifurto
     ? calcularAlertas(est.movs, produtos, config.limiteAntifurtoUnidades ?? 2)
     : [];
@@ -98,6 +103,7 @@ function PainelLayout() {
     (config.alertaVencimentos ? vencendo7.length : 0) +
     (config.avisoInconsistencias ? inconsAbertas.length : 0) +
     (config.alertaPedidos ? pedidosAtencao.length : 0) +
+    produtosParaPedirCount +
     alertasAntifurto.filter((a) => a.severidade === "alto").length;
 
   return (
@@ -320,6 +326,17 @@ function PainelLayout() {
                               <span className="ml-2 shrink-0 text-muted-foreground capitalize">{p.fornecedorNome || "—"}</span>
                             </div>
                           ))}
+                        </div>
+                      )}
+                      {produtosParaPedirCount > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-green-600">
+                              🟢 {produtosParaPedirCount} produto{produtosParaPedirCount > 1 ? "s" : ""} precisam de reposição
+                            </p>
+                            <Link to="/painel/pedidos/sugerir" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Sugerir →</Link>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Use "Sugerir pedido" para criar os rascunhos.</p>
                         </div>
                       )}
                     </div>

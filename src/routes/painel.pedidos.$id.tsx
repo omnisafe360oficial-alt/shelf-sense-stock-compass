@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle, Clock, Edit3, FileUp, Package,
+  AlertTriangle, ArrowLeft, Check, CheckCircle, Clock, Edit3, FileUp, MessageCircle, Package,
   Plus, Save, Send, Trash2, X, XCircle, Building2, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,30 @@ function DetalhesPedido() {
 
     return { totalSolicitado, totalRecebidoSalvo, totalRecebidoAtual, valorRecebido, itensPendentes, pct, isAtrasado, diasAtraso };
   }, [pedido, qtds]);
+
+  const whatsappUrl = useMemo(() => {
+    if (!pedido || pedido.status === "cancelado") return null;
+    const forn = fornecedores.find((f) => f.id === pedido.fornecedorId);
+    if (!forn?.whatsapp) return null;
+    const nomeProd = (pid: string) => produtos.find((p) => p.id === pid)?.nome ?? "Produto";
+    const itensTxt = pedido.itens
+      .map((i) => `• ${nomeProd(i.produtoId)} – ${i.qtdSolicitada} ${i.unidade}`)
+      .join("\n");
+    const dataFmt = pedido.dataPrevista
+      ? pedido.dataPrevista.split("-").reverse().join("/")
+      : "a combinar";
+    const msg = [
+      `Olá! Segue o pedido *${pedido.numero}*:`,
+      "",
+      itensTxt,
+      "",
+      `💰 Total: ${brl(pedido.total)}`,
+      `📅 Entrega prevista: ${dataFmt}`,
+      "",
+      "— OmniSafe 360",
+    ].join("\n");
+    return `https://wa.me/${forn.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+  }, [pedido, fornecedores, produtos]);
 
   if (!pedido || !stats) return (
     <div className="space-y-4">
@@ -389,6 +413,16 @@ function DetalhesPedido() {
 
       {/* Ações */}
       <div className="flex flex-wrap gap-2">
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#1ebe5d] transition-colors"
+          >
+            <MessageCircle className="h-4 w-4" /> Enviar pelo WhatsApp
+          </a>
+        )}
         {podaEditar && (
           <Button variant="outline" onClick={abrirEdicao}><Edit3 className="h-4 w-4" /> Editar</Button>
         )}
