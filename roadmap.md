@@ -13,3 +13,11 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 - [x] 9. Reposição, Recebimentos, Inconsistências
 - [x] 10. Relatórios, Equipe, Configurações
 - [x] 11. Dados reais (Lovable Cloud, login Google)
+
+## Pedido de compra automático
+- [x] A — Regra certa (só depósito), sem duplicados, um pedido por fornecedor
+- [ ] B — Tela "Precisa comprar" agrupada por fornecedor
+- [ ] C — Vincular fornecedor na hora
+- [ ] D — Quantidade em caixas/fardos
+- [ ] E — Enviar pelo WhatsApp com um clique
+- [ ] F — (opcional) Envio automático pelo WhatsApp Business

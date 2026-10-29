@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { usePedidos, criarPedido } from "@/lib/pedidos-store";
 import type { PedidoStatus } from "@/lib/pedidos-store";
 import { useEstoque } from "@/lib/estoque-store";
-import { abaixoDoMinimo, abaixoDoMinimoDeposito, HOJE as HOJE_COMPUTED } from "@/lib/computed";
+import { HOJE as HOJE_COMPUTED } from "@/lib/computed";
+import { sugerirCompras } from "@/lib/compra-sugestao";
+import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -86,16 +88,11 @@ type Aba = "todos" | "aberto" | "recebido" | "cancelado";
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const est = useEstoque();
+  const produtos = useProdutos();
   const navigate = useNavigate();
   const [aba, setAba] = useState<Aba>("todos");
   const [q, setQ] = useState("");
   const [criando, setCriando] = useState(false);
-
-  // Produtos com estoque abaixo do mínimo (lógica simples, não depende de vendas)
-  const abaixoMinimo = useMemo(
-    () => abaixoDoMinimo(est.gondola),
-    [est.gondola],
-  );
 
   const totaisDeposito = useMemo(() => {
     const t: Record<string, number> = {};
@@ -105,11 +102,6 @@ function PedidosPage() {
     return t;
   }, [est.lotes]);
 
-  const abaixoMinimoDeposito = useMemo(
-    () => abaixoDoMinimoDeposito(est.lotes),
-    [est.lotes],
-  );
-
   const idsComPedidoAberto = useMemo(() => {
     const abertos = pedidos.filter((p) => !["recebido", "cancelado"].includes(p.status));
     const ids = new Set<string>();
@@ -117,79 +109,35 @@ function PedidosPage() {
     return ids;
   }, [pedidos]);
 
-  const produtosSemPedido = useMemo(
-    () => abaixoMinimo.filter((p) => !idsComPedidoAberto.has(p.id)),
-    [abaixoMinimo, idsComPedidoAberto],
+  const grupos = useMemo(
+    () => sugerirCompras(produtos, totaisDeposito, idsComPedidoAberto),
+    [produtos, totaisDeposito, idsComPedidoAberto],
   );
-
-  const produtosDepositoSemPedido = useMemo(
-    () => abaixoMinimoDeposito.filter((p) => !idsComPedidoAberto.has(p.id)),
-    [abaixoMinimoDeposito, idsComPedidoAberto],
-  );
-
-  async function criarPedidosAutomaticos() {
-    if (produtosSemPedido.length === 0) return;
-    setCriando(true);
-    const porFornecedor: Record<string, typeof produtosSemPedido> = {};
-    for (const p of produtosSemPedido) {
-      const forn = p.fornecedor || "Sem fornecedor";
-      (porFornecedor[forn] = porFornecedor[forn] ?? []).push(p);
-    }
-    const dp = new Date(HOJE_COMPUTED);
-    dp.setDate(dp.getDate() + 7);
-    const dataPrevista = dp.toISOString().slice(0, 10);
-    let count = 0;
-    for (const [fornNome, itens] of Object.entries(porFornecedor)) {
-      const fornId = itens.find((p) => p.fornecedorId)?.fornecedorId;
-      criarPedido({
-        fornecedorId: fornId,
-        fornecedorNome: fornNome === "Sem fornecedor" ? "" : fornNome,
-        dataPrevista,
-        observacao: "Gerado automaticamente — estoque abaixo do mínimo",
-        itens: itens.map((p) => ({
-          produtoId: p.id,
-          qtdSolicitada: Math.max(1, p.minimo - (est.gondola[p.id] ?? 0)),
-          precoUnitario: p.preco,
-          unidade: "un",
-        })),
-      });
-      count++;
-    }
-    setCriando(false);
-    toast.success(`${count} rascunho${count !== 1 ? "s" : ""} criado${count !== 1 ? "s" : ""} automaticamente!`);
-    navigate({ to: "/painel/pedidos" });
-  }
+  const itensSugeridos = grupos.flatMap((g) => g.itens);
 
   async function criarPedidosDeposito() {
-    if (produtosDepositoSemPedido.length === 0) return;
+    if (criando || grupos.length === 0) return;
     setCriando(true);
-    const porFornecedor: Record<string, typeof produtosDepositoSemPedido> = {};
-    for (const p of produtosDepositoSemPedido) {
-      const forn = p.fornecedor || "Sem fornecedor";
-      (porFornecedor[forn] = porFornecedor[forn] ?? []).push(p);
-    }
     const dp = new Date(HOJE_COMPUTED);
     dp.setDate(dp.getDate() + 7);
     const dataPrevista = dp.toISOString().slice(0, 10);
-    let count = 0;
-    for (const [fornNome, itens] of Object.entries(porFornecedor)) {
-      const fornId = itens.find((p) => p.fornecedorId)?.fornecedorId;
+    for (const g of grupos) {
       criarPedido({
-        fornecedorId: fornId,
-        fornecedorNome: fornNome === "Sem fornecedor" ? "" : fornNome,
+        fornecedorId: g.fornecedorId,
+        fornecedorNome: g.fornecedorNome,
         dataPrevista,
-        observacao: "Gerado automaticamente — depósito abaixo do mínimo",
-        itens: itens.map((p) => ({
-          produtoId: p.id,
-          qtdSolicitada: Math.max(1, (p.minimoDeposito ?? 10) - (totaisDeposito[p.id] ?? 0)),
-          precoUnitario: p.preco,
+        observacao: "Gerado automaticamente — depósito no mínimo ou zerado",
+        itens: g.itens.map((i) => ({
+          produtoId: i.produto.id,
+          qtdSolicitada: i.qtd,
+          precoUnitario: i.produto.preco,
           unidade: "un",
         })),
       });
-      count++;
     }
+    const n = grupos.length;
     setCriando(false);
-    toast.success(`${count} rascunho${count !== 1 ? "s" : ""} de depósito criado${count !== 1 ? "s" : ""}!`);
+    toast.success(`${n} rascunho${n !== 1 ? "s" : ""} criado${n !== 1 ? "s" : ""} — um por fornecedor.`);
     navigate({ to: "/painel/pedidos" });
   }
 
@@ -243,67 +191,17 @@ function PedidosPage() {
     </div>
   );
 
-  const alertaReposicao = produtosSemPedido.length > 0 && (
-    <div className="rounded-2xl border border-warning/40 bg-warning/5 overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
-          <div>
-            <p className="font-semibold text-warning">
-              {produtosSemPedido.length} produto{produtosSemPedido.length !== 1 ? "s" : ""} abaixo do mínimo sem pedido aberto
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Crie os rascunhos automaticamente ou revise individualmente em "Sugerir pedido".
-            </p>
-          </div>
-        </div>
-        <Button
-          onClick={criarPedidosAutomaticos}
-          disabled={criando}
-          className="shrink-0 bg-warning text-warning-foreground hover:bg-warning/90"
-        >
-          <Sparkles className="h-4 w-4" />
-          {criando ? "Criando…" : "Criar pedidos automáticos"}
-        </Button>
-      </div>
-      <div className="border-t border-warning/20 divide-y divide-warning/10 max-h-56 overflow-y-auto">
-        {produtosSemPedido.slice(0, 8).map((p) => (
-          <div key={p.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
-            <div className="min-w-0">
-              <span className="font-medium truncate">{p.nome}</span>
-              {p.fornecedor && (
-                <span className="ml-2 text-xs text-muted-foreground">{p.fornecedor}</span>
-              )}
-            </div>
-            <div className="ml-4 shrink-0 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>Estoque: <strong className="text-warning">{est.gondola[p.id] ?? 0}</strong> / mín {p.minimo}</span>
-              <span className="rounded-full bg-warning/15 px-2 py-0.5 font-semibold text-warning">
-                pedir {Math.max(1, p.minimo - (est.gondola[p.id] ?? 0))}
-              </span>
-            </div>
-          </div>
-        ))}
-        {produtosSemPedido.length > 8 && (
-          <div className="px-5 py-2 text-xs text-muted-foreground">
-            +{produtosSemPedido.length - 8} outros —{" "}
-            <Link to="/painel/pedidos/sugerir" className="text-primary hover:underline">ver todos</Link>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const alertaDeposito = produtosDepositoSemPedido.length > 0 && (
+  const alertaDeposito = itensSugeridos.length > 0 && (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4">
         <div className="flex items-start gap-3">
           <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
             <p className="font-semibold text-primary">
-              {produtosDepositoSemPedido.length} produto{produtosDepositoSemPedido.length !== 1 ? "s" : ""} com depósito abaixo do mínimo
+              {itensSugeridos.length} produto{itensSugeridos.length !== 1 ? "s" : ""} precisa{itensSugeridos.length !== 1 ? "m" : ""} ser comprado{itensSugeridos.length !== 1 ? "s" : ""}
             </p>
             <p className="text-sm text-muted-foreground">
-              O estoque do depósito está baixo — crie rascunhos de compra automaticamente.
+              O depósito chegou ao mínimo ou acabou. O sistema cria um rascunho para cada fornecedor.
             </p>
           </div>
         </div>
@@ -314,11 +212,11 @@ function PedidosPage() {
           className="shrink-0 border-primary/40 text-primary hover:bg-primary/10"
         >
           <Sparkles className="h-4 w-4" />
-          {criando ? "Criando…" : "Criar pedidos (depósito)"}
+          {criando ? "Criando…" : "Criar pedidos automáticos"}
         </Button>
       </div>
       <div className="border-t border-primary/15 divide-y divide-primary/10 max-h-56 overflow-y-auto">
-        {produtosDepositoSemPedido.slice(0, 8).map((p) => (
+        {itensSugeridos.slice(0, 8).map(({ produto: p, atual, minimo, qtd }) => (
           <div key={p.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
             <div className="min-w-0">
               <span className="font-medium truncate">{p.nome}</span>
@@ -327,16 +225,16 @@ function PedidosPage() {
               )}
             </div>
             <div className="ml-4 shrink-0 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>Depósito: <strong className="text-primary">{totaisDeposito[p.id] ?? 0}</strong> / mín {p.minimoDeposito ?? 10}</span>
+              <span>Depósito: <strong className="text-primary">{atual}</strong> / mín {minimo}</span>
               <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
-                pedir {Math.max(1, (p.minimoDeposito ?? 10) - (totaisDeposito[p.id] ?? 0))}
+                pedir {qtd}
               </span>
             </div>
           </div>
         ))}
-        {produtosDepositoSemPedido.length > 8 && (
+        {itensSugeridos.length > 8 && (
           <div className="px-5 py-2 text-xs text-muted-foreground">
-            +{produtosDepositoSemPedido.length - 8} outros —{" "}
+            +{itensSugeridos.length - 8} outros —{" "}
             <Link to="/painel/pedidos/sugerir" className="text-primary hover:underline">ver todos</Link>
           </div>
         )}
@@ -348,9 +246,8 @@ function PedidosPage() {
     return (
       <div className="space-y-6">
         {cabecalho}
-        {alertaReposicao}
         {alertaDeposito}
-        {produtosSemPedido.length === 0 && (
+        {itensSugeridos.length === 0 && (
           <div className="rounded-2xl border border-dashed bg-card py-20 text-center">
             <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/30" />
             <p className="mt-4 text-xl font-semibold">Nenhum pedido ainda</p>
@@ -374,7 +271,6 @@ function PedidosPage() {
   return (
     <div className="space-y-6">
       {cabecalho}
-      {alertaReposicao}
       {alertaDeposito}
 
       {/* Banner de pedidos atrasados */}
