@@ -251,12 +251,12 @@ function PedidosPage() {
                 )}
               </div>
               <div className="max-h-64 divide-y overflow-y-auto">
-                {g.itens.map(({ produto: p, atual, minimo, qtd }) => (
+                {g.itens.map(({ produto: p, atual, minimo, qtd, porCaixa, caixas }) => (
                   <div key={p.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
                     <span className="min-w-0 truncate font-medium">{p.nome}</span>
                     <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                       <span>Depósito <strong className={atual === 0 ? "text-destructive" : "text-warning"}>{atual}</strong> / mín {minimo}</span>
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">pedir {qtd}</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">pedir {porCaixa > 1 ? `${caixas} cx de ${porCaixa} (${qtd} un)` : `${qtd} un`}</span>
                       {sem && <VincularFornecedor produtoIds={[p.id]} />}
                     </div>
                   </div>
