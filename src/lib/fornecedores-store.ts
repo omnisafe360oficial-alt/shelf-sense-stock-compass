@@ -61,62 +61,60 @@ export function useFornecedores(): Fornecedor[] {
 
 export function getFornecedores(): Fornecedor[] { return estado; }
 
-export function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): string {
-  const id = crypto.randomUUID();
-  estado = [...estado, { ...dados, id }];
-  notificar();
+export const SEM_LOJA = "Sua conta não está ligada a uma loja. Termine a configuração da loja.";
+
+function exigirLoja(): string {
   const lojaId = getLojaId();
-  if (lojaId) {
-    supabase
-      .from("fornecedores")
-      .insert({
-        id,
-        loja_id: lojaId,
-        nome: dados.nome,
-        cnpj_cpf: dados.cnpj,
-        contato: dados.contato,
-        telefone: dados.telefone,
-        email: dados.email,
-        cidade: dados.cidade,
-        prazo: dados.prazo,
-        whatsapp: dados.whatsapp ?? null,
-      })
-      .then(({ error }) => { if (error) toast.error("Erro ao salvar fornecedor: " + error.message); });
-  }
+  if (!lojaId) throw new Error(SEM_LOJA);
+  return lojaId;
+}
+
+/** Salva no banco e só devolve o id depois que o banco confirmar. */
+export async function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): Promise<string> {
+  const lojaId = exigirLoja();
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("fornecedores").insert({
+    id,
+    loja_id: lojaId,
+    nome: dados.nome,
+    cnpj_cpf: dados.cnpj,
+    contato: dados.contato,
+    telefone: dados.telefone,
+    email: dados.email,
+    cidade: dados.cidade,
+    prazo: dados.prazo,
+    whatsapp: dados.whatsapp ?? null,
+  });
+  if (error) throw new Error("O banco não aceitou o fornecedor: " + error.message);
+  await carregarFornecedores(lojaId);
   return id;
 }
 
-export function excluirFornecedor(id: string): void {
-  estado = estado.filter((f) => f.id !== id);
-  notificar();
-  const lojaId = getLojaId();
-  if (lojaId) {
-    supabase
-      .from("fornecedores")
-      .delete()
-      .eq("id", id)
-      .then(({ error }) => { if (error) toast.error("Erro ao excluir fornecedor: " + error.message); });
+export async function excluirFornecedor(id: string): Promise<void> {
+  const lojaId = exigirLoja();
+  const { error } = await supabase.from("fornecedores").delete().eq("id", id);
+  if (error) {
+    toast.error("Erro ao excluir fornecedor: " + error.message, { duration: 10000 });
+    throw error;
   }
+  await carregarFornecedores(lojaId);
 }
 
-export function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id">>): void {
-  estado = estado.map((f) => (f.id === id ? { ...f, ...dados } : f));
-  notificar();
-  const lojaId = getLojaId();
-  if (lojaId) {
-    const payload: Record<string, unknown> = {};
-    if (dados.nome !== undefined) payload.nome = dados.nome;
-    if (dados.cnpj !== undefined) payload.cnpj_cpf = dados.cnpj;
-    if (dados.contato !== undefined) payload.contato = dados.contato;
-    if (dados.telefone !== undefined) payload.telefone = dados.telefone;
-    if (dados.email !== undefined) payload.email = dados.email;
-    if (dados.cidade !== undefined) payload.cidade = dados.cidade;
-    if (dados.prazo !== undefined) payload.prazo = dados.prazo;
-    if (dados.whatsapp !== undefined) payload.whatsapp = dados.whatsapp;
-    supabase
-      .from("fornecedores")
-      .update(payload)
-      .eq("id", id)
-      .then(({ error }) => { if (error) toast.error("Erro ao atualizar fornecedor: " + error.message); });
+export async function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id">>): Promise<void> {
+  const lojaId = exigirLoja();
+  const payload: Record<string, unknown> = {};
+  if (dados.nome !== undefined) payload.nome = dados.nome;
+  if (dados.cnpj !== undefined) payload.cnpj_cpf = dados.cnpj;
+  if (dados.contato !== undefined) payload.contato = dados.contato;
+  if (dados.telefone !== undefined) payload.telefone = dados.telefone;
+  if (dados.email !== undefined) payload.email = dados.email;
+  if (dados.cidade !== undefined) payload.cidade = dados.cidade;
+  if (dados.prazo !== undefined) payload.prazo = dados.prazo;
+  if (dados.whatsapp !== undefined) payload.whatsapp = dados.whatsapp;
+  const { error } = await supabase.from("fornecedores").update(payload).eq("id", id);
+  if (error) {
+    toast.error("Erro ao atualizar fornecedor: " + error.message, { duration: 10000 });
+    throw error;
   }
+  await carregarFornecedores(lojaId);
 }
