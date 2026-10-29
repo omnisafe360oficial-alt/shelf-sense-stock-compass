@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cadastrarFornecedor } from "@/lib/fornecedores-store";
+import { cadastrarFornecedor, avisarErroFornecedor } from "@/lib/fornecedores-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/fornecedores/novo")({
@@ -64,9 +64,13 @@ function NovoFornecedor() {
 
   const podeSubmeter = f.nome.trim().length >= 2;
 
-  const salvar = () => {
-    if (!podeSubmeter) { toast.error("Nome é obrigatório."); return; }
-    const id = cadastrarFornecedor({
+  const [salvando, setSalvando] = useState(false);
+
+  const salvar = async () => {
+    if (!podeSubmeter || salvando) { if (!podeSubmeter) toast.error("Nome é obrigatório."); return; }
+    setSalvando(true);
+    try {
+    const id = await cadastrarFornecedor({
       nome: f.nome.trim(),
       cnpj: f.cnpj.trim(),
       contato: f.contato.trim(),
@@ -78,6 +82,11 @@ function NovoFornecedor() {
     });
     toast.success(`Fornecedor "${f.nome.trim()}" cadastrado!`);
     navigate({ to: "/painel/fornecedores/$id", params: { id } });
+    } catch (e) {
+      avisarErroFornecedor(e);
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -228,8 +237,8 @@ function NovoFornecedor() {
         <Link to="/painel/fornecedores">
           <Button variant="ghost">Cancelar</Button>
         </Link>
-        <Button size="lg" disabled={!podeSubmeter} onClick={salvar}>
-          <Save className="h-4 w-4" /> Salvar fornecedor
+        <Button size="lg" disabled={!podeSubmeter || salvando} onClick={salvar}>
+          <Save className="h-4 w-4" /> {salvando ? "Salvando…" : "Salvar fornecedor"}
         </Button>
       </div>
     </div>

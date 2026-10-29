@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
 import { getConfig } from "@/lib/config-store";
 import { getProdutos, cadastrarProduto, editarProduto, cadastrarProdutosBatch } from "@/lib/produtos-store";
-import { getFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
+import { getFornecedores, cadastrarFornecedor, avisarErroFornecedor } from "@/lib/fornecedores-store";
 import { importarEstoqueBatch } from "@/lib/estoque-store";
 import { lerNfe, sugerirConversao, XML_EXEMPLO, type Nfe } from "@/lib/nfe";
 import { cn } from "@/lib/utils";
@@ -136,7 +136,7 @@ function Importar() {
           <Button size="lg" variant={pendentes > 0 ? "outline" : "default"} onClick={() => {
             if (!nota) return;
             if (!fornecedorExiste) {
-              cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" });
+              cadastrarFornecedor({ nome: nota.fornecedor.nome, cnpj: nota.fornecedor.cnpj, contato: "", telefone: "", email: "", cidade: "", prazo: "" }).catch(avisarErroFornecedor);
             }
 
             const linhasNovas = linhas.filter((l) => !l.existente);

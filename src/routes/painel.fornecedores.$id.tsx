@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { brl } from "@/lib/mock-data";
-import { useFornecedores, getFornecedores, editarFornecedor, excluirFornecedor } from "@/lib/fornecedores-store";
+import { useFornecedores, getFornecedores, editarFornecedor, excluirFornecedor, avisarErroFornecedor } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { usePedidos } from "@/lib/pedidos-store";
@@ -146,17 +146,21 @@ function Ficha() {
 
   const cancelar = () => { setEditando(false); setConfirmando(false); };
 
-  const salvar = () => {
+  const salvar = async () => {
     if (!form.nome.trim()) { toast.error("Nome não pode ser vazio."); return; }
-    editarFornecedor(f.id, { ...form, nome: form.nome.trim() });
-    setEditando(false);
-    toast.success("Fornecedor atualizado!");
+    try {
+      await editarFornecedor(f.id, { ...form, nome: form.nome.trim() });
+      setEditando(false);
+      toast.success("Fornecedor atualizado!");
+    } catch (e) { if (e instanceof Error && !("code" in e)) avisarErroFornecedor(e); }
   };
 
-  const confirmarExclusao = () => {
-    excluirFornecedor(f.id);
-    toast.success(`"${f.nome}" excluído.`);
-    navigate({ to: "/painel/fornecedores" });
+  const confirmarExclusao = async () => {
+    try {
+      await excluirFornecedor(f.id);
+      toast.success(`"${f.nome}" excluído.`);
+      navigate({ to: "/painel/fornecedores" });
+    } catch (e) { if (e instanceof Error && !("code" in e)) avisarErroFornecedor(e); }
   };
 
   const info = [
