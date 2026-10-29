@@ -86,7 +86,7 @@ export function useEstoque() {
 export const lotesFefo = (s: Estado, produtoId: string) =>
   s.lotes.filter((l) => l.produtoId === produtoId && l.qtd > 0).sort((a, b) => a.validade.localeCompare(b.validade));
 
-export const diasAte = (iso: string, hoje = new Date()) => Math.round((new Date(iso).getTime() - hoje.getTime()) / 86400000);
+export const diasAte = (iso: string, hoje = new Date()) => Math.round((new Date(iso + "T12:00:00").getTime() - hoje.getTime()) / 86400000);
 
 export type Faixa = "vencido" | "7" | "15" | "30" | "ok";
 export type TipoPerda = "vencido" | "avariado" | "furto" | "outros";

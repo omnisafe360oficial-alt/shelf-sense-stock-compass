@@ -68,7 +68,7 @@ function SugerirPedidoPage() {
   }, {});
 
   const selecionados = linhas.filter((l) => l.selecionada && l.qtdEditada > 0);
-  const totalValor = selecionados.reduce((s, l) => s + l.qtdEditada * l.produto.preco, 0);
+  const totalValor = selecionados.reduce((s, l) => s + l.qtdEditada * (l.produto.custoUltimaCompra ?? l.produto.preco), 0);
   const fornecedoresSet = new Set(selecionados.map((l) => l.produto.fornecedor || "Sem fornecedor"));
   const fornecedoresCount = fornecedoresSet.size;
 
