@@ -56,11 +56,68 @@ function Campo({ label, dica, children }: { label: string; dica?: string; childr
 
 const PRAZOS_COMUNS = ["7 dias", "14 dias", "21 dias", "28 dias", "30 dias", "45 dias", "60 dias"];
 
+const soDigitos = (s: string) => s.replace(/\D/g, "");
+
+function mascaraDoc(v: string) {
+  const d = soDigitos(v).slice(0, 14);
+  if (d.length <= 11) {
+    return d
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+  }
+  return d
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function mascaraTelefone(v: string) {
+  const d = soDigitos(v).slice(0, 11);
+  if (d.length <= 2) return d.length ? `(${d}` : "";
+  const ddd = d.slice(0, 2);
+  const resto = d.slice(2);
+  const corte = d.length === 11 ? 5 : 4;
+  if (resto.length <= corte) return `(${ddd}) ${resto}`;
+  return `(${ddd}) ${resto.slice(0, corte)}-${resto.slice(corte)}`;
+}
+
+const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e"]);
+function capitalizar(v: string) {
+  return v
+    .split(" ")
+    .map((p, i) => {
+      if (!p) return p;
+      const low = p.toLowerCase();
+      if (i > 0 && MINUSCULAS.has(low)) return low;
+      // mantém siglas digitadas em maiúsculas (ex.: LTDA, ME, SP)
+      if (p.length > 1 && p === p.toUpperCase() && /[A-ZÀ-Ý]/.test(p)) return p;
+      return low.charAt(0).toUpperCase() + low.slice(1);
+    })
+    .join(" ");
+}
+
+function formatarCampo(k: string, v: string) {
+  switch (k) {
+    case "cnpj": return mascaraDoc(v);
+    case "telefone":
+    case "whatsapp": return mascaraTelefone(v);
+    case "email": return v.trim().toLowerCase();
+    case "nome":
+    case "contato":
+    case "cidade": return capitalizar(v);
+    default: return v;
+  }
+}
+
 function NovoFornecedor() {
   const navigate = useNavigate();
   const [f, setF] = useState(INICIAL);
-  const set = (k: keyof typeof INICIAL) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setF((prev) => ({ ...prev, [k]: e.target.value }));
+  const set = (k: keyof typeof INICIAL) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = formatarCampo(k, e.target.value);
+    setF((prev) => ({ ...prev, [k]: v }));
+  };
 
   const podeSubmeter = f.nome.trim().length >= 2;
 
