@@ -30,6 +30,7 @@ import { Route as PainelEtiquetasRouteImport } from './routes/painel.etiquetas'
 import { Route as PainelGondolaRouteImport } from './routes/painel.gondola'
 import { Route as PainelHistoricoFornecedorRouteImport } from './routes/painel.historico-fornecedor'
 import { Route as PainelInconsistenciasRouteImport } from './routes/painel.inconsistencias'
+import { Route as PainelInteligenciaRouteImport } from './routes/painel.inteligencia'
 import { Route as PainelInventarioRouteImport } from './routes/painel.inventario'
 import { Route as PainelMetasRouteImport } from './routes/painel.metas'
 import { Route as PainelMovimentacoesRouteImport } from './routes/painel.movimentacoes'
@@ -167,6 +168,11 @@ const PainelHistoricoFornecedorRoute =
 const PainelInconsistenciasRoute = PainelInconsistenciasRouteImport.update({
   id: '/inconsistencias',
   path: '/inconsistencias',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelInteligenciaRoute = PainelInteligenciaRouteImport.update({
+  id: '/inteligencia',
+  path: '/inteligencia',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelInventarioRoute = PainelInventarioRouteImport.update({
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inteligencia': typeof PainelInteligenciaRoute
   '/painel/inventario': typeof PainelInventarioRoute
   '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inteligencia': typeof PainelInteligenciaRoute
   '/painel/inventario': typeof PainelInventarioRoute
   '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -459,6 +467,7 @@ export interface FileRoutesById {
   '/painel/gondola': typeof PainelGondolaRoute
   '/painel/historico-fornecedor': typeof PainelHistoricoFornecedorRoute
   '/painel/inconsistencias': typeof PainelInconsistenciasRoute
+  '/painel/inteligencia': typeof PainelInteligenciaRoute
   '/painel/inventario': typeof PainelInventarioRoute
   '/painel/metas': typeof PainelMetasRoute
   '/painel/movimentacoes': typeof PainelMovimentacoesRoute
@@ -516,6 +525,7 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/historico-fornecedor'
     | '/painel/inconsistencias'
+    | '/painel/inteligencia'
     | '/painel/inventario'
     | '/painel/metas'
     | '/painel/movimentacoes'
@@ -568,6 +578,7 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/historico-fornecedor'
     | '/painel/inconsistencias'
+    | '/painel/inteligencia'
     | '/painel/inventario'
     | '/painel/metas'
     | '/painel/movimentacoes'
@@ -623,6 +634,7 @@ export interface FileRouteTypes {
     | '/painel/gondola'
     | '/painel/historico-fornecedor'
     | '/painel/inconsistencias'
+    | '/painel/inteligencia'
     | '/painel/inventario'
     | '/painel/metas'
     | '/painel/movimentacoes'
@@ -815,6 +827,13 @@ declare module '@tanstack/react-router' {
       path: '/inconsistencias'
       fullPath: '/painel/inconsistencias'
       preLoaderRoute: typeof PainelInconsistenciasRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/inteligencia': {
+      id: '/painel/inteligencia'
+      path: '/inteligencia'
+      fullPath: '/painel/inteligencia'
+      preLoaderRoute: typeof PainelInteligenciaRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/inventario': {
@@ -1058,6 +1077,7 @@ interface PainelRouteChildren {
   PainelGondolaRoute: typeof PainelGondolaRoute
   PainelHistoricoFornecedorRoute: typeof PainelHistoricoFornecedorRoute
   PainelInconsistenciasRoute: typeof PainelInconsistenciasRoute
+  PainelInteligenciaRoute: typeof PainelInteligenciaRoute
   PainelInventarioRoute: typeof PainelInventarioRoute
   PainelMetasRoute: typeof PainelMetasRoute
   PainelMovimentacoesRoute: typeof PainelMovimentacoesRoute
@@ -1099,6 +1119,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelGondolaRoute: PainelGondolaRoute,
   PainelHistoricoFornecedorRoute: PainelHistoricoFornecedorRoute,
   PainelInconsistenciasRoute: PainelInconsistenciasRoute,
+  PainelInteligenciaRoute: PainelInteligenciaRoute,
   PainelInventarioRoute: PainelInventarioRoute,
   PainelMetasRoute: PainelMetasRoute,
   PainelMovimentacoesRoute: PainelMovimentacoesRoute,
