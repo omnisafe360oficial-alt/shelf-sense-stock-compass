@@ -41,6 +41,19 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // Ao voltar para a aba, a pré-visualização pode ter uma versão nova e
+    // os arquivos antigos deixam de existir. Recarrega uma vez automaticamente.
+    const msg = String((error as Error)?.message ?? error);
+    const desatualizado =
+      /dynamically imported module|Importing a module script failed|Failed to fetch|error loading dynamically|Outdated Optimize Dep|ChunkLoadError/i.test(
+        msg,
+      );
+    const chave = "omnisafe-auto-reload";
+    const ultimo = Number(sessionStorage.getItem(chave) ?? 0);
+    if (desatualizado && Date.now() - ultimo > 10000) {
+      sessionStorage.setItem(chave, String(Date.now()));
+      window.location.reload();
+    }
   }, [error]);
 
   return (
