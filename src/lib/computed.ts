@@ -10,7 +10,7 @@ export function vendasPorProduto(movs: Mov[]): Record<string, { un: number; ulti
   for (const m of movs) {
     if (m.tipo !== "venda") continue;
     if (!map[m.produtoId]) map[m.produtoId] = { un: 0, ultimaData: null };
-    map[m.produtoId].un += m.qtd;
+    map[m.produtoId].un += Math.abs(m.qtd);
     if (!map[m.produtoId].ultimaData || m.data > map[m.produtoId].ultimaData!) {
       map[m.produtoId].ultimaData = m.data;
     }
@@ -27,13 +27,13 @@ export function diasSemVenda(ultimaData: string | null): number {
 export function vendasHoje(movs: Mov[]): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.startsWith(HOJE))
-    .reduce((s, m) => s + m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 export function vendasOntem(movs: Mov[]): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.startsWith(ONTEM))
-    .reduce((s, m) => s + m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 /** Retorna array de 12 valores (R$) para as horas 8h–19h do dia de hoje. */
@@ -44,7 +44,7 @@ export function vendasPorHora(movs: Mov[]): number[] {
     const h = parseInt(m.data.slice(11, 13), 10);
     const idx = h - 8;
     if (idx >= 0 && idx < 12) {
-      hours[idx] += m.qtd * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0);
+      hours[idx] += Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0);
     }
   }
   return hours;
@@ -72,10 +72,11 @@ export type LoteInfo = Lote & { produto: Produto; dias: number; faixa: Faixa };
 export function lotesVencendo(lotes: Lote[], limiar: number = 15): LoteInfo[] {
   return lotes
     .filter((l) => l.qtd > 0)
-    .map((l) => {
+    .flatMap((l) => {
+      const produto = getProdutos().find((p) => p.id === l.produtoId);
+      if (!produto) return [];
       const dias = diasAte(l.validade);
-      const produto = getProdutos().find((p) => p.id === l.produtoId)!;
-      return { ...l, produto, dias, faixa: faixaValidade(dias) };
+      return [{ ...l, produto, dias, faixa: faixaValidade(dias) }];
     })
     .filter((l) => l.dias <= limiar)
     .sort((a, b) => a.dias - b.dias);
@@ -172,9 +173,9 @@ export function sugestoesPedido(
   gondola: Record<string, number>,
   diasLead = 7
 ): SugestaoPedido[] {
-  const PERIODO = 30;
+  const PERIODO = 31;
   const SEGURANCA = 3;
-  const inicio = new Date(new Date(HOJE).getTime() - PERIODO * 86_400_000).toISOString().slice(0, 10);
+  const inicio = new Date(new Date(HOJE).getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
 
   const vendas: Record<string, number> = {};
   for (const m of movs) {
