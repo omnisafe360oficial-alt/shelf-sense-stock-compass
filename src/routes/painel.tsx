@@ -9,7 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Input } from "@/components/ui/input";
 import { useEstoque } from "@/lib/estoque-store";
 import { useOperacao } from "@/lib/operacao-store";
-import { abaixoDoMinimo, abaixoDoMinimoDeposito, lotesVencendo, HOJE, sugestoesPedido } from "@/lib/computed";
+import { abaixoDoMinimo, abaixoDoMinimoDeposito, lotesVencendo, HOJE, sugestoesPedido, inteligenciaProdutos, gerarAlertasIntel } from "@/lib/computed";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
 import { useEquipe } from "@/lib/equipe-store";
@@ -101,6 +101,11 @@ function PainelLayout() {
     [est.movs, est.gondola, config.alertaPedidos],
   );
 
+  const alertasIACriticos = useMemo(() => {
+    const intel = inteligenciaProdutos(est.movs, est.gondola, est.lotes);
+    return gerarAlertasIntel(intel, est.gondola, est.lotes).filter((a) => a.tipo === "critico").length;
+  }, [est.movs, est.gondola, est.lotes]);
+
   const alertasAntifurto = config.alertaAntifurto
     ? calcularAlertas(est.movs, produtos, config.limiteAntifurtoUnidades ?? 2)
     : [];
@@ -113,7 +118,8 @@ function PainelLayout() {
     (config.alertaPedidos ? pedidosAtencao.length : 0) +
     produtosParaPedirCount +
     alertasAntifurto.filter((a) => a.severidade === "alto").length +
-    depositoBaixo.length;
+    depositoBaixo.length +
+    alertasIACriticos;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -383,6 +389,17 @@ function PainelLayout() {
                       ))}
                     </div>
                   )}
+                      {alertasIACriticos > 0 && (
+                        <div className="p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-destructive">
+                              🧠 {alertasIACriticos} alerta{alertasIACriticos > 1 ? "s" : ""} crítico{alertasIACriticos > 1 ? "s" : ""} (IA)
+                            </p>
+                            <Link to="/painel/alertas" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Produtos no ponto de pedido ou sem cobertura.</p>
+                        </div>
+                      )}
                   <div className="border-t px-4 py-2 flex items-center justify-between">
                     <Link to="/painel/alertas" className="text-xs font-medium text-primary hover:underline" onClick={fecharNotif}>
                       Ver central de alertas →

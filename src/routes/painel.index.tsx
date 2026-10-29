@@ -20,6 +20,7 @@ import {
   abaixoDoMinimo, HOJE, lotesVencendo,
   vendasHoje, vendasOntem, vendasPorDia,
   vendasPorHora, vendasPorProduto,
+  inteligenciaProdutos, gerarAlertasIntel, type AlertaIntel,
 } from "@/lib/computed";
 import { useMetas } from "@/lib/metas-store";
 import { brl } from "@/lib/mock-data";
@@ -124,6 +125,12 @@ function Inicio() {
   const maxHora    = Math.max(...horas, 1);
   const diasSemana = vendasPorDia(est.movs, 7);
   const maxDia     = Math.max(...diasSemana.map((d) => d.valor), 1);
+
+  // ── Motor IA ──────────────────────────────────────────────────────────────
+  const alertasIA = useMemo<AlertaIntel[]>(() => {
+    const intel = inteligenciaProdutos(est.movs, est.gondola, est.lotes);
+    return gerarAlertasIntel(intel, est.gondola, est.lotes).slice(0, 5);
+  }, [est.movs, est.gondola, est.lotes]);
 
   // ── Top produtos ──────────────────────────────────────────────────────────
   const vendPorProd = useMemo(() => vendasPorProduto(est.movs), [est.movs]);
@@ -402,6 +409,39 @@ function Inicio() {
           </p>
         </Link>
       </div>
+
+      {/* ── Motor IA — Requer atenção ──────────────────────────────────────── */}
+      {alertasIA.length > 0 && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-primary">
+              Motor IA — {alertasIA.length} item{alertasIA.length !== 1 ? "s" : ""} precisam de atenção
+            </p>
+            <Link to="/painel/alertas" className="text-xs text-primary hover:underline">
+              Ver todos →
+            </Link>
+          </div>
+          <div className="space-y-1.5">
+            {alertasIA.map((a) => (
+              <Link
+                key={a.produtoId}
+                to="/painel/produtos/$id"
+                params={{ id: a.produtoId }}
+                className="flex items-center gap-3 rounded-lg bg-card px-3 py-2.5 text-sm transition hover:bg-muted"
+              >
+                <span className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase",
+                  a.tipo === "critico" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning",
+                )}>
+                  {a.tipo === "critico" ? "Crítico" : "Atenção"}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium">{a.produtoNome}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{a.titulo}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Atalhos rápidos ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">

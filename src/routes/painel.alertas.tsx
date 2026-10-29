@@ -11,6 +11,7 @@ import { useConfig } from "@/lib/config-store";
 import { usePedidos } from "@/lib/pedidos-store";
 import {
   abaixoDoMinimo, abaixoDoMinimoDeposito, diasSemVenda, lotesVencendo, vendasPorProduto, HOJE,
+  inteligenciaProdutos, gerarAlertasIntel, type AlertaIntel,
 } from "@/lib/computed";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -163,6 +164,11 @@ function Alertas() {
 
   const total = categorias.reduce((s, c) => s + c.itens.length, 0);
 
+  const alertasIA = useMemo<AlertaIntel[]>(() => {
+    const intel = inteligenciaProdutos(est.movs, est.gondola, est.lotes);
+    return gerarAlertasIntel(intel, est.gondola, est.lotes);
+  }, [est.movs, est.gondola, est.lotes]);
+
   function exportarCSV() {
     const rows = ["Categoria,Produto / Referência,Detalhe"];
     for (const cat of categorias) {
@@ -206,8 +212,48 @@ function Alertas() {
         )}
       </div>
 
+      {/* Motor de Inteligência */}
+      {alertasIA.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-primary/20 bg-primary/5">
+          <div className="flex items-center justify-between border-b border-primary/15 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <Bell className="h-4 w-4" />
+              <span>Motor de Inteligência</span>
+              <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold">
+                {alertasIA.length}
+              </span>
+            </div>
+            <Link to="/painel/pedidos/sugerir" className="text-xs text-primary hover:underline">
+              Sugerir pedido →
+            </Link>
+          </div>
+          <div className="divide-y divide-primary/10 text-sm">
+            {alertasIA.map((a) => (
+              <Link
+                key={a.produtoId}
+                to="/painel/produtos/$id"
+                params={{ id: a.produtoId }}
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 transition-colors"
+              >
+                <span className={cn(
+                  "shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase",
+                  a.tipo === "critico" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning",
+                )}>
+                  {a.tipo === "critico" ? "Crítico" : "Atenção"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{a.produtoNome}</p>
+                  <p className="truncate text-xs text-muted-foreground">{a.titulo}</p>
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">{a.detalhe.split(" · ")[0]}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tudo ok */}
-      {total === 0 && (
+      {total === 0 && alertasIA.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-xl border bg-card py-16 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-500" />
           <p className="text-lg font-semibold">Tudo em ordem!</p>

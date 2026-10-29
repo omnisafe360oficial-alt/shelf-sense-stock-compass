@@ -225,6 +225,77 @@ export function classificarABC(
   return resultado;
 }
 
+export type TipoAlerta = "critico" | "atencao" | "info";
+
+export type AlertaIntel = {
+  produtoId: string;
+  produtoNome: string;
+  tipo: TipoAlerta;
+  titulo: string;
+  detalhe: string;
+  diasEstoque: number;
+};
+
+export function gerarAlertasIntel(
+  intel: Record<string, IntelProduto>,
+  gondola: Record<string, number>,
+  lotes: Lote[],
+  leadTime = 7,
+): AlertaIntel[] {
+  const produtos = getProdutos();
+  const dep: Record<string, number> = {};
+  for (const l of lotes) if (l.qtd > 0) dep[l.produtoId] = (dep[l.produtoId] ?? 0) + l.qtd;
+
+  const alertas: AlertaIntel[] = [];
+
+  for (const p of produtos) {
+    const info = intel[p.id];
+    if (!info || info.velocidadeDiaria === 0) continue;
+    const total = (gondola[p.id] ?? 0) + (dep[p.id] ?? 0);
+
+    if (total <= info.pontoPedido) {
+      alertas.push({
+        produtoId: p.id,
+        produtoNome: p.nome,
+        tipo: info.abc === "A" || total === 0 ? "critico" : "atencao",
+        titulo: total === 0 ? "Estoque zerado" : "No ponto de pedido",
+        detalhe: `Estoque: ${total} un · PP: ${info.pontoPedido} un · Classe ${info.abc}${info.xyz}`,
+        diasEstoque: info.diasEstoque,
+      });
+      continue;
+    }
+
+    if (info.diasEstoque < leadTime) {
+      alertas.push({
+        produtoId: p.id,
+        produtoNome: p.nome,
+        tipo: info.abc === "A" ? "critico" : "atencao",
+        titulo: `Cobertura crítica — ${info.diasEstoque}d`,
+        detalhe: `${info.velocidadeDiaria.toFixed(1)} un/dia · lead: ${leadTime}d · Classe ${info.abc}${info.xyz}`,
+        diasEstoque: info.diasEstoque,
+      });
+      continue;
+    }
+
+    if (info.abc === "A" && info.xyz === "Z") {
+      alertas.push({
+        produtoId: p.id,
+        produtoNome: p.nome,
+        tipo: "atencao",
+        titulo: "Produto A com demanda irregular",
+        detalhe: `CV: ${info.cv.toFixed(2)} · ${info.diasEstoque}d cobertura · monitorar`,
+        diasEstoque: info.diasEstoque,
+      });
+    }
+  }
+
+  return alertas.sort((a, b) => {
+    const prio: Record<TipoAlerta, number> = { critico: 0, atencao: 1, info: 2 };
+    const pd = prio[a.tipo] - prio[b.tipo];
+    return pd !== 0 ? pd : a.diasEstoque - b.diasEstoque;
+  });
+}
+
 export type ScoreDivergencia = {
   usuario: string;
   totalContagens: number;
