@@ -21,7 +21,7 @@ export function vendasPorProduto(movs: Mov[]): Record<string, { un: number; ulti
 
 export function diasSemVenda(ultimaData: string | null): number {
   if (!ultimaData) return 999;
-  const diff = new Date(HOJE).getTime() - new Date(ultimaData.slice(0, 10)).getTime();
+  const diff = new Date(getHoje()).getTime() - new Date(ultimaData.slice(0, 10)).getTime();
   return Math.round(diff / 86_400_000);
 }
 

@@ -14,7 +14,7 @@ import { useProdutos } from "@/lib/produtos-store";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { promocaoAtivaParaProduto, usePromocoes } from "@/lib/promocoes-store";
-import { HOJE } from "@/lib/computed";
+import { getHoje } from "@/lib/computed";
 
 export const Route = createFileRoute("/painel/pdv")({
   pendingComponent: SkeletonPdv,
@@ -36,7 +36,7 @@ type Linha = { produtoId: string; qtd: number };
 type VendaHistorico = {
   id: string; hora: string; total: number; qtdItens: number; pagamento: string;
   descontoVal: number; troco: number;
-  linhas: { nome: string; qtd: number; preco: number }[];
+  linhas: { produtoId: string; nome: string; qtd: number; preco: number }[];
 };
 
 const PAGAMENTOS = [
@@ -154,7 +154,7 @@ function Pdv() {
         : [...prev, { produtoId, qtd: nova }],
     );
     if (isNovo && !descontoItens[produtoId]) {
-      const promo = promocaoAtivaParaProduto(promoEstado.promocoes, produtoId, HOJE);
+      const promo = promocaoAtivaParaProduto(promoEstado.promocoes, produtoId, getHoje());
       if (promo) {
         setDescontoItens((prev) => ({
           ...prev,
@@ -213,7 +213,7 @@ function Pdv() {
       const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const linhas = itens.map((i) => {
         const p = produtos.find((x) => x.id === i.produtoId)!;
-        return { nome: p.nome, qtd: i.qtd, preco: precoLiquido(i.produtoId) };
+        return { produtoId: i.produtoId, nome: p.nome, qtd: i.qtd, preco: precoLiquido(i.produtoId) };
       });
       const entrada: VendaHistorico = {
         id: crypto.randomUUID(), hora, total,
@@ -690,7 +690,7 @@ function Pdv() {
             <div className="rounded-xl border bg-muted/30 p-4">
               <div className="space-y-1.5">
                 {ultimaVenda.linhas.map((l, i) => {
-                  const prod = produtos.find((x) => x.nome === l.nome);
+                  const prod = produtos.find((x) => x.id === l.produtoId);
                   const un = prod?.unidade ?? "un";
                   return (
                     <div key={i} className="flex justify-between gap-2 text-sm">
