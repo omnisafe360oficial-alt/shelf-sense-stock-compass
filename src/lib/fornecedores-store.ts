@@ -12,7 +12,7 @@ function mapDoBanco(row: Record<string, unknown>): Fornecedor {
   return {
     id: row.id as string,
     nome: (row.nome as string) ?? "",
-    cnpj: (row.cnpj_cpf as string) ?? "",
+    cnpj: (row.cnpj as string) ?? "",
     contato: (row.contato as string) ?? "",
     telefone: (row.telefone as string) ?? "",
     email: (row.email as string) ?? "",
@@ -27,7 +27,7 @@ let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 async function carregarFornecedores(lojaId: string) {
   const { data, error } = await supabase
     .from("fornecedores")
-    .select("id, nome, cnpj_cpf, contato, telefone, email, cidade, prazo, whatsapp")
+    .select("id, nome, cnpj, contato, telefone, email, cidade, prazo, whatsapp")
     .eq("loja_id", lojaId)
     .order("nome");
   if (error) { toast.error("Erro ao carregar fornecedores"); return; }
@@ -77,7 +77,7 @@ export async function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): Promis
     id,
     loja_id: lojaId,
     nome: dados.nome,
-    cnpj_cpf: dados.cnpj,
+    cnpj: dados.cnpj,
     contato: dados.contato,
     telefone: dados.telefone,
     email: dados.email,
@@ -104,7 +104,7 @@ export async function editarFornecedor(id: string, dados: Partial<Omit<Fornecedo
   const lojaId = exigirLoja();
   const payload: Record<string, unknown> = {};
   if (dados.nome !== undefined) payload.nome = dados.nome;
-  if (dados.cnpj !== undefined) payload.cnpj_cpf = dados.cnpj;
+  if (dados.cnpj !== undefined) payload.cnpj = dados.cnpj;
   if (dados.contato !== undefined) payload.contato = dados.contato;
   if (dados.telefone !== undefined) payload.telefone = dados.telefone;
   if (dados.email !== undefined) payload.email = dados.email;
