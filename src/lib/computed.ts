@@ -391,3 +391,153 @@ export function sugestoesPedido(
     .filter((s) => s.qtdSugerida > 0)
     .sort((a, b) => a.diasRestantes - b.diasRestantes);
 }
+
+// ─── Score de Saúde do Estoque (Etapa 5) ─────────────────────────────────────
+
+export type SaudeGrau = "excelente" | "bom" | "regular" | "critico";
+
+export type DimensaoSaude = {
+  nome: string;
+  pontos: number;
+  max: number;
+  pct: number;
+  status: SaudeGrau;
+  detalhe: string;
+};
+
+export type SaudeEstoque = {
+  score: number;
+  grau: SaudeGrau;
+  dimensoes: {
+    cobertura: DimensaoSaude;
+    reposicao: DimensaoSaude;
+    giro: DimensaoSaude;
+    perdas: DimensaoSaude;
+  };
+  recomendacoes: string[];
+};
+
+function grauDim(pct: number): SaudeGrau {
+  return pct >= 0.9 ? "excelente" : pct >= 0.75 ? "bom" : pct >= 0.6 ? "regular" : "critico";
+}
+
+export function saudeEstoque(
+  movs: Mov[],
+  gondola: Record<string, number>,
+  lotes: Lote[],
+): SaudeEstoque {
+  const intel = inteligenciaProdutos(movs, gondola, lotes);
+  const dep = depositoMap(lotes);
+  const produtos = getProdutos();
+
+  const itens = produtos
+    .map((p) => {
+      const info = intel[p.id];
+      if (!info) return null;
+      const estoqueAtual = (gondola[p.id] ?? 0) + (dep[p.id] ?? 0);
+      return { p, info, estoqueAtual };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  const total = itens.length;
+  const vazio: DimensaoSaude = { nome: "", pontos: 0, max: 0, pct: 0, status: "critico", detalhe: "Sem dados" };
+
+  if (total === 0) {
+    return {
+      score: 0,
+      grau: "critico",
+      dimensoes: {
+        cobertura: { ...vazio, nome: "Cobertura", max: 30 },
+        reposicao: { ...vazio, nome: "Reposição", max: 25 },
+        giro:      { ...vazio, nome: "Giro",      max: 25 },
+        perdas:    { ...vazio, nome: "Perdas",     max: 20 },
+      },
+      recomendacoes: ["Cadastre produtos e registre vendas para ativar o Score de Saúde."],
+    };
+  }
+
+  // Cobertura (30 pts): % com diasEstoque ≥ 14d
+  const cobertos = itens.filter((x) => x.info.diasEstoque >= 14).length;
+  const pctCob = cobertos / total;
+  const ptsCob = Math.round(pctCob * 30);
+
+  // Reposição (25 pts): % acima do ponto de pedido
+  const okRep = itens.filter((x) => x.estoqueAtual > 0 && x.estoqueAtual > x.info.pontoPedido).length;
+  const pctRep = okRep / total;
+  const ptsRep = Math.round(pctRep * 25);
+
+  // Giro (25 pts): % com vendas nos últimos 60 dias
+  const comVel = itens.filter((x) => x.info.velocidadeDiaria > 0).length;
+  const pctGiro = comVel / total;
+  const ptsGiro = Math.round(pctGiro * 25);
+
+  // Perdas (20 pts): inversamente proporcional à taxa de ajustes negativos vs vendas
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffISO = cutoff.toISOString();
+
+  const vendasQtd = movs.filter((m) => m.tipo === "venda" && m.data >= cutoffISO).reduce((s, m) => s + Math.abs(m.qtd), 0);
+  const perdasQtd = movs.filter((m) => m.tipo === "ajuste" && m.qtd < 0 && m.data >= cutoffISO).reduce((s, m) => s + Math.abs(m.qtd), 0);
+  const taxaPerdas = vendasQtd > 0 ? perdasQtd / vendasQtd : 0;
+  const pctPerdas = Math.max(0, 1 - taxaPerdas * 10);
+  const ptsPerdas = Math.round(pctPerdas * 20);
+
+  const score = ptsCob + ptsRep + ptsGiro + ptsPerdas;
+  const grau: SaudeGrau = score >= 90 ? "excelente" : score >= 75 ? "bom" : score >= 60 ? "regular" : "critico";
+
+  const recomendacoes: string[] = [];
+
+  if (pctCob < 0.8) {
+    const n = itens.filter((x) => x.info.diasEstoque < 7).length;
+    recomendacoes.push(`${n} produto${n !== 1 ? "s" : ""} com menos de 7 dias de cobertura — agendar pedido urgente.`);
+  }
+  if (pctRep < 0.9) {
+    const crit = itens.filter((x) => x.estoqueAtual === 0 || x.estoqueAtual <= x.info.pontoPedido);
+    const critA = crit.filter((x) => x.info.abc === "A").length;
+    if (critA > 0)
+      recomendacoes.push(`${critA} produto${critA !== 1 ? "s" : ""} Classe A abaixo do ponto de pedido — risco de ruptura de alta demanda.`);
+    else
+      recomendacoes.push(`${crit.length} produto${crit.length !== 1 ? "s" : ""} abaixo do ponto de pedido — usar Sugestão de Pedido.`);
+  }
+  if (pctGiro < 0.7) {
+    const n = itens.filter((x) => x.info.velocidadeDiaria === 0).length;
+    recomendacoes.push(`${n} produto${n !== 1 ? "s" : ""} sem vendas nos últimos 60 dias — avaliar encalhe ou promoção.`);
+  }
+  if (taxaPerdas > 0.02) {
+    recomendacoes.push(`Taxa de perdas de ${(taxaPerdas * 100).toFixed(1)}% sobre as vendas — investigar ajustes negativos.`);
+  }
+  const azCount = itens.filter((x) => x.info.abc === "A" && x.info.xyz === "Z").length;
+  if (azCount > 0)
+    recomendacoes.push(`${azCount} produto${azCount !== 1 ? "s" : ""} Classe A com demanda irregular (AZ) — aumentar estoque de segurança.`);
+
+  if (recomendacoes.length === 0)
+    recomendacoes.push("Estoque em ótimas condições! Continue monitorando os indicadores diariamente.");
+
+  return {
+    score,
+    grau,
+    dimensoes: {
+      cobertura: {
+        nome: "Cobertura", pontos: ptsCob, max: 30, pct: Math.round(pctCob * 100),
+        status: grauDim(pctCob),
+        detalhe: `${cobertos} de ${total} produto${total !== 1 ? "s" : ""} com ≥14 dias de estoque`,
+      },
+      reposicao: {
+        nome: "Reposição", pontos: ptsRep, max: 25, pct: Math.round(pctRep * 100),
+        status: grauDim(pctRep),
+        detalhe: `${okRep} de ${total} produto${total !== 1 ? "s" : ""} acima do ponto de pedido`,
+      },
+      giro: {
+        nome: "Giro", pontos: ptsGiro, max: 25, pct: Math.round(pctGiro * 100),
+        status: grauDim(pctGiro),
+        detalhe: `${comVel} de ${total} produto${total !== 1 ? "s" : ""} vendidos nos últimos 60 dias`,
+      },
+      perdas: {
+        nome: "Perdas", pontos: ptsPerdas, max: 20, pct: Math.round(pctPerdas * 100),
+        status: grauDim(pctPerdas),
+        detalhe: taxaPerdas === 0 ? "Nenhuma perda registrada no período" : `${(taxaPerdas * 100).toFixed(1)}% das vendas em ajustes negativos`,
+      },
+    },
+    recomendacoes,
+  };
+}

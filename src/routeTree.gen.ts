@@ -42,6 +42,7 @@ import { Route as PainelRelatorioVendasRouteImport } from './routes/painel.relat
 import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelReposicaoRouteImport } from './routes/painel.reposicao'
 import { Route as PainelResumoRelatoriosRouteImport } from './routes/painel.resumo-relatorios'
+import { Route as PainelSaudeRouteImport } from './routes/painel.saude'
 import { Route as PainelSegurancaRouteImport } from './routes/painel.seguranca'
 import { Route as PainelValidadesRouteImport } from './routes/painel.validades'
 import { Route as RecebeIndexRouteImport } from './routes/recebe.index'
@@ -230,6 +231,11 @@ const PainelResumoRelatoriosRoute = PainelResumoRelatoriosRouteImport.update({
   path: '/resumo-relatorios',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelSaudeRoute = PainelSaudeRouteImport.update({
+  id: '/saude',
+  path: '/saude',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelSegurancaRoute = PainelSegurancaRouteImport.update({
   id: '/seguranca',
   path: '/seguranca',
@@ -369,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
+  '/painel/saude': typeof PainelSaudeRoute
   '/painel/seguranca': typeof PainelSegurancaRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/recebe/historico': typeof RecebeHistoricoRoute
@@ -422,6 +429,7 @@ export interface FileRoutesByTo {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
+  '/painel/saude': typeof PainelSaudeRoute
   '/painel/seguranca': typeof PainelSegurancaRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/recebe/historico': typeof RecebeHistoricoRoute
@@ -479,6 +487,7 @@ export interface FileRoutesById {
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/reposicao': typeof PainelReposicaoRoute
   '/painel/resumo-relatorios': typeof PainelResumoRelatoriosRoute
+  '/painel/saude': typeof PainelSaudeRoute
   '/painel/seguranca': typeof PainelSegurancaRoute
   '/painel/validades': typeof PainelValidadesRoute
   '/recebe/historico': typeof RecebeHistoricoRoute
@@ -537,6 +546,7 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/resumo-relatorios'
+    | '/painel/saude'
     | '/painel/seguranca'
     | '/painel/validades'
     | '/recebe/historico'
@@ -590,6 +600,7 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/resumo-relatorios'
+    | '/painel/saude'
     | '/painel/seguranca'
     | '/painel/validades'
     | '/recebe/historico'
@@ -646,6 +657,7 @@ export interface FileRouteTypes {
     | '/painel/relatorios'
     | '/painel/reposicao'
     | '/painel/resumo-relatorios'
+    | '/painel/saude'
     | '/painel/seguranca'
     | '/painel/validades'
     | '/recebe/historico'
@@ -913,6 +925,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelResumoRelatoriosRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/saude': {
+      id: '/painel/saude'
+      path: '/saude'
+      fullPath: '/painel/saude'
+      preLoaderRoute: typeof PainelSaudeRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/seguranca': {
       id: '/painel/seguranca'
       path: '/seguranca'
@@ -1089,6 +1108,7 @@ interface PainelRouteChildren {
   PainelRelatoriosRoute: typeof PainelRelatoriosRoute
   PainelReposicaoRoute: typeof PainelReposicaoRoute
   PainelResumoRelatoriosRoute: typeof PainelResumoRelatoriosRoute
+  PainelSaudeRoute: typeof PainelSaudeRoute
   PainelSegurancaRoute: typeof PainelSegurancaRoute
   PainelValidadesRoute: typeof PainelValidadesRoute
   PainelIndexRoute: typeof PainelIndexRoute
@@ -1131,6 +1151,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelRelatoriosRoute: PainelRelatoriosRoute,
   PainelReposicaoRoute: PainelReposicaoRoute,
   PainelResumoRelatoriosRoute: PainelResumoRelatoriosRoute,
+  PainelSaudeRoute: PainelSaudeRoute,
   PainelSegurancaRoute: PainelSegurancaRoute,
   PainelValidadesRoute: PainelValidadesRoute,
   PainelIndexRoute: PainelIndexRoute,
