@@ -13,7 +13,7 @@ import type { PedidoStatus } from "@/lib/pedidos-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { HOJE as HOJE_COMPUTED } from "@/lib/computed";
 import { sugerirCompras } from "@/lib/compra-sugestao";
-import { getProdutos } from "@/lib/produtos-store";
+import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +88,7 @@ type Aba = "todos" | "aberto" | "recebido" | "cancelado";
 function PedidosPage() {
   const { pedidos } = usePedidos();
   const est = useEstoque();
+  const produtos = useProdutos();
   const navigate = useNavigate();
   const [aba, setAba] = useState<Aba>("todos");
   const [q, setQ] = useState("");
@@ -109,8 +110,8 @@ function PedidosPage() {
   }, [pedidos]);
 
   const grupos = useMemo(
-    () => sugerirCompras(getProdutos(), totaisDeposito, idsComPedidoAberto),
-    [totaisDeposito, idsComPedidoAberto],
+    () => sugerirCompras(produtos, totaisDeposito, idsComPedidoAberto),
+    [produtos, totaisDeposito, idsComPedidoAberto],
   );
   const itensSugeridos = grupos.flatMap((g) => g.itens);
 
