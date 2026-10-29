@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import {
-  AlertTriangle, ChevronRight, Lightbulb, Package,
+  AlertTriangle, CheckCircle2, ChevronRight, MessageCircle, Lightbulb, Package,
   Plus, Search, ShoppingCart, Sparkles, X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,8 @@ import { usePedidos, criarPedido } from "@/lib/pedidos-store";
 import type { PedidoStatus } from "@/lib/pedidos-store";
 import { useEstoque } from "@/lib/estoque-store";
 import { HOJE as HOJE_COMPUTED } from "@/lib/computed";
-import { sugerirCompras } from "@/lib/compra-sugestao";
+import { sugerirCompras, type GrupoCompra } from "@/lib/compra-sugestao";
+import { useFornecedores } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,7 @@ function PedidosPage() {
   const { pedidos } = usePedidos();
   const est = useEstoque();
   const produtos = useProdutos();
+  const fornecedores = useFornecedores();
   const navigate = useNavigate();
   const [aba, setAba] = useState<Aba>("todos");
   const [q, setQ] = useState("");
@@ -115,13 +117,13 @@ function PedidosPage() {
   );
   const itensSugeridos = grupos.flatMap((g) => g.itens);
 
-  async function criarPedidosDeposito() {
-    if (criando || grupos.length === 0) return;
+  async function criarPedidosDeposito(alvo: GrupoCompra[] = grupos) {
+    if (criando || alvo.length === 0) return;
     setCriando(true);
     const dp = new Date(HOJE_COMPUTED);
     dp.setDate(dp.getDate() + 7);
     const dataPrevista = dp.toISOString().slice(0, 10);
-    for (const g of grupos) {
+    for (const g of alvo) {
       criarPedido({
         fornecedorId: g.fornecedorId,
         fornecedorNome: g.fornecedorNome,
@@ -135,7 +137,7 @@ function PedidosPage() {
         })),
       });
     }
-    const n = grupos.length;
+    const n = alvo.length;
     setCriando(false);
     toast.success(`${n} rascunho${n !== 1 ? "s" : ""} criado${n !== 1 ? "s" : ""} — um por fornecedor.`);
     navigate({ to: "/painel/pedidos" });
@@ -191,56 +193,79 @@ function PedidosPage() {
     </div>
   );
 
-  const alertaDeposito = itensSugeridos.length > 0 && (
-    <div className="rounded-2xl border border-primary/30 bg-primary/5 overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4">
+  const whatsDoGrupo = (g: GrupoCompra) => {
+    const f = fornecedores.find((x) => (g.fornecedorId ? x.id === g.fornecedorId : x.nome.toLowerCase() === g.fornecedorNome.toLowerCase()));
+    return f?.whatsapp ?? "";
+  };
+
+  const alertaDeposito = itensSugeridos.length > 0 ? (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-5 py-4">
         <div className="flex items-start gap-3">
-          <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <ShoppingCart className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
             <p className="font-semibold text-primary">
-              {itensSugeridos.length} produto{itensSugeridos.length !== 1 ? "s" : ""} precisa{itensSugeridos.length !== 1 ? "m" : ""} ser comprado{itensSugeridos.length !== 1 ? "s" : ""}
+              Precisa comprar: {itensSugeridos.length} produto{itensSugeridos.length !== 1 ? "s" : ""} de {grupos.length} fornecedor{grupos.length !== 1 ? "es" : ""}
             </p>
             <p className="text-sm text-muted-foreground">
-              O depósito chegou ao mínimo ou acabou. O sistema cria um rascunho para cada fornecedor.
+              O depósito chegou ao mínimo ou acabou. Cada fornecedor recebe o seu próprio pedido.
             </p>
           </div>
         </div>
-        <Button
-          onClick={criarPedidosDeposito}
-          disabled={criando}
-          variant="outline"
-          className="shrink-0 border-primary/40 text-primary hover:bg-primary/10"
-        >
-          <Sparkles className="h-4 w-4" />
-          {criando ? "Criando…" : "Criar pedidos automáticos"}
-        </Button>
-      </div>
-      <div className="border-t border-primary/15 divide-y divide-primary/10 max-h-56 overflow-y-auto">
-        {itensSugeridos.slice(0, 8).map(({ produto: p, atual, minimo, qtd }) => (
-          <div key={p.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
-            <div className="min-w-0">
-              <span className="font-medium truncate">{p.nome}</span>
-              {p.fornecedor && (
-                <span className="ml-2 text-xs text-muted-foreground">{p.fornecedor}</span>
-              )}
-            </div>
-            <div className="ml-4 shrink-0 flex items-center gap-3 text-xs text-muted-foreground">
-              <span>Depósito: <strong className="text-primary">{atual}</strong> / mín {minimo}</span>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
-                pedir {qtd}
-              </span>
-            </div>
-          </div>
-        ))}
-        {itensSugeridos.length > 8 && (
-          <div className="px-5 py-2 text-xs text-muted-foreground">
-            +{itensSugeridos.length - 8} outros —{" "}
-            <Link to="/painel/pedidos/sugerir" className="text-primary hover:underline">ver todos</Link>
-          </div>
+        {grupos.length > 1 && (
+          <Button onClick={() => criarPedidosDeposito()} disabled={criando} className="shrink-0">
+            <Sparkles className="h-4 w-4" />
+            {criando ? "Criando…" : `Criar os ${grupos.length} pedidos`}
+          </Button>
         )}
       </div>
-    </div>
-  );
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        {grupos.map((g) => {
+          const sem = g.chave === "sem";
+          const whats = sem ? "" : whatsDoGrupo(g);
+          const total = g.itens.reduce((s, i) => s + i.qtd * i.produto.preco, 0);
+          return (
+            <div key={g.chave} className={cn("overflow-hidden rounded-2xl border bg-card", sem && "border-warning/40")}>
+              <div className={cn("flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3", sem ? "bg-warning/5" : "bg-muted/30")}>
+                <div className="min-w-0">
+                  <p className={cn("truncate font-semibold", sem && "text-warning")}>
+                    {sem ? "Sem fornecedor" : g.fornecedorNome}
+                  </p>
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    {g.itens.length} produto{g.itens.length !== 1 ? "s" : ""} · {brl(total)}
+                    {!sem && (whats ? (
+                      <span className="inline-flex items-center gap-1 text-success"><CheckCircle2 className="h-3 w-3" /> WhatsApp ok</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-warning"><MessageCircle className="h-3 w-3" /> sem WhatsApp</span>
+                    ))}
+                  </p>
+                </div>
+                {sem ? (
+                  <span className="text-xs text-warning">Ligue estes produtos a um fornecedor</span>
+                ) : (
+                  <Button size="sm" onClick={() => criarPedidosDeposito([g])} disabled={criando}>
+                    <Sparkles className="h-4 w-4" /> Criar pedido
+                  </Button>
+                )}
+              </div>
+              <div className="max-h-64 divide-y overflow-y-auto">
+                {g.itens.map(({ produto: p, atual, minimo, qtd }) => (
+                  <div key={p.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+                    <span className="min-w-0 truncate font-medium">{p.nome}</span>
+                    <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                      <span>Depósito <strong className={atual === 0 ? "text-destructive" : "text-warning"}>{atual}</strong> / mín {minimo}</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">pedir {qtd}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  ) : null;
 
   if (pedidos.length === 0) {
     return (
