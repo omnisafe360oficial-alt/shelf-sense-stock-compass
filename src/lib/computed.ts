@@ -2,8 +2,9 @@ import { diasAte, faixaValidade, type Faixa, type Lote, type Mov } from "./estoq
 import { getProdutos } from "./produtos-store";
 import { type Produto } from "./mock-data";
 
-export const HOJE = new Date().toISOString().slice(0, 10);
-const ONTEM = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+export const getHoje = () => new Date().toISOString().slice(0, 10);
+export const getOntem = () => new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+export const HOJE = getHoje();
 
 export function vendasPorProduto(movs: Mov[]): Record<string, { un: number; ultimaData: string | null }> {
   const map: Record<string, { un: number; ultimaData: string | null }> = {};
@@ -25,26 +26,29 @@ export function diasSemVenda(ultimaData: string | null): number {
 }
 
 export function vendasHoje(movs: Mov[]): number {
+  const hoje = getHoje();
   return movs
-    .filter((m) => m.tipo === "venda" && m.data.startsWith(HOJE))
-    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .filter((m) => m.tipo === "venda" && m.data.startsWith(hoje))
+    .reduce((s, m) => s + Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 export function vendasOntem(movs: Mov[]): number {
+  const ontem = getOntem();
   return movs
-    .filter((m) => m.tipo === "venda" && m.data.startsWith(ONTEM))
-    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .filter((m) => m.tipo === "venda" && m.data.startsWith(ontem))
+    .reduce((s, m) => s + Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 /** Retorna array de 12 valores (R$) para as horas 8h–19h do dia de hoje. */
 export function vendasPorHora(movs: Mov[]): number[] {
+  const hoje = getHoje();
   const hours = Array.from<number>({ length: 12 }).fill(0);
   for (const m of movs) {
-    if (m.tipo !== "venda" || !m.data.startsWith(HOJE)) continue;
+    if (m.tipo !== "venda" || !m.data.startsWith(hoje)) continue;
     const h = parseInt(m.data.slice(11, 13), 10);
     const idx = h - 8;
     if (idx >= 0 && idx < 12) {
-      hours[idx] += Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0);
+      hours[idx] += Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0);
     }
   }
   return hours;
@@ -61,10 +65,10 @@ export function abaixoDoMinimoDeposito(lotes: Lote[]): Produto[] {
   for (const l of lotes) {
     if (l.qtd > 0) totais[l.produtoId] = (totais[l.produtoId] ?? 0) + l.qtd;
   }
-  const min = (p: Produto) => p.minimoDeposito ?? 10;
   return getProdutos()
-    .filter((p) => (totais[p.id] ?? 0) <= min(p))
-    .sort((a, b) => (totais[a.id] ?? 0) / min(a) - (totais[b.id] ?? 0) / min(b));
+    .filter((p) => p.minimoDeposito !== undefined && p.minimoDeposito > 0
+      && (totais[p.id] ?? 0) <= p.minimoDeposito)
+    .sort((a, b) => (totais[a.id] ?? 0) / a.minimoDeposito! - (totais[b.id] ?? 0) / b.minimoDeposito!);
 }
 
 export type LoteInfo = Lote & { produto: Produto; dias: number; faixa: Faixa };
@@ -86,13 +90,14 @@ export type DiaVenda = { data: string; valor: number; label: string };
 
 export function vendasPorDia(movs: Mov[], dias = 30): DiaVenda[] {
   const resultado: DiaVenda[] = [];
+  const hoje = getHoje();
   for (let i = dias - 1; i >= 0; i--) {
-    const d = new Date(new Date(HOJE).getTime() - i * 86_400_000);
+    const d = new Date(new Date(hoje + "T12:00:00").getTime() - i * 86_400_000);
     const ds = d.toISOString().slice(0, 10);
     const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
     const valor = movs
       .filter((m) => m.tipo === "venda" && m.data.slice(0, 10) === ds)
-      .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+      .reduce((s, m) => s + Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
     resultado.push({ data: ds, valor, label });
   }
   return resultado;
@@ -101,13 +106,13 @@ export function vendasPorDia(movs: Mov[], dias = 30): DiaVenda[] {
 export function faturamentoMes(movs: Mov[], anoMes: string): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.slice(0, 7) === anoMes)
-    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 export function vendasPeriodo(movs: Mov[], inicio: string, fim: string): number {
   return movs
     .filter((m) => m.tipo === "venda" && m.data.slice(0, 10) >= inicio && m.data.slice(0, 10) <= fim)
-    .reduce((s, m) => s + Math.abs(m.qtd) * (getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
+    .reduce((s, m) => s + Math.abs(m.qtd) * (m.precoUnitario ?? getProdutos().find((p) => p.id === m.produtoId)?.preco ?? 0), 0);
 }
 
 export type Classe = "A" | "B" | "C";
@@ -168,14 +173,32 @@ export type SugestaoPedido = {
   qtdSugerida: number;
 };
 
+export function depositoMap(lotes: Lote[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const l of lotes) {
+    if (l.qtd > 0) map[l.produtoId] = (map[l.produtoId] ?? 0) + l.qtd;
+  }
+  return map;
+}
+
 export function sugestoesPedido(
   movs: Mov[],
   gondola: Record<string, number>,
+  depositoOuDiasLead: Record<string, number> | number = {},
   diasLead = 7
 ): SugestaoPedido[] {
+  // overload: 3rd arg can be a number (old callers passing diasLead as 3rd positional)
+  let deposito: Record<string, number>;
+  if (typeof depositoOuDiasLead === "number") {
+    diasLead = depositoOuDiasLead;
+    deposito = {};
+  } else {
+    deposito = depositoOuDiasLead;
+  }
   const PERIODO = 31;
   const SEGURANCA = 3;
-  const inicio = new Date(new Date(HOJE).getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
+  const hoje = getHoje();
+  const inicio = new Date(new Date(hoje + "T12:00:00").getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
 
   const vendas: Record<string, number> = {};
   for (const m of movs) {
@@ -188,11 +211,14 @@ export function sugestoesPedido(
     .map((p) => {
       const vendido = vendas[p.id] ?? 0;
       const mediaDiaria = vendido / PERIODO;
-      const atual = gondola[p.id] ?? 0;
-      const diasRestantes = mediaDiaria > 0 ? Math.floor(atual / mediaDiaria) : 999;
+      const gondolaAtual = gondola[p.id] ?? 0;
+      const depositoAtual = deposito[p.id] ?? 0;
+      const estoqueTotal = gondolaAtual + depositoAtual;
+      const diasRestantes = mediaDiaria > 0 ? Math.floor(estoqueTotal / mediaDiaria) : 999;
       const meta = Math.ceil((diasLead + SEGURANCA) * mediaDiaria);
-      const qtdSugerida = Math.max(0, meta - atual);
-      return { produto: p, gondolaAtual: atual, mediaDiaria, diasRestantes, qtdSugerida };
+      const teto = p.maximoDeposito ?? Infinity;
+      const qtdSugerida = Math.max(0, Math.min(meta - estoqueTotal, teto - estoqueTotal));
+      return { produto: p, gondolaAtual, mediaDiaria, diasRestantes, qtdSugerida };
     })
     .filter((s) => s.qtdSugerida > 0)
     .sort((a, b) => a.diasRestantes - b.diasRestantes);

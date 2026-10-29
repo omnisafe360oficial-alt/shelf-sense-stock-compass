@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -90,7 +91,7 @@ function progresso(etapa: Etapa): number {
 
 function diasAteValidade(iso: string) {
   if (!iso) return null;
-  return Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000);
+  return Math.round((new Date(iso + "T12:00:00").getTime() - Date.now()) / 86_400_000);
 }
 
 // ─── Custom numpad ────────────────────────────────────────────────────────────
@@ -142,6 +143,7 @@ function NumPad({
 function ReceberFluxo() {
   const { pedidoId: pedidoIdParam } = Route.useSearch();
   const navigate = useNavigate();
+  const auth = useAuth();
   const [s, setS] = useState<FluxoState>(() => {
     if (pedidoIdParam) {
       const estado = getRecebeEstado();
@@ -250,7 +252,7 @@ function ReceberFluxo() {
       fornecedor: s.fornecedor,
       pedidoId: s.pedidoId,
       pedidoNumero: s.pedidoNumero,
-      operador: "Carlos Mendes",
+      operador: auth.nomeProprietario ?? auth.session?.user?.email ?? "Sistema",
       itens: s.itens,
       observacaoGeral: s.obsGeral,
       totalDivergencias: divergencias,
@@ -929,7 +931,7 @@ function ReceberFluxo() {
             <p className="font-display text-sm font-semibold">{s.fornecedor || "Avulso"}</p>
             {s.pedidoNumero && <p className="mt-0.5 font-mono text-xs opacity-80">{s.pedidoNumero}</p>}
             <p className="mt-1 text-xs opacity-70">
-              Carlos Mendes ·{" "}
+              {auth.nomeProprietario ?? auth.session?.user?.email ?? "Sistema"} ·{" "}
               {new Date().toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>

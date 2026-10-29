@@ -158,7 +158,11 @@ export function editarPedido(id: string, dados: {
   itens: Omit<ItemPedido, "id" | "qtdRecebida">[];
 }): void {
   const total = dados.itens.reduce((s, i) => s + i.qtdSolicitada * i.precoUnitario, 0);
-  const novosItens: ItemPedido[] = dados.itens.map((i) => ({ ...i, id: crypto.randomUUID(), qtdRecebida: 0 }));
+  const pedidoAtual = estado.pedidos.find((p) => p.id === id);
+  const novosItens: ItemPedido[] = dados.itens.map((i) => {
+    const existente = pedidoAtual?.itens.find((e) => e.produtoId === i.produtoId);
+    return { ...i, id: existente?.id ?? crypto.randomUUID(), qtdRecebida: existente?.qtdRecebida ?? 0 };
+  });
 
   emitir({
     pedidos: estado.pedidos.map((p) =>
