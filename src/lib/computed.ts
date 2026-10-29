@@ -116,6 +116,99 @@ export function vendasPeriodo(movs: Mov[], inicio: string, fim: string): number 
 }
 
 export type Classe = "A" | "B" | "C";
+export type ClasseXYZ = "X" | "Y" | "Z";
+
+export type IntelProduto = {
+  abc: Classe;
+  xyz: ClasseXYZ;
+  velocidadeDiaria: number;
+  desvio: number;
+  cv: number;
+  estoqueSeguranca: number;
+  pontoPedido: number;
+  /** [dom, seg, ter, qua, qui, sex, sab] — média 1.0 */
+  coefDiaSemana: number[];
+  diasEstoque: number;
+};
+
+const DIAS_HIST = 60;
+const Z_95 = 1.65;
+
+export function inteligenciaProdutos(
+  movs: Mov[],
+  gondola: Record<string, number>,
+  lotes: Lote[],
+  leadTimePadrao = 7,
+): Record<string, IntelProduto> {
+  const produtos = getProdutos();
+  const hoje = getHoje();
+  const base = new Date(hoje + "T12:00:00");
+  const inicio = new Date(base.getTime() - DIAS_HIST * 86_400_000).toISOString().slice(0, 10);
+  const t30 = new Date(base.getTime() - 30 * 86_400_000).toISOString().slice(0, 10);
+
+  const dates: { iso: string; dow: number }[] = [];
+  for (let i = DIAS_HIST - 1; i >= 0; i--) {
+    const d = new Date(base.getTime() - i * 86_400_000);
+    dates.push({ iso: d.toISOString().slice(0, 10), dow: d.getDay() });
+  }
+
+  const vendaDia: Record<string, Record<string, number>> = {};
+  const receita30: Record<string, number> = {};
+  for (const m of movs) {
+    if (m.tipo !== "venda") continue;
+    const d = m.data.slice(0, 10);
+    if (d < inicio) continue;
+    if (!vendaDia[m.produtoId]) vendaDia[m.produtoId] = {};
+    vendaDia[m.produtoId][d] = (vendaDia[m.produtoId][d] ?? 0) + Math.abs(m.qtd);
+    if (d >= t30) {
+      const p = produtos.find((x) => x.id === m.produtoId);
+      receita30[m.produtoId] = (receita30[m.produtoId] ?? 0) +
+        Math.abs(m.qtd) * (m.precoUnitario ?? p?.preco ?? 0);
+    }
+  }
+
+  const abc = classificarABC(produtos.map((p) => ({ id: p.id, vendas30: receita30[p.id] ?? 0 })));
+
+  const deposito: Record<string, number> = {};
+  for (const l of lotes) if (l.qtd > 0) deposito[l.produtoId] = (deposito[l.produtoId] ?? 0) + l.qtd;
+
+  const result: Record<string, IntelProduto> = {};
+  for (const p of produtos) {
+    const daysData = vendaDia[p.id] ?? {};
+    const series = dates.map((d) => daysData[d.iso] ?? 0);
+    const n = series.length;
+    const mean = series.reduce((s, v) => s + v, 0) / n;
+    const variance = n > 1 ? series.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
+    const desvio = Math.sqrt(variance);
+    const cv = mean > 0 ? desvio / mean : 0;
+    const xyz: ClasseXYZ = cv < 0.2 ? "X" : cv < 0.5 ? "Y" : "Z";
+    const estoqueSeguranca = Math.ceil(Z_95 * desvio * Math.sqrt(leadTimePadrao));
+    const pontoPedido = Math.ceil(mean * leadTimePadrao) + estoqueSeguranca;
+
+    const dowSum = [0, 0, 0, 0, 0, 0, 0];
+    const dowN = [0, 0, 0, 0, 0, 0, 0];
+    for (let i = 0; i < n; i++) { dowSum[dates[i].dow] += series[i]; dowN[dates[i].dow]++; }
+    const dowAvg = dowSum.map((s, i) => (dowN[i] > 0 ? s / dowN[i] : 0));
+    const globalMean = dowAvg.reduce((s, v) => s + v, 0) / 7;
+    const coefDiaSemana = dowAvg.map((v) => (globalMean > 0 ? Math.round((v / globalMean) * 100) / 100 : 1));
+
+    const estoqueTotal = (gondola[p.id] ?? 0) + (deposito[p.id] ?? 0);
+    const diasEstoque = mean > 0 ? Math.floor(estoqueTotal / mean) : 999;
+
+    result[p.id] = {
+      abc: abc[p.id] ?? "C",
+      xyz,
+      velocidadeDiaria: Math.round(mean * 100) / 100,
+      desvio: Math.round(desvio * 100) / 100,
+      cv: Math.round(cv * 100) / 100,
+      estoqueSeguranca,
+      pontoPedido,
+      coefDiaSemana,
+      diasEstoque,
+    };
+  }
+  return result;
+}
 
 export function classificarABC(
   items: { id: string; vendas30: number }[],
@@ -171,6 +264,8 @@ export type SugestaoPedido = {
   mediaDiaria: number;
   diasRestantes: number;
   qtdSugerida: number;
+  estoqueSeguranca: number;
+  pontoPedido: number;
 };
 
 export function depositoMap(lotes: Lote[]): Record<string, number> {
@@ -185,9 +280,9 @@ export function sugestoesPedido(
   movs: Mov[],
   gondola: Record<string, number>,
   depositoOuDiasLead: Record<string, number> | number = {},
-  diasLead = 7
+  diasLead = 7,
+  intel: Record<string, IntelProduto> = {},
 ): SugestaoPedido[] {
-  // overload: 3rd arg can be a number (old callers passing diasLead as 3rd positional)
   let deposito: Record<string, number>;
   if (typeof depositoOuDiasLead === "number") {
     diasLead = depositoOuDiasLead;
@@ -215,10 +310,12 @@ export function sugestoesPedido(
       const depositoAtual = deposito[p.id] ?? 0;
       const estoqueTotal = gondolaAtual + depositoAtual;
       const diasRestantes = mediaDiaria > 0 ? Math.floor(estoqueTotal / mediaDiaria) : 999;
-      const meta = Math.ceil((diasLead + SEGURANCA) * mediaDiaria);
+      const estoqueSeguranca = intel[p.id]?.estoqueSeguranca ?? Math.ceil(SEGURANCA * mediaDiaria);
+      const pontoPedido = intel[p.id]?.pontoPedido ?? Math.ceil(mediaDiaria * diasLead) + estoqueSeguranca;
+      const meta = Math.ceil(mediaDiaria * diasLead) + estoqueSeguranca;
       const teto = p.maximoDeposito ?? Infinity;
       const qtdSugerida = Math.max(0, Math.min(meta - estoqueTotal, teto - estoqueTotal));
-      return { produto: p, gondolaAtual, mediaDiaria, diasRestantes, qtdSugerida };
+      return { produto: p, gondolaAtual, mediaDiaria, diasRestantes, qtdSugerida, estoqueSeguranca, pontoPedido };
     })
     .filter((s) => s.qtdSugerida > 0)
     .sort((a, b) => a.diasRestantes - b.diasRestantes);

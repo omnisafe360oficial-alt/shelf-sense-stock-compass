@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
+import { inteligenciaProdutos, type Classe, type ClasseXYZ } from "@/lib/computed";
 
 export const Route = createFileRoute("/painel/produtos/$id")({
   loader: ({ params }) => {
@@ -117,6 +118,11 @@ function ProdutoDetalhe() {
   const movsFiltradas = useMemo(
     () => filtroMov === "todas" ? todasMovsProduto : todasMovsProduto.filter((m) => m.tipo === filtroMov),
     [todasMovsProduto, filtroMov],
+  );
+
+  const intel = useMemo(
+    () => produto ? inteligenciaProdutos(est.movs, est.gondola, est.lotes)[produto.id] : undefined,
+    [est.movs, est.gondola, est.lotes, produto?.id],
   );
 
   // Analytics: últimos 30 dias
@@ -270,6 +276,23 @@ function ProdutoDetalhe() {
           <p className="font-mono text-sm text-primary-foreground/75">{produto.codigo}</p>
           <h1 className="text-3xl font-bold">{produto.nome}</h1>
           <p className="mt-1 text-primary-foreground/75">{produto.categoria} · {produto.fornecedor || "Fornecedor não informado"}</p>
+          {intel && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={cn("rounded px-2 py-0.5 text-xs font-bold",
+                intel.abc === "A" ? "bg-success/25 text-success" : intel.abc === "B" ? "bg-warning/25 text-warning" : "bg-white/10 text-primary-foreground/60"
+              )}>
+                Classe {intel.abc}
+              </span>
+              <span className={cn("rounded px-2 py-0.5 text-xs font-bold",
+                intel.xyz === "X" ? "bg-primary/30 text-primary-foreground" : intel.xyz === "Y" ? "bg-warning/25 text-warning" : "bg-destructive/25 text-destructive"
+              )}>
+                {intel.xyz === "X" ? "Demanda estável" : intel.xyz === "Y" ? "Demanda variável" : "Demanda irregular"}
+              </span>
+              <span className="text-xs text-primary-foreground/60">
+                {intel.velocidadeDiaria > 0 ? `${intel.velocidadeDiaria.toFixed(1)} un/dia` : "sem histórico"}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={cn("rounded-full px-3 py-1.5 text-sm font-semibold", sitCor[sit])}>
@@ -383,6 +406,66 @@ function ProdutoDetalhe() {
           )}
         </div>
       </div>
+
+      {/* Inteligência de produto */}
+      {intel && (
+        <div className="rounded-2xl border bg-card p-5">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Motor de Inteligência
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Velocidade (60d)</p>
+              <p className="text-xl font-bold">{intel.velocidadeDiaria > 0 ? `${intel.velocidadeDiaria.toFixed(2)} un/dia` : "—"}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">CV: {intel.cv.toFixed(2)} · σ {intel.desvio.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Estoque de segurança</p>
+              <p className="text-xl font-bold">{intel.estoqueSeguranca} un</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">z=1.65 × σ × √lead</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Ponto de pedido</p>
+              <p className={cn("text-xl font-bold", total <= intel.pontoPedido ? "text-destructive" : "text-success")}>
+                {intel.pontoPedido} un
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                estoque atual: <span className={cn("font-semibold", total <= intel.pontoPedido ? "text-destructive" : "")}>{total} un</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase">Cobertura estimada</p>
+              <p className={cn("text-xl font-bold",
+                intel.diasEstoque <= 7 ? "text-destructive" : intel.diasEstoque <= 14 ? "text-warning" : "text-success",
+              )}>
+                {intel.diasEstoque >= 999 ? "∞" : `${intel.diasEstoque} dias`}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">com ritmo atual de vendas</p>
+            </div>
+          </div>
+          {intel.velocidadeDiaria > 0 && (
+            <div className="mt-4 border-t pt-3">
+              <p className="mb-2 text-xs text-muted-foreground uppercase">Coeficiente por dia da semana</p>
+              <div className="flex gap-2">
+                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d, i) => (
+                  <div key={d} className="flex flex-1 flex-col items-center gap-1">
+                    <div className="relative h-12 w-full overflow-hidden rounded bg-muted">
+                      <div
+                        className={cn("absolute bottom-0 left-0 right-0 rounded transition-all",
+                          intel.coefDiaSemana[i] >= 1.2 ? "bg-success/70" : intel.coefDiaSemana[i] <= 0.8 ? "bg-warning/60" : "bg-primary/50",
+                        )}
+                        style={{ height: `${Math.min(100, intel.coefDiaSemana[i] * 50)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{d}</p>
+                    <p className="text-[10px] font-semibold">{intel.coefDiaSemana[i].toFixed(1)}×</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Atividade recente */}
       <div className="rounded-2xl border bg-card p-5">

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useEstoque } from "@/lib/estoque-store";
 import { criarPedido } from "@/lib/pedidos-store";
-import { sugestoesPedido, depositoMap, HOJE } from "@/lib/computed";
+import { sugestoesPedido, depositoMap, inteligenciaProdutos, HOJE, type ClasseXYZ, type Classe } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -16,6 +16,14 @@ export const Route = createFileRoute("/painel/pedidos/sugerir")({
   pendingMs: 200,
   component: SugerirPedidoPage,
 });
+
+function abcCls(abc: Classe): string {
+  return abc === "A" ? "bg-success/15 text-success" : abc === "B" ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground";
+}
+
+function xyzCls(xyz: ClasseXYZ): string {
+  return xyz === "X" ? "bg-primary/10 text-primary" : xyz === "Y" ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive";
+}
 
 function urgenciaCls(dias: number): string {
   if (dias >= 999) return "text-muted-foreground";
@@ -37,9 +45,14 @@ function SugerirPedidoPage() {
   const [diasLead, setDiasLead] = useState(7);
   const [overrides, setOverrides] = useState<Record<string, { qtd: number; sel: boolean }>>({});
 
+  const intel = useMemo(
+    () => inteligenciaProdutos(est.movs, est.gondola, est.lotes, diasLead),
+    [est.movs, est.gondola, est.lotes, diasLead],
+  );
+
   const sugestoes = useMemo(
-    () => sugestoesPedido(est.movs, est.gondola, depositoMap(est.lotes), diasLead),
-    [est.movs, est.gondola, est.lotes, diasLead]
+    () => sugestoesPedido(est.movs, est.gondola, depositoMap(est.lotes), diasLead, intel),
+    [est.movs, est.gondola, est.lotes, diasLead, intel],
   );
 
   const linhas = sugestoes.map((s) => ({
@@ -185,8 +198,25 @@ function SugerirPedidoPage() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <p className="font-medium">{l.produto.nome}</p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="font-medium">{l.produto.nome}</p>
+                            {intel[l.produto.id] && (
+                              <>
+                                <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold leading-none", abcCls(intel[l.produto.id].abc))}>
+                                  {intel[l.produto.id].abc}
+                                </span>
+                                <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold leading-none", xyzCls(intel[l.produto.id].xyz))}>
+                                  {intel[l.produto.id].xyz}
+                                </span>
+                              </>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">{l.produto.codigo}</p>
+                          {intel[l.produto.id] && (
+                            <p className="text-xs text-muted-foreground">
+                              seg. {intel[l.produto.id].estoqueSeguranca} un · pp {intel[l.produto.id].pontoPedido} un
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">{l.gondolaAtual} un</td>
                         <td className="hidden px-4 py-3 text-right sm:table-cell">
