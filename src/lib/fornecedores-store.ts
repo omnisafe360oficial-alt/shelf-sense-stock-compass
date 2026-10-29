@@ -17,9 +17,15 @@ function mapDoBanco(row: Record<string, unknown>): Fornecedor {
     telefone: (row.telefone as string) ?? "",
     email: (row.email as string) ?? "",
     cidade: (row.cidade as string) ?? "",
-    prazo: (row.prazo as string) ?? "",
+    prazo: row.prazo == null || row.prazo === "" ? "" : `${row.prazo} dias`,
     whatsapp: (row.whatsapp as string) ?? "",
   };
+}
+
+/** O banco guarda o prazo só como número de dias (ex.: "7 dias" → 7). */
+function prazoParaBanco(prazo: string | undefined | null): number | null {
+  const n = parseInt(String(prazo ?? "").replace(/\D/g, ""), 10);
+  return Number.isFinite(n) ? n : null;
 }
 
 let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
@@ -82,7 +88,7 @@ export async function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): Promis
     telefone: dados.telefone,
     email: dados.email,
     cidade: dados.cidade,
-    prazo: dados.prazo,
+    prazo: prazoParaBanco(dados.prazo),
     whatsapp: dados.whatsapp ?? null,
   });
   if (error) throw new Error("O banco não aceitou o fornecedor: " + error.message);
@@ -109,7 +115,7 @@ export async function editarFornecedor(id: string, dados: Partial<Omit<Fornecedo
   if (dados.telefone !== undefined) payload.telefone = dados.telefone;
   if (dados.email !== undefined) payload.email = dados.email;
   if (dados.cidade !== undefined) payload.cidade = dados.cidade;
-  if (dados.prazo !== undefined) payload.prazo = dados.prazo;
+  if (dados.prazo !== undefined) payload.prazo = prazoParaBanco(dados.prazo);
   if (dados.whatsapp !== undefined) payload.whatsapp = dados.whatsapp;
   const { error } = await supabase.from("fornecedores").update(payload).eq("id", id);
   if (error) {
