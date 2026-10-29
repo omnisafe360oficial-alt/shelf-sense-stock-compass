@@ -29,4 +29,13 @@ describe("sugestão de compra", () => {
     const g = sugerirCompras([prod({ id: "a", minimoDeposito: 10 })], { a: 4 }, new Set());
     expect(g[0]!.itens[0]!.qtd).toBe(16);
   });
+  it("arredonda para fardo fechado: mínimo 10, fardo 12, depósito 0 → 2 fardos (24 un)", () => {
+    const g = sugerirCompras([prod({ id: "a", nome: "CERVEJA LATA 350ML FARDO 12", minimoDeposito: 10 })], { a: 0 }, new Set());
+    expect(g[0]!.itens[0]!.caixas).toBe(2);
+    expect(g[0]!.itens[0]!.qtd).toBe(24);
+  });
+  it("mínimo 10, máximo 12, fardo 12 → 1 fardo", () => {
+    const g = sugerirCompras([prod({ id: "a", nome: "AGUA 500ML CX 12UN", minimoDeposito: 10, maximoDeposito: 12 })], { a: 0 }, new Set());
+    expect(g[0]!.itens[0]!.caixas).toBe(1);
+  });
 });

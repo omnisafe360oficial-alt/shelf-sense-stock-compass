@@ -1,9 +1,11 @@
 import type { Produto } from "@/lib/mock-data";
+import { sugerirConversao } from "@/lib/nfe";
 
 /** Mínimo de depósito usado quando o produto não tem um definido. */
 export const MINIMO_DEPOSITO_PADRAO = 10;
 
-export type ItemSugerido = { produto: Produto; atual: number; minimo: number; qtd: number };
+/** qtd = total em unidades; caixas × porCaixa = qtd. porCaixa 1 = vendido solto. */
+export type ItemSugerido = { produto: Produto; atual: number; minimo: number; qtd: number; porCaixa: number; caixas: number };
 export type GrupoCompra = {
   chave: string;
   fornecedorId?: string;
@@ -28,7 +30,10 @@ export function sugerirCompras(
     const minimo = p.minimoDeposito && p.minimoDeposito > 0 ? p.minimoDeposito : MINIMO_DEPOSITO_PADRAO;
     if (atual > minimo && atual > 0) continue;
     const alvo = p.maximoDeposito && p.maximoDeposito > minimo ? p.maximoDeposito : minimo * 2;
-    const qtd = Math.max(1, alvo - atual);
+    const falta = Math.max(1, alvo - atual);
+    const porCaixa = Math.max(1, sugerirConversao(p.nome, "CX"));
+    const caixas = Math.ceil(falta / porCaixa);
+    const qtd = caixas * porCaixa;
     const nome = (p.fornecedor ?? "").trim();
     const chave = p.fornecedorId ? `id:${p.fornecedorId}` : nome ? `nome:${nome.toLowerCase()}` : "sem";
     let g = grupos.get(chave);
@@ -36,7 +41,7 @@ export function sugerirCompras(
       g = { chave, fornecedorId: p.fornecedorId, fornecedorNome: nome, itens: [] };
       grupos.set(chave, g);
     }
-    g.itens.push({ produto: p, atual, minimo, qtd });
+    g.itens.push({ produto: p, atual, minimo, qtd, porCaixa, caixas });
   }
   // Fornecedores com nome primeiro; "sem fornecedor" por último.
   return [...grupos.values()].sort((a, b) =>
