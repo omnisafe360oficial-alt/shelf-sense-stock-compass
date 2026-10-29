@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useEstoque } from "@/lib/estoque-store";
 import { criarPedido } from "@/lib/pedidos-store";
-import { sugestoesPedido, HOJE } from "@/lib/computed";
+import { sugestoesPedido, depositoMap, HOJE } from "@/lib/computed";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -38,8 +38,8 @@ function SugerirPedidoPage() {
   const [overrides, setOverrides] = useState<Record<string, { qtd: number; sel: boolean }>>({});
 
   const sugestoes = useMemo(
-    () => sugestoesPedido(est.movs, est.gondola, diasLead),
-    [est.movs, est.gondola, diasLead]
+    () => sugestoesPedido(est.movs, est.gondola, depositoMap(est.lotes), diasLead),
+    [est.movs, est.gondola, est.lotes, diasLead]
   );
 
   const linhas = sugestoes.map((s) => ({
