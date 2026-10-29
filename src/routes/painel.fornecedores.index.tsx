@@ -6,7 +6,7 @@ import { ArrowUpDown, Building2, Mail, MapPin, Phone, Plus, Search, X } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useFornecedores, cadastrarFornecedor } from "@/lib/fornecedores-store";
+import { useFornecedores, cadastrarFornecedor, avisarErroFornecedor } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { usePedidos } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
@@ -217,12 +217,20 @@ function Fornecedores() {
         >
           <form
             onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               if (!form.nome.trim()) { toast.error("Nome é obrigatório."); return; }
-              cadastrarFornecedor({ ...form, nome: form.nome.trim() });
-              setNovo(false);
-              toast.success(`Fornecedor "${form.nome.trim()}" cadastrado!`);
+              const btn = (e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement | null);
+              if (btn) { btn.disabled = true; btn.dataset.txt = btn.textContent ?? ""; btn.textContent = "Salvando…"; }
+              try {
+                await cadastrarFornecedor({ ...form, nome: form.nome.trim() });
+                setNovo(false);
+                toast.success(`Fornecedor "${form.nome.trim()}" cadastrado!`);
+              } catch (err) {
+                avisarErroFornecedor(err);
+              } finally {
+                if (btn) { btn.disabled = false; btn.textContent = btn.dataset.txt ?? "Salvar"; }
+              }
             }}
             className="w-full max-w-lg space-y-4 rounded-2xl bg-card p-8 shadow-elegant"
           >
