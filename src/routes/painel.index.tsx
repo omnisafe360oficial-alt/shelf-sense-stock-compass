@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SkeletonDashboard } from "@/components/ui/skeleton-page";
 import { useMemo } from "react";
 import {
-  AlertTriangle, ArrowDownRight, ArrowUpRight,
+  Activity, AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight,
   BarChart2, CalendarClock, CheckCircle2, Circle, ClipboardList,
   DollarSign, Package, PackageMinus,
   RefreshCw, ShoppingCart, TrendingUp, Warehouse,
@@ -21,6 +21,7 @@ import {
   vendasHoje, vendasOntem, vendasPorDia,
   vendasPorHora, vendasPorProduto,
   inteligenciaProdutos, gerarAlertasIntel, type AlertaIntel,
+  saudeEstoque, type SaudeGrau,
 } from "@/lib/computed";
 import { useMetas } from "@/lib/metas-store";
 import { brl } from "@/lib/mock-data";
@@ -131,6 +132,11 @@ function Inicio() {
     const intel = inteligenciaProdutos(est.movs, est.gondola, est.lotes);
     return gerarAlertasIntel(intel, est.gondola, est.lotes).slice(0, 5);
   }, [est.movs, est.gondola, est.lotes]);
+
+  const saude = useMemo(
+    () => saudeEstoque(est.movs, est.gondola, est.lotes),
+    [est.movs, est.gondola, est.lotes],
+  );
 
   // ── Top produtos ──────────────────────────────────────────────────────────
   const vendPorProd = useMemo(() => vendasPorProduto(est.movs), [est.movs]);
@@ -247,6 +253,42 @@ function Inicio() {
           </div>
         </div>
       )}
+
+      {/* ── Score de Saúde ─────────────────────────────────────────────────── */}
+      {saude.score > 0 && (() => {
+        const COR: Record<SaudeGrau, string> = { excelente: "text-emerald-600", bom: "text-blue-600", regular: "text-amber-600", critico: "text-rose-600" };
+        const BG:  Record<SaudeGrau, string> = { excelente: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", bom: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", regular: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", critico: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" };
+        const LABEL: Record<SaudeGrau, string> = { excelente: "Excelente", bom: "Bom", regular: "Regular", critico: "Crítico" };
+        return (
+          <Link
+            to="/painel/saude"
+            className="flex flex-wrap items-center gap-4 rounded-2xl border bg-card px-5 py-4 shadow-elegant hover:border-primary/40 hover:shadow-lg transition"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <Activity className="h-5 w-5 shrink-0 text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">Saúde do Estoque</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-3xl font-bold tabular-nums", COR[saude.grau])}>{saude.score}</span>
+              <span className="text-sm text-muted-foreground">/100</span>
+              <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold ml-1", BG[saude.grau])}>{LABEL[saude.grau]}</span>
+            </div>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {Object.values(saude.dimensoes).map((d) => (
+                <div key={d.nome} className="flex flex-col items-center gap-0.5 min-w-0">
+                  <div className="h-1 w-14 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${(d.pontos / d.max) * 100}%` }} />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{d.nome}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-primary ml-auto shrink-0">
+              Ver detalhes <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </Link>
+        );
+      })()}
 
       {/* ── KPIs ───────────────────────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
