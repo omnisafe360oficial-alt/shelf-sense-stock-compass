@@ -14,6 +14,7 @@ import { useEstoque } from "@/lib/estoque-store";
 import { HOJE as HOJE_COMPUTED } from "@/lib/computed";
 import { sugerirCompras, type GrupoCompra } from "@/lib/compra-sugestao";
 import { useFornecedores } from "@/lib/fornecedores-store";
+import { VincularFornecedor } from "@/components/pedidos/VincularFornecedor";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -242,7 +243,7 @@ function PedidosPage() {
                   </p>
                 </div>
                 {sem ? (
-                  <span className="text-xs text-warning">Ligue estes produtos a um fornecedor</span>
+                  <VincularFornecedor produtoIds={g.itens.map((i) => i.produto.id)} rotulo="Ligar todos a…" />
                 ) : (
                   <Button size="sm" onClick={() => criarPedidosDeposito([g])} disabled={criando}>
                     <Sparkles className="h-4 w-4" /> Criar pedido
@@ -256,6 +257,7 @@ function PedidosPage() {
                     <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                       <span>Depósito <strong className={atual === 0 ? "text-destructive" : "text-warning"}>{atual}</strong> / mín {minimo}</span>
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">pedir {qtd}</span>
+                      {sem && <VincularFornecedor produtoIds={[p.id]} />}
                     </div>
                   </div>
                 ))}

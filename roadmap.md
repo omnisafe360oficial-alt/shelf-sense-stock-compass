@@ -17,7 +17,7 @@ Cada etapa espera o "ok" do usuário antes da próxima.
 ## Pedido de compra automático
 - [x] A — Regra certa (só depósito), sem duplicados, um pedido por fornecedor
 - [x] B — Tela "Precisa comprar" agrupada por fornecedor
-- [ ] C — Vincular fornecedor na hora
+- [x] C — Vincular fornecedor na hora
 - [ ] D — Quantidade em caixas/fardos
 - [ ] E — Enviar pelo WhatsApp com um clique
 - [ ] F — (opcional) Envio automático pelo WhatsApp Business
