@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { AlertTriangle, ChevronDown, ChevronRight, Eye, Package, ShieldAlert, TrendingDown, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
+import { AlertTriangle, Brain, ChevronDown, ChevronRight, Eye, Package, ShieldAlert, TrendingDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,16 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useConfig } from "@/lib/config-store";
-import { calcularAlertas, calcularAlertasPorFuncionario, type AlertaAntifurto, type AlertaFuncionario } from "@/lib/antifurto-store";
+import {
+  calcularAlertas, calcularAlertasPorFuncionario, detectarDesvioEstoque, calcularConfiabilidade,
+  type AlertaAntifurto, type AlertaFuncionario, type DesvioInteligente, type ConfiabilidadeFuncionario,
+} from "@/lib/antifurto-store";
+import { inteligenciaProdutos, type IntelProduto } from "@/lib/computed";
 import { gravarAudit } from "@/lib/audit-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/antifurto")({
   head: () => ({
     meta: [
-      { title: "Antifurto — OmniSafe 360" },
+      { title: "Prevenção de Perdas — OmniSafe 360" },
       { name: "description", content: "Monitoramento de perdas e alertas de antifurto por produto." },
-      { property: "og:title", content: "Antifurto — OmniSafe 360" },
+      { property: "og:title", content: "Prevenção de Perdas — OmniSafe 360" },
     ],
   }),
   pendingComponent: SkeletonListPage,
@@ -34,7 +37,18 @@ const COR_SEV = {
 
 const LABEL_SEV = { alto: "Alto risco", médio: "Risco médio", baixo: "Baixo risco" } as const;
 
-function RowAlerta({ alerta, expandido, onToggle }: { alerta: AlertaAntifurto; expandido: boolean; onToggle: () => void }) {
+const ABC_CLS = {
+  A: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  B: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  C: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+} as const;
+
+function RowAlerta({ alerta, intelInfo, expandido, onToggle }: {
+  alerta: AlertaAntifurto;
+  intelInfo?: Pick<IntelProduto, "abc" | "xyz">;
+  expandido: boolean;
+  onToggle: () => void;
+}) {
   function marcarInvestigado() {
     gravarAudit({
       acao: "ajuste",
@@ -56,7 +70,14 @@ function RowAlerta({ alerta, expandido, onToggle }: { alerta: AlertaAntifurto; e
           <div className="flex items-center gap-2">
             {expandido ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
             <div>
-              <p className="font-medium text-sm leading-tight">{alerta.produtoNome}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-medium text-sm leading-tight">{alerta.produtoNome}</p>
+                {intelInfo && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ABC_CLS[intelInfo.abc]}`}>
+                    {intelInfo.abc}{intelInfo.xyz}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{alerta.produtoCategoria}</p>
             </div>
           </div>
@@ -104,13 +125,12 @@ function RowAlerta({ alerta, expandido, onToggle }: { alerta: AlertaAntifurto; e
   );
 }
 
-const COR_SEV_FUNC = {
-  alto: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
-  médio: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  baixo: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-} as const;
-
-function RowFuncionario({ alerta, expandido, onToggle }: { alerta: AlertaFuncionario; expandido: boolean; onToggle: () => void }) {
+function RowFuncionario({ alerta, confiabilidade, expandido, onToggle }: {
+  alerta: AlertaFuncionario;
+  confiabilidade?: ConfiabilidadeFuncionario;
+  expandido: boolean;
+  onToggle: () => void;
+}) {
   return (
     <>
       <tr
@@ -122,7 +142,14 @@ function RowFuncionario({ alerta, expandido, onToggle }: { alerta: AlertaFuncion
             {expandido ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium text-sm">{alerta.funcionario}</p>
+              <div>
+                <p className="font-medium text-sm">{alerta.funcionario}</p>
+                {confiabilidade && (
+                  <p className={`text-xs ${confiabilidade.riscoConfiabilidade === "alto" ? "text-rose-500" : confiabilidade.riscoConfiabilidade === "médio" ? "text-amber-500" : "text-muted-foreground"}`}>
+                    {confiabilidade.taxaNegativa.toFixed(0)}% dos ajustes negativos ({confiabilidade.totalAjustes} total)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </td>
@@ -136,7 +163,7 @@ function RowFuncionario({ alerta, expandido, onToggle }: { alerta: AlertaFuncion
           {new Date(alerta.ultimaData).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
         </td>
         <td className="py-3 px-4">
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${COR_SEV_FUNC[alerta.severidade]}`}>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${COR_SEV[alerta.severidade]}`}>
             {LABEL_SEV[alerta.severidade]}
           </span>
         </td>
@@ -163,6 +190,73 @@ function RowFuncionario({ alerta, expandido, onToggle }: { alerta: AlertaFuncion
   );
 }
 
+function RowDesvio({ desvio, expandido, onToggle }: { desvio: DesvioInteligente; expandido: boolean; onToggle: () => void }) {
+  return (
+    <>
+      <tr
+        className="border-b last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+        onClick={onToggle}
+      >
+        <td className="py-3 px-4">
+          <div className="flex items-center gap-2">
+            {expandido ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-medium text-sm leading-tight">{desvio.produtoNome}</p>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ABC_CLS[desvio.abc]}`}>
+                  {desvio.abc}{desvio.xyz}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">{desvio.produtoCategoria}</p>
+            </div>
+          </div>
+        </td>
+        <td className="py-3 px-4 text-center text-xs text-muted-foreground">
+          {desvio.velocidadeDiaria.toFixed(1)} un/dia
+        </td>
+        <td className="py-3 px-4 text-center">
+          <span className="font-semibold text-rose-600 dark:text-rose-400">{desvio.totalAjustesNeg}</span>
+          <span className="text-xs text-muted-foreground ml-1">un.</span>
+        </td>
+        <td className="py-3 px-4 text-center">
+          <span className="font-semibold">{desvio.desvioEmDiasVenda}d</span>
+          <span className="text-xs text-muted-foreground ml-1">vendas</span>
+        </td>
+        <td className="py-3 px-4">
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${COR_SEV[desvio.risco]}`}>
+            {LABEL_SEV[desvio.risco]}
+          </span>
+        </td>
+      </tr>
+      {expandido && (
+        <tr className="bg-muted/20">
+          <td colSpan={5} className="px-8 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Ajustes negativos detectados</p>
+            <div className="space-y-1.5">
+              {desvio.movimentos.map((m) => (
+                <div key={m.id} className="flex items-center gap-3 text-xs">
+                  <span className="text-muted-foreground w-32 shrink-0">
+                    {new Date(m.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })} {new Date(m.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                  <span className="font-semibold text-rose-600 dark:text-rose-400 w-16">{m.qtd} un.</span>
+                  <span className="text-muted-foreground">{m.origem || "—"} → {m.destino || "—"}</span>
+                  {m.usuario && <span className="text-muted-foreground">· {m.usuario}</span>}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Perda equivalente a <strong>{desvio.desvioEmDiasVenda} dias</strong> de vendas para produto Classe <strong>{desvio.abc}{desvio.xyz}</strong> ({desvio.velocidadeDiaria.toFixed(1)} un/dia).{" "}
+              <Link to="/painel/produtos/$id" params={{ id: desvio.produtoId }} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                Ver produto →
+              </Link>
+            </p>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 function Antifurto() {
   const estoque = useEstoque();
   const produtos = useProdutos();
@@ -172,7 +266,22 @@ function Antifurto() {
   const alertas = calcularAlertas(estoque.movs, produtos, limiar);
   const alertasFuncionario = calcularAlertasPorFuncionario(estoque.movs, limiar);
 
-  const [aba, setAba] = useState<"produtos" | "funcionarios">("produtos");
+  const intel = useMemo(
+    () => inteligenciaProdutos(estoque.movs, estoque.gondola, estoque.lotes),
+    [estoque.movs, estoque.gondola, estoque.lotes],
+  );
+
+  const desvios = useMemo(
+    () => detectarDesvioEstoque(estoque.movs, produtos, intel),
+    [estoque.movs, produtos, intel],
+  );
+
+  const confiabilidade = useMemo(
+    () => calcularConfiabilidade(estoque.movs),
+    [estoque.movs],
+  );
+
+  const [aba, setAba] = useState<"produtos" | "funcionarios" | "desvio">("produtos");
   const [filtroSev, setFiltroSev] = useState<"todos" | "alto" | "médio" | "baixo">("todos");
   const [busca, setBusca] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -185,6 +294,7 @@ function Antifurto() {
 
   const totalPerda = alertas.reduce((s, a) => s + a.perdaAcumulada, 0);
   const qtdAltos = alertas.filter((a) => a.severidade === "alto").length;
+  const qtdDesviosAlto = desvios.filter((d) => d.risco === "alto").length;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -193,7 +303,7 @@ function Antifurto() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <ShieldAlert className="h-6 w-6 text-rose-500" />
-            Alertas Antifurto
+            Prevenção de Perdas
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Ajustes negativos sem venda registrada nos últimos 30 dias — produtos com perda ≥ {limiar} un. são sinalizados.
@@ -205,7 +315,7 @@ function Antifurto() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-1 pt-4">
             <CardDescription className="text-xs">Produtos sinalizados</CardDescription>
@@ -222,12 +332,25 @@ function Antifurto() {
             <p className="text-3xl font-bold text-rose-600 dark:text-rose-400">{totalPerda}</p>
           </CardContent>
         </Card>
-        <Card className="col-span-2 sm:col-span-1">
+        <Card>
           <CardHeader className="pb-1 pt-4">
             <CardDescription className="text-xs">Alertas de alto risco</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-4">
             <p className={`text-3xl font-bold ${qtdAltos > 0 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>{qtdAltos}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-1 pt-4">
+            <CardDescription className="text-xs flex items-center gap-1">
+              <Brain className="h-3 w-3" /> Desvio inteligente
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 pb-4">
+            <p className={`text-3xl font-bold ${qtdDesviosAlto > 0 ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}>{desvios.length}</p>
+            {qtdDesviosAlto > 0 && (
+              <p className="text-xs text-rose-500">{qtdDesviosAlto} alto risco</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -247,6 +370,16 @@ function Antifurto() {
           <Users className="h-3.5 w-3.5" />
           Por Funcionário
           {alertasFuncionario.some((a) => a.severidade === "alto") && (
+            <span className="ml-1 h-2 w-2 rounded-full bg-rose-500 inline-block" />
+          )}
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${aba === "desvio" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setAba("desvio")}
+        >
+          <Brain className="h-3.5 w-3.5" />
+          Desvio Inteligente
+          {qtdDesviosAlto > 0 && (
             <span className="ml-1 h-2 w-2 rounded-full bg-rose-500 inline-block" />
           )}
         </button>
@@ -287,8 +420,54 @@ function Antifurto() {
                       <RowFuncionario
                         key={a.funcionario}
                         alerta={a}
+                        confiabilidade={confiabilidade.find((c) => c.funcionario === a.funcionario)}
                         expandido={expandido === `f-${a.funcionario}`}
                         onToggle={() => setExpandido(expandido === `f-${a.funcionario}` ? null : `f-${a.funcionario}`)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : aba === "desvio" ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-4 w-4 text-primary" />
+              Desvio Inteligente — Motor de IA
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Produtos cuja perda equivale a ≥ 2 dias de venda conforme velocidade histórica. Classe A tem maior criticidade.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {desvios.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-12 text-center">
+                <Brain className="h-10 w-10 text-emerald-400/60" />
+                <p className="text-sm text-muted-foreground">Nenhum desvio inteligente detectado.</p>
+                <p className="text-xs text-muted-foreground">O motor de IA não encontrou produtos com perda expressiva em relação à velocidade de venda.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Produto</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Velocidade</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Perda (un.)</th>
+                      <th className="text-center py-2.5 px-4 font-medium text-muted-foreground text-xs">Desvio</th>
+                      <th className="text-left py-2.5 px-4 font-medium text-muted-foreground text-xs">Risco</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {desvios.map((d) => (
+                      <RowDesvio
+                        key={d.produtoId}
+                        desvio={d}
+                        expandido={expandido === `d-${d.produtoId}`}
+                        onToggle={() => setExpandido(expandido === `d-${d.produtoId}` ? null : `d-${d.produtoId}`)}
                       />
                     ))}
                   </tbody>
@@ -365,6 +544,7 @@ function Antifurto() {
                     <RowAlerta
                       key={a.produtoId}
                       alerta={a}
+                      intelInfo={intel[a.produtoId]}
                       expandido={expandido === a.produtoId}
                       onToggle={() => setExpandido(expandido === a.produtoId ? null : a.produtoId)}
                     />
