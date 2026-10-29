@@ -118,3 +118,16 @@ export async function editarFornecedor(id: string, dados: Partial<Omit<Fornecedo
   }
   await carregarFornecedores(lojaId);
 }
+
+/** Mostra o erro na tela por tempo suficiente; se faltar a loja, oferece o atalho. */
+export function avisarErroFornecedor(e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (msg === SEM_LOJA) {
+    toast.error(SEM_LOJA, {
+      duration: 15000,
+      action: { label: "Configurar loja", onClick: () => { window.location.href = "/configurar-loja"; } },
+    });
+  } else {
+    toast.error(msg, { duration: 15000 });
+  }
+}
