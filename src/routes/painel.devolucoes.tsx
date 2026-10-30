@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, Download, PackageSearch, Plus, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Calendar, ChevronDown, ChevronRight, Download, PackageSearch, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -292,13 +292,23 @@ function NovaDevolucaoDialog({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
+const HOJE_DEV = new Date().toISOString().slice(0, 10);
+
 function Devolucoes() {
   const devolucoes = useDevolicoes();
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "cliente" | "fornecedor">("todos");
   const [expandido, setExpandido] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
 
-  const filtradas = devolucoes.filter((d) => filtroTipo === "todos" || d.tipo === filtroTipo);
+  const filtradas = devolucoes.filter((d) => {
+    if (filtroTipo !== "todos" && d.tipo !== filtroTipo) return false;
+    const dataStr = d.data.slice(0, 10);
+    if (de && dataStr < de) return false;
+    if (ate && dataStr > ate) return false;
+    return true;
+  });
 
   const totalCliente = devolucoes.filter((d) => d.tipo === "cliente").length;
   const totalFornecedor = devolucoes.filter((d) => d.tipo === "fornecedor").length;
@@ -307,7 +317,7 @@ function Devolucoes() {
   function exportarCSV() {
     const hoje = new Date().toISOString().slice(0, 10);
     const rows = ["Tipo,Data,Motivo,Fornecedor,Produto,Qtd,Valor unit.,Total"];
-    for (const d of devolucoes) {
+    for (const d of filtradas) {
       const data = new Date(d.data).toLocaleDateString("pt-BR");
       const tipo = d.tipo === "cliente" ? "De cliente" : "Ao fornecedor";
       const fornecedor = d.fornecedorNome || "";
@@ -383,7 +393,7 @@ function Devolucoes() {
       </div>
 
       {/* Filtro */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(["todos", "cliente", "fornecedor"] as const).map((t) => (
           <Button
             key={t}
@@ -394,6 +404,35 @@ function Devolucoes() {
             {t === "todos" ? "Todas" : t === "cliente" ? "↙ De cliente" : "↗ Ao fornecedor"}
           </Button>
         ))}
+        <div className="flex items-center gap-1.5 ml-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <input
+            type="date"
+            value={de}
+            max={ate || HOJE_DEV}
+            onChange={(e) => setDe(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            title="De"
+          />
+          <span className="text-xs text-muted-foreground">até</span>
+          <input
+            type="date"
+            value={ate}
+            min={de}
+            max={HOJE_DEV}
+            onChange={(e) => setAte(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            title="Até"
+          />
+          {(de || ate) && (
+            <button
+              onClick={() => { setDe(""); setAte(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              limpar
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabela */}

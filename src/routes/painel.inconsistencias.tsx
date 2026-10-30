@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Calendar, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { resolverInconsistencia, useOperacao } from "@/lib/operacao-store";
 import { useProdutos } from "@/lib/produtos-store";
@@ -35,16 +35,27 @@ export const Route = createFileRoute("/painel/inconsistencias")({
 
 const status = { aberta: "Aberta", ajustada: "Contagem aceita", mantida: "Sistema mantido" } as const;
 
+const HOJE_INC = new Date().toISOString().slice(0, 10);
+
 function Inconsistencias() {
   const op = useOperacao();
   const produtos = useProdutos();
   const [filtro, setFiltro] = useState<"aberta" | "todas">("aberta");
-  const lista = op.inconsistencias.filter((i) => filtro === "todas" || i.status === "aberta");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+
+  const lista = op.inconsistencias.filter((i) => {
+    if (filtro === "aberta" && i.status !== "aberta") return false;
+    const dataStr = i.data.slice(0, 10);
+    if (de && dataStr < de) return false;
+    if (ate && dataStr > ate) return false;
+    return true;
+  });
   const abertas = op.inconsistencias.filter((i) => i.status === "aberta").length;
 
   function handleExport() {
     const cabecalho = ["Data", "Origem", "Referência", "Produto", "Sistema", "Contado", "Diferença", "Quem contou", "Status"];
-    const linhas = op.inconsistencias.map((i) => {
+    const linhas = lista.map((i) => {
       const dif = i.contado - i.sistema;
       return [
         new Date(i.data).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
@@ -65,16 +76,45 @@ function Inconsistencias() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-3xl font-bold">Inconsistências</h1><p className="text-muted-foreground">Quando a contagem não bate com o sistema, aparece aqui para você decidir</p></div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button onClick={handleExport} className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted">
             <Download className="h-4 w-4" /> Exportar CSV
           </button>
           <div className="flex rounded-lg bg-muted p-1">
-          {(["aberta", "todas"] as const).map((f) => (
-            <button key={f} onClick={() => setFiltro(f)} className={cn("rounded-md px-4 py-1.5 text-sm font-semibold", filtro === f ? "bg-card shadow-sm" : "text-muted-foreground")}>
-              {f === "aberta" ? `Abertas (${abertas})` : `Todas (${op.inconsistencias.length})`}
-            </button>
-          ))}
+            {(["aberta", "todas"] as const).map((f) => (
+              <button key={f} onClick={() => setFiltro(f)} className={cn("rounded-md px-4 py-1.5 text-sm font-semibold", filtro === f ? "bg-card shadow-sm" : "text-muted-foreground")}>
+                {f === "aberta" ? `Abertas (${abertas})` : `Todas (${op.inconsistencias.length})`}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={de}
+              max={ate || HOJE_INC}
+              onChange={(e) => setDe(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs"
+              title="De"
+            />
+            <span className="text-xs text-muted-foreground">até</span>
+            <input
+              type="date"
+              value={ate}
+              min={de}
+              max={HOJE_INC}
+              onChange={(e) => setAte(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs"
+              title="Até"
+            />
+            {(de || ate) && (
+              <button
+                onClick={() => { setDe(""); setAte(""); }}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                limpar
+              </button>
+            )}
           </div>
         </div>
       </div>
