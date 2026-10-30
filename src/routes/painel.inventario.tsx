@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEstoque, ajustarEstoque } from "@/lib/estoque-store";
+import { gravarAudit } from "@/lib/audit-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { useAuth } from "@/lib/auth";
 import { HOJE } from "@/lib/computed";
@@ -103,6 +104,7 @@ function Inventario() {
         ajustarEstoque(l.loteId, contado, "Inventário periódico", usuario);
       }
     }
+    gravarAudit({ acao: "ajuste", modulo: "Inventário", descricao: `Inventário periódico concluído por ${usuario} — ${linhas.length} lote${linhas.length !== 1 ? "s" : ""} contado${linhas.length !== 1 ? "s" : ""}, ${divergencias.length} ajuste${divergencias.length !== 1 ? "s" : ""} aplicado${divergencias.length !== 1 ? "s" : ""}.`, usuarioNome: usuario });
     toast.success(`Inventário concluído — ${divergencias.length} ajuste${divergencias.length !== 1 ? "s" : ""} aplicado${divergencias.length !== 1 ? "s" : ""}.`);
     setFase("concluido");
   }

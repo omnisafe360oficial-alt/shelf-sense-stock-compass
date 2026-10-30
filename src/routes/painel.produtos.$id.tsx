@@ -13,6 +13,7 @@ import { brl, categorias, UNIDADES, type LocalDeposito, type LocalGondola } from
 import { useProdutos, getProdutos, editarProduto, excluirProduto, cadastrarVariante } from "@/lib/produtos-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { useEstoque, ajustarEstoque, inicializarProduto } from "@/lib/estoque-store";
+import { gravarAudit } from "@/lib/audit-store";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { diasAte, exibirValidade, faixaValidade } from "@/lib/estoque-store";
@@ -250,7 +251,9 @@ function ProdutoDetalhe() {
     const novo = Number(ajusteVal);
     if (isNaN(novo) || novo < 0) { toast.error("Saldo inválido."); return; }
     if (!ajusteMotivo.trim()) { toast.error("Informe o motivo do ajuste."); return; }
+    const loteAnt = est.lotes.find((l) => l.id === loteId);
     ajustarEstoque(loteId, novo, ajusteMotivo.trim(), auth.nomeProprietario ?? "Gerente");
+    gravarAudit({ acao: "ajuste", modulo: "Estoque", descricao: `Ajuste manual: "${produto.nome}", lote "${loteAnt?.lote ?? loteId}", ${loteAnt?.qtd ?? "?"} → ${novo} un. — ${ajusteMotivo.trim()}.`, usuarioNome: auth.nomeProprietario ?? "Gerente", produtoId: produto.id, produtoNome: produto.nome, valorAnterior: String(loteAnt?.qtd ?? ""), valorNovo: String(novo) });
     toast.success("Estoque ajustado.");
     setAjustando(null);
   };

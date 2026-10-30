@@ -189,6 +189,7 @@ export function registrarPerda(loteId: string, tipo: TipoPerda, obs?: string) {
   if (lojaId) {
     persistirLote(lojaId, { ...l, qtd: 0 });
     persistirMov(lojaId, mov);
+    gravarAudit({ acao: "ajuste", modulo: "Estoque", descricao: `Perda registrada: lote "${l.lote}" (${l.qtd} un.), tipo: ${tipo}${obs ? ` — ${obs}` : ""}.`, usuarioNome: "Sistema", produtoId: l.produtoId });
   }
 }
 
