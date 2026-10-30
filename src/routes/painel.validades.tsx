@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { brl } from "@/lib/mock-data";
 import { useProdutos } from "@/lib/produtos-store";
 import { diasAte, exibirValidade, faixaValidade, registrarPerda, useEstoque, type Faixa, type TipoPerda } from "@/lib/estoque-store";
+import { addPromocao } from "@/lib/promocoes-store";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
@@ -95,7 +96,22 @@ function Validades() {
                     <div className="text-right"><p className="font-semibold">{l.qtd} un</p><p className="text-xs text-muted-foreground">{brl(l.qtd * p.preco)}</p></div>
                     <div className="flex gap-2">
                       {faixa !== "vencido" && (
-                        <Button variant="outline" size="sm" onClick={() => toast.success(`Promoção sugerida: ${p.nome} por ${brl(p.preco * (faixa === "7" ? 0.7 : 0.85))}`, { description: `${faixa === "7" ? "30" : "15"}% de desconto no lote ${l.lote}` })}>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          const pct = faixa === "7" ? 30 : 15;
+                          const hoje = new Date().toISOString().slice(0, 10);
+                          const dataFim = l.validade.slice(0, 10);
+                          addPromocao({
+                            nome: `Validade · ${p.nome}`,
+                            descricao: `${pct}% de desconto – vence ${exibirValidade(l.validade)}, lote ${l.lote}`,
+                            tipo: "pct",
+                            valor: pct,
+                            dataInicio: hoje,
+                            dataFim,
+                            todos: false,
+                            produtoIds: [p.id],
+                          });
+                          toast.success(`Promoção criada: ${p.nome} com ${pct}% de desconto até ${exibirValidade(l.validade)}`);
+                        }}>
                           <BadgePercent /> Promoção
                         </Button>
                       )}

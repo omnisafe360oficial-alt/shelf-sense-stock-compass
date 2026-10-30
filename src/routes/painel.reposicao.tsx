@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { lotesFefo, useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { conferirReposicao, useOperacao } from "@/lib/operacao-store";
+import { useAuth } from "@/lib/auth";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/reposicao")({
@@ -31,6 +32,7 @@ function Reposicao() {
   const s = useEstoque();
   const op = useOperacao();
   const produtos = useProdutos();
+  const auth = useAuth();
   const [aberto, setAberto] = useState<string | null>(null);
   const [encontrado, setEncontrado] = useState("");
   const [reposto, setReposto] = useState("");
@@ -50,7 +52,7 @@ function Reposicao() {
     const enc = Number(encontrado), rep = Number(reposto);
     if (encontrado === "" || enc < 0 || rep < 0) { toast.error("Informe quanto encontrou na gôndola."); return; }
     if (rep > deposito) { toast.error(`O depósito só tem ${deposito}.`); return; }
-    const bateu = conferirReposicao(id, enc, rep, "Repositor · Pedro");
+    const bateu = conferirReposicao(id, enc, rep, auth.nomeProprietario ?? "Repositor");
     if (bateu) toast.success("Contagem bateu. Gôndola reposta.");
     else toast.warning("Contagem não bateu com o sistema. Inconsistência aberta.");
     setAberto(null);

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, ClipboardCheck, Download,
   PlayCircle, RotateCcw,
@@ -24,6 +24,19 @@ export const Route = createFileRoute("/painel/inventario")({
 
 type Fase = "inicio" | "contagem" | "revisao" | "concluido";
 
+const INV_KEY = "inventario-contagens-v1";
+
+function lerInvSalvo(): { fase: Fase; contagens: Record<string, string> } | null {
+  try {
+    const raw = localStorage.getItem(INV_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { fase: Fase; contagens: Record<string, string> };
+      if (parsed.fase === "contagem" || parsed.fase === "revisao") return parsed;
+    }
+  } catch {}
+  return null;
+}
+
 type LinhaCont = {
   loteId: string;
   produtoId: string;
@@ -39,9 +52,17 @@ function Inventario() {
   const est = useEstoque();
   const produtos = useProdutos();
   const auth = useAuth();
-  const [fase, setFase] = useState<Fase>("inicio");
-  const [contagens, setContagens] = useState<Record<string, string>>({});
+  const [fase, setFase] = useState<Fase>(() => lerInvSalvo()?.fase ?? "inicio");
+  const [contagens, setContagens] = useState<Record<string, string>>(() => lerInvSalvo()?.contagens ?? {});
   const [filtro, setFiltro] = useState("");
+
+  useEffect(() => {
+    if (fase === "contagem" || fase === "revisao") {
+      try { localStorage.setItem(INV_KEY, JSON.stringify({ fase, contagens })); } catch {}
+    } else {
+      try { localStorage.removeItem(INV_KEY); } catch {}
+    }
+  }, [fase, contagens]);
 
   const linhas = useMemo<LinhaCont[]>(() => {
     const lotesAtivos = est.lotes.filter((l) => l.qtd > 0 || l.qtd === 0);
