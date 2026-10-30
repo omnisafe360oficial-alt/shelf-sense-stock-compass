@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { getLojaId, onLojaChange } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type TipoDesconto = "pct" | "fixo";
 
@@ -75,7 +76,10 @@ export function addPromocao(p: Omit<Promocao, "id">): void {
   supabase
     .from("promocoes")
     .insert({ id, loja_id: lojaId, nome: p.nome, descricao: p.descricao, tipo: p.tipo, valor: p.valor, data_inicio: p.dataInicio, data_fim: p.dataFim, todos: p.todos, produto_ids: p.produtoIds })
-    .then(({ error }) => { if (error) toast.error("Erro ao criar promoção: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao criar promoção: " + error.message);
+      else gravarAudit({ acao: "criar", modulo: "Promoções", descricao: `Promoção "${p.nome}" criada.`, usuarioNome: "Sistema" });
+    });
 }
 
 export function updatePromocao(parcial: Partial<Promocao> & { id: string }): void {
@@ -91,16 +95,24 @@ export function updatePromocao(parcial: Partial<Promocao> & { id: string }): voi
   if (parcial.dataFim !== undefined) payload.data_fim = parcial.dataFim;
   if (parcial.todos !== undefined) payload.todos = parcial.todos;
   if (parcial.produtoIds !== undefined) payload.produto_ids = parcial.produtoIds;
+  const nome = estado.promocoes.find((p) => p.id === parcial.id)?.nome ?? parcial.id;
   supabase.from("promocoes").update(payload).eq("id", parcial.id)
-    .then(({ error }) => { if (error) toast.error("Erro ao atualizar promoção: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao atualizar promoção: " + error.message);
+      else gravarAudit({ acao: "editar", modulo: "Promoções", descricao: `Promoção "${nome}" atualizada.`, usuarioNome: "Sistema" });
+    });
 }
 
 export function removePromocao(id: string): void {
+  const nome = estado.promocoes.find((p) => p.id === id)?.nome ?? id;
   emitir({ promocoes: estado.promocoes.filter((p) => p.id !== id) });
   const lojaId = getLojaId();
   if (!lojaId) return;
   supabase.from("promocoes").delete().eq("id", id)
-    .then(({ error }) => { if (error) toast.error("Erro ao excluir promoção: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao excluir promoção: " + error.message);
+      else gravarAudit({ acao: "excluir", modulo: "Promoções", descricao: `Promoção "${nome}" excluída.`, usuarioNome: "Sistema" });
+    });
 }
 
 export function getPromocoes(): Promocao[] { return estado.promocoes; }

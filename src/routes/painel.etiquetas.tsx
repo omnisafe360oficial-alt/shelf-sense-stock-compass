@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
+import { gravarAudit } from "@/lib/audit-store";
 
 export const Route = createFileRoute("/painel/etiquetas")({
   head: () => ({
@@ -67,7 +68,18 @@ function Etiquetas() {
                 Limpar seleção
               </Button>
             )}
-            <Button disabled={selecionados.size === 0} onClick={() => window.print()}>
+            <Button
+              disabled={selecionados.size === 0}
+              onClick={() => {
+                gravarAudit({
+                  acao: "imprimir",
+                  modulo: "Etiquetas",
+                  descricao: `${selecionados.size} etiqueta${selecionados.size !== 1 ? "s" : ""} impressa${selecionados.size !== 1 ? "s" : ""}.`,
+                  usuarioNome: "Sistema",
+                });
+                window.print();
+              }}
+            >
               <Printer className="h-4 w-4" /> Imprimir {selecionados.size > 0 ? `(${selecionados.size})` : ""}
             </Button>
           </div>

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type Config = {
   nomeLoja: string; cnpj: string; cidade: string; uf: string;
@@ -128,5 +129,6 @@ export function salvarConfig(parcial: Partial<Config>): void {
     .eq("id", lojaId)
     .then(({ error }) => {
       if (error) toast.error("Erro ao salvar configurações: " + error.message);
+      else gravarAudit({ acao: "editar", modulo: "Configurações", descricao: "Configurações da loja atualizadas.", usuarioNome: "Sistema" });
     });
 }
