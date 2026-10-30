@@ -51,7 +51,7 @@ const ABC_CLS: Record<"A" | "B" | "C", string> = {
 
 const XYZ_CLS: Record<"X" | "Y" | "Z", string> = {
   X: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  Y: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  Y: "bg-primary/10 text-primary",
   Z: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
@@ -485,7 +485,7 @@ function Inteligencia() {
               <PrevisaoSection titulo="⚠️ Pedir agora — estoque no ou abaixo do ponto de pedido" itens={previsao.agora} corCls="text-rose-600 dark:text-rose-400" />
               <PrevisaoSection titulo="Esta semana — cobertura ≤ 7 dias" itens={previsao.semana} corCls="text-amber-600" />
               <PrevisaoSection titulo="Próxima semana — 8 a 14 dias" itens={previsao.proxima} corCls="text-amber-500" />
-              <PrevisaoSection titulo="Em 15–30 dias" itens={previsao.trinta} corCls="text-blue-500" />
+              <PrevisaoSection titulo="Em 15–30 dias" itens={previsao.trinta} corCls="text-primary" />
               {previsao.ok.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-2">

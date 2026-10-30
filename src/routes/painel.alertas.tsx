@@ -129,7 +129,7 @@ function Alertas() {
       {
         id: "pedidos",
         titulo: `Pedidos parados há +${config.diasAlertaPedido}d`,
-        cor: "text-blue-500",
+        cor: "text-primary",
         icone: <ShoppingCart className="h-4 w-4" />,
         link: "/painel/pedidos",
         itens: pedidosAtencao.map((p) => {

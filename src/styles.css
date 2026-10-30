@@ -144,6 +144,11 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  --success: oklch(0.72 0.18 165);
+  --warning: oklch(0.82 0.16 75);
+  --brand-deep: oklch(0.28 0.07 230);
+  --brand-glow: oklch(0.78 0.17 180);
+  --gradient-brand: linear-gradient(135deg, var(--brand-deep), var(--primary) 55%, var(--brand-glow));
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
   --sidebar-primary: oklch(0.488 0.243 264.376);

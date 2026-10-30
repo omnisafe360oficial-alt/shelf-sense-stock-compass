@@ -347,8 +347,8 @@ function PainelLayout() {
                       {config.alertaPedidos && pedidosAtencao.length > 0 && (
                         <div className="p-3">
                           <div className="mb-2 flex items-center justify-between">
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-blue-500">
-                              🔵 {pedidosAtencao.length} pedido{pedidosAtencao.length > 1 ? "s" : ""} pendente{pedidosAtencao.length > 1 ? "s" : ""}
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+                              {pedidosAtencao.length} pedido{pedidosAtencao.length > 1 ? "s" : ""} pendente{pedidosAtencao.length > 1 ? "s" : ""}
                             </p>
                             <Link to="/painel/pedidos" className="text-[11px] text-primary hover:underline" onClick={fecharNotif}>Ver →</Link>
                           </div>

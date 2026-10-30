@@ -189,7 +189,7 @@ function RelatorioCompras() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6 text-blue-500" />
+            <ShoppingCart className="w-6 h-6 text-primary" />
             Relatório de Compras
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -216,7 +216,7 @@ function RelatorioCompras() {
               onClick={() => selecionarPreset(i)}
               className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                 presetAtivo === i
-                  ? "bg-blue-600 text-white border-blue-600"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-muted hover:bg-accent border-transparent"
               }`}
             >
@@ -251,11 +251,11 @@ function RelatorioCompras() {
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi icon={<ShoppingCart className="w-5 h-5 text-blue-500" />} label="Fornecedores" valor={String(kpis.fornecedores)} />
+        <Kpi icon={<ShoppingCart className="w-5 h-5 text-primary" />} label="Fornecedores" valor={String(kpis.fornecedores)} />
         <Kpi icon={<Package className="w-5 h-5 text-purple-500" />} label="Recebimentos" valor={String(kpis.recebimentos)} />
         <Kpi icon={<Package className="w-5 h-5 text-orange-500" />} label="Unidades recebidas" valor={String(kpis.unidades)} />
         <Kpi
-          icon={<TrendingDown className="w-5 h-5 text-blue-600" />}
+          icon={<TrendingDown className="w-5 h-5 text-primary" />}
           label={temCusto ? "Valor estimado" : "Valor estimado*"}
           valor={temCusto ? brl(kpis.valorEstimado) : "—"}
           destaque={temCusto}
@@ -284,14 +284,14 @@ function RelatorioCompras() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <span className="text-sm truncate">{g.nome}</span>
-                      <span className="text-sm font-semibold text-blue-600 shrink-0">
+                      <span className="text-sm font-semibold text-primary shrink-0">
                         {temCusto ? brl(g.valorEstimado) : `${g.unidades} un`}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-muted rounded-full h-1.5">
                         <div
-                          className="h-1.5 bg-blue-500 rounded-full"
+                          className="h-1.5 bg-primary rounded-full"
                           style={{ width: `${(base / max) * 100}%` }}
                         />
                       </div>
@@ -341,7 +341,7 @@ function RelatorioCompras() {
                     ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                     : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                   }
-                  <ShoppingCart className="w-4 h-4 text-blue-500 shrink-0" />
+                  <ShoppingCart className="w-4 h-4 text-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{g.nome}</p>
                     <p className="text-xs text-muted-foreground">
@@ -350,7 +350,7 @@ function RelatorioCompras() {
                   </div>
                   <div className="text-right shrink-0">
                     {temCusto && (
-                      <p className="text-sm font-semibold text-blue-600">{brl(g.valorEstimado)}</p>
+                      <p className="text-sm font-semibold text-primary">{brl(g.valorEstimado)}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       Última: {formatData(g.entradas[0]?.data ?? "")}
@@ -409,7 +409,7 @@ function RelatorioCompras() {
                               <td className="p-3" colSpan={3}>Total</td>
                               <td className="p-3 text-right">{g.unidades}</td>
                               <td className="p-3" />
-                              <td className="p-3 text-right text-blue-600">{brl(g.valorEstimado)}</td>
+                              <td className="p-3 text-right text-primary">{brl(g.valorEstimado)}</td>
                               <td className="p-3" />
                             </tr>
                           </tfoot>
@@ -450,13 +450,13 @@ function ProdutosRecebidos({ entradas, temCusto }: { entradas: EntradaRow[]; tem
             <span className="text-xs truncate w-40 shrink-0">{p.nome}</span>
             <div className="flex-1 bg-muted rounded-full h-1.5 min-w-0">
               <div
-                className="h-1.5 bg-blue-400 rounded-full"
+                className="h-1.5 bg-primary rounded-full"
                 style={{ width: `${(p.qtd / maxQtd) * 100}%` }}
               />
             </div>
             <span className="text-xs text-muted-foreground w-10 text-right shrink-0">{p.qtd} un</span>
             {temCusto && p.valor > 0 && (
-              <span className="text-xs font-medium w-20 text-right shrink-0 text-blue-600">{brl(p.valor)}</span>
+              <span className="text-xs font-medium w-20 text-right shrink-0 text-primary">{brl(p.valor)}</span>
             )}
           </div>
         ))}
@@ -467,9 +467,9 @@ function ProdutosRecebidos({ entradas, temCusto }: { entradas: EntradaRow[]; tem
 
 function Kpi({ icon, label, valor, destaque }: { icon: React.ReactNode; label: string; valor: string; destaque?: boolean }) {
   return (
-    <div className={`rounded-xl border p-4 space-y-1 ${destaque ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800" : "bg-card"}`}>
+    <div className={`rounded-xl border p-4 space-y-1 ${destaque ? "bg-primary/5 border-primary/20" : "bg-card"}`}>
       <div className="flex items-center gap-2">{icon}<span className="text-xs text-muted-foreground">{label}</span></div>
-      <p className={`text-xl font-bold ${destaque ? "text-blue-700 dark:text-blue-400" : ""}`}>{valor}</p>
+      <p className={`text-xl font-bold ${destaque ? "text-primary dark:text-primary" : ""}`}>{valor}</p>
     </div>
   );
 }

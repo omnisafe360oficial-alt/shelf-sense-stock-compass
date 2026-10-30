@@ -245,7 +245,7 @@ function HistoricoFornecedor() {
           {/* KPIs Compras */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Kpi icon={<Truck className="w-5 h-5 text-orange-500" />} label="Fornecedores" valor={String(kpisCompras.fornecedores)} />
-            <Kpi icon={<Hash className="w-5 h-5 text-blue-500" />} label="Recebimentos" valor={String(kpisCompras.recebimentos)} />
+            <Kpi icon={<Hash className="w-5 h-5 text-primary" />} label="Recebimentos" valor={String(kpisCompras.recebimentos)} />
             <Kpi icon={<Package className="w-5 h-5 text-purple-500" />} label="Unidades recebidas" valor={String(kpisCompras.itens)} />
             <Kpi icon={<TrendingDown className="w-5 h-5 text-amber-500" />} label="Divergências" valor={String(kpisCompras.divergencias)} destaque={kpisCompras.divergencias > 0} />
           </div>
@@ -271,8 +271,8 @@ function HistoricoFornecedor() {
                   <div key={g.nome} className="bg-card border rounded-xl overflow-hidden">
                     <button onClick={() => toggleExpand("c:" + g.nome)}
                       className="w-full flex items-center gap-3 p-4 hover:bg-muted/40 transition-colors text-left">
-                      <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                        <ShoppingCart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <ShoppingCart className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{g.nome}</p>
@@ -383,7 +383,7 @@ function HistoricoFornecedor() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi icon={<Truck className="w-5 h-5 text-orange-500" />} label="Fornecedores" valor={String(kpis.fornecedores)} />
-        <Kpi icon={<Hash className="w-5 h-5 text-blue-500" />} label="Devoluções" valor={String(kpis.devolucoes)} />
+        <Kpi icon={<Hash className="w-5 h-5 text-primary" />} label="Devoluções" valor={String(kpis.devolucoes)} />
         <Kpi icon={<Package className="w-5 h-5 text-purple-500" />} label="Unidades devolvidas" valor={String(kpis.itens)} />
         <Kpi icon={<TrendingDown className="w-5 h-5 text-red-500" />} label="Valor total" valor={brl(kpis.valor)} destaque />
       </div>

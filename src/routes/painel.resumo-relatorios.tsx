@@ -231,7 +231,7 @@ function ResumoRelatorios() {
 
         {/* ── Card: Compras ── */}
         <ReportCard
-          icon={<ShoppingCart className="w-5 h-5 text-blue-500" />}
+          icon={<ShoppingCart className="w-5 h-5 text-primary" />}
           title="Compras por Fornecedor"
           color="blue"
           to="/painel/relatorio-compras"
@@ -430,7 +430,7 @@ type Color = "green" | "blue" | "orange" | "red";
 
 const colorBorder: Record<Color, string> = {
   green: "border-l-green-500",
-  blue: "border-l-blue-500",
+  blue: "border-l-primary",
   orange: "border-l-orange-500",
   red: "border-l-red-500",
 };
@@ -462,7 +462,7 @@ function ReportCard({
 
 const statHighlight: Record<string, string> = {
   green: "text-green-700 dark:text-green-400",
-  blue: "text-blue-700 dark:text-blue-400",
+  blue: "text-primary",
   orange: "text-orange-600 dark:text-orange-400",
   red: "text-red-600 dark:text-red-400",
 };

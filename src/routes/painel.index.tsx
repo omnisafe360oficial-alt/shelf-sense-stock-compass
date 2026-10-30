@@ -56,7 +56,7 @@ const STATUS_PEDIDO_LABEL: Record<string, string> = {
 };
 
 const ATALHOS = [
-  { label: "PDV",        desc: "Registrar venda",  href: "/painel/pdv",          icon: ShoppingCart, cor: "from-blue-500 to-blue-600"    },
+  { label: "PDV",        desc: "Registrar venda",  href: "/painel/pdv",          icon: ShoppingCart, cor: "from-primary to-primary/80"    },
   { label: "Reposição",  desc: "Repor gôndola",    href: "/painel/reposicao",    icon: RefreshCw,    cor: "from-amber-500 to-orange-500"  },
   { label: "Recebimento",desc: "Conferir entrega", href: "/painel/recebimentos", icon: Package,      cor: "from-emerald-500 to-teal-600"  },
   { label: "Estoque",    desc: "Ver posição",      href: "/painel/estoque",      icon: Warehouse,    cor: "from-violet-500 to-purple-600" },
@@ -201,7 +201,7 @@ function Inicio() {
         </div>
         <Link
           to="/painel/pdv"
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
         >
           <ShoppingCart className="h-4 w-4" /> Abrir PDV
         </Link>
@@ -256,8 +256,8 @@ function Inicio() {
 
       {/* ── Score de Saúde ─────────────────────────────────────────────────── */}
       {saude.score > 0 && (() => {
-        const COR: Record<SaudeGrau, string> = { excelente: "text-emerald-600", bom: "text-blue-600", regular: "text-amber-600", critico: "text-rose-600" };
-        const BG:  Record<SaudeGrau, string> = { excelente: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", bom: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", regular: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", critico: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" };
+        const COR: Record<SaudeGrau, string> = { excelente: "text-emerald-600", bom: "text-primary", regular: "text-amber-600", critico: "text-rose-600" };
+        const BG:  Record<SaudeGrau, string> = { excelente: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300", bom: "bg-primary/10 text-primary", regular: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", critico: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" };
         const LABEL: Record<SaudeGrau, string> = { excelente: "Excelente", bom: "Bom", regular: "Regular", critico: "Crítico" };
         return (
           <Link

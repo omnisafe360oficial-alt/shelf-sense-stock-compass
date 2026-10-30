@@ -32,7 +32,7 @@ const GRAU_LABEL: Record<SaudeGrau, string> = {
 
 const GRAU_BG: Record<SaudeGrau, string> = {
   excelente: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  bom:       "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  bom:       "bg-primary/10 text-primary",
   regular:   "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   critico:   "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
 };
@@ -194,7 +194,7 @@ function SaudePage() {
             {saude.score} de {pontosMaximos} pontos possíveis
           </p>
           <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-1 text-xs text-muted-foreground">
-            {([["90–100", "Excelente", "text-emerald-600"], ["75–89", "Bom", "text-blue-600"], ["60–74", "Regular", "text-amber-600"], ["0–59", "Crítico", "text-rose-600"]] as [string, string, string][]).map(([range, label, cls]) => (
+            {([["90–100", "Excelente", "text-emerald-600"], ["75–89", "Bom", "text-primary"], ["60–74", "Regular", "text-amber-600"], ["0–59", "Crítico", "text-rose-600"]] as [string, string, string][]).map(([range, label, cls]) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className={cn("font-semibold tabular-nums", cls)}>{range}</span>
                 <span>{label}</span>

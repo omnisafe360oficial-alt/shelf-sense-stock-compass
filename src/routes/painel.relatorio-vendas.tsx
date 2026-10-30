@@ -158,7 +158,7 @@ function RelatorioVendas() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart2 className="w-6 h-6 text-blue-500" />
+            <BarChart2 className="w-6 h-6 text-primary" />
             Relatório de Vendas
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Receita, unidades e produtos mais vendidos no período selecionado.</p>
@@ -183,7 +183,7 @@ function RelatorioVendas() {
               onClick={() => selecionarPreset(i)}
               className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                 presetAtivo === i
-                  ? "bg-blue-600 text-white border-blue-600"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "bg-muted hover:bg-accent border-transparent"
               }`}
             >
@@ -219,7 +219,7 @@ function RelatorioVendas() {
       {/* ── KPIs ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi icon={<TrendingUp className="w-5 h-5 text-green-500" />} label="Receita total" valor={brl(kpis.receita)} destaque />
-        <Kpi icon={<ShoppingBag className="w-5 h-5 text-blue-500" />} label="Transações" valor={String(kpis.transacoes)} />
+        <Kpi icon={<ShoppingBag className="w-5 h-5 text-primary" />} label="Transações" valor={String(kpis.transacoes)} />
         <Kpi icon={<Package className="w-5 h-5 text-purple-500" />} label="Unidades vendidas" valor={String(kpis.unidades)} />
         <Kpi icon={<BarChart2 className="w-5 h-5 text-orange-500" />} label="Produtos distintos" valor={String(kpis.produtosDistintos)} />
       </div>
@@ -256,7 +256,7 @@ function RelatorioVendas() {
                 <div key={dia} className="flex items-center gap-3 text-sm">
                   <span className="w-24 text-muted-foreground text-xs">{dia.split("-").reverse().join("/")}</span>
                   <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                    <div className="h-2 bg-blue-500 rounded-full" style={{ width: `${(receita / maxReceita) * 100}%` }} />
+                    <div className="h-2 bg-primary rounded-full" style={{ width: `${(receita / maxReceita) * 100}%` }} />
                   </div>
                   <span className="w-24 text-right text-xs font-medium">{brl(receita)}</span>
                   <span className="w-16 text-right text-xs text-muted-foreground">{unidades} un</span>
@@ -283,7 +283,7 @@ function RelatorioVendas() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-muted rounded-full h-1.5">
                       <div
-                        className="h-1.5 bg-blue-500 rounded-full"
+                        className="h-1.5 bg-primary rounded-full"
                         style={{ width: `${(p.receita / (topProdutos[0]?.receita || 1)) * 100}%` }}
                       />
                     </div>
