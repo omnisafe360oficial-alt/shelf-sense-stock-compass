@@ -82,3 +82,21 @@ export function alterarStatus(id: string, ativo: boolean): void {
       else gravarAudit({ acao: "editar", modulo: "Equipe", descricao: `Membro "${membro?.nome ?? id}" ${ativo ? "ativado" : "bloqueado"}.`, usuarioNome: "Sistema" });
     });
 }
+
+export function removerMembro(id: string): void {
+  const membro = estado.find((m) => m.id === id);
+  estado = estado.filter((m) => m.id !== id);
+  notificar();
+  supabase
+    .from("membros")
+    .delete()
+    .eq("id", id)
+    .then(({ error }) => {
+      if (error) {
+        if (membro) { estado = [...estado, membro]; notificar(); }
+        toast.error("Erro ao remover membro: " + error.message);
+      } else {
+        gravarAudit({ acao: "excluir", modulo: "Equipe", descricao: `Membro "${membro?.nome ?? id}" removido permanentemente.`, usuarioNome: "Sistema" });
+      }
+    });
+}

@@ -48,6 +48,8 @@ const PAGAMENTOS = [
 type Pagamento = (typeof PAGAMENTOS)[number]["id"];
 
 const RAPIDOS = [5, 10, 20, 50, 100, 200];
+const PDV_HIST_KEY = "pdv-historico-v1";
+const PDV_HOJE = new Date().toISOString().slice(0, 10);
 
 function Pdv() {
   const s = useEstoque();
@@ -67,7 +69,16 @@ function Pdv() {
   const [pag, setPag] = useState<Pagamento>("Pix");
   const [recebido, setRecebido] = useState("");
   const [desconto, setDesconto] = useState("");
-  const [historico, setHistorico] = useState<VendaHistorico[]>([]);
+  const [historico, setHistorico] = useState<VendaHistorico[]>(() => {
+    try {
+      const raw = localStorage.getItem(PDV_HIST_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { date: string; items: VendaHistorico[] };
+        if (parsed.date === PDV_HOJE) return parsed.items;
+      }
+    } catch {}
+    return [];
+  });
   const [ultimaVenda, setUltimaVenda] = useState<VendaHistorico | null>(null);
   const [showRecibo, setShowRecibo] = useState(false);
   const [descontoItens, setDescontoItens] = useState<Record<string, { val: string; modo: "%" | "R$" }>>({});
@@ -220,7 +231,9 @@ function Pdv() {
         qtdItens: itens.reduce((t, i) => t + i.qtd, 0),
         pagamento: pag, descontoVal: snapDesconto, troco: snapTroco, linhas,
       };
-      setHistorico((h) => [entrada, ...h].slice(0, 20));
+      const novoHistorico = [entrada, ...historico].slice(0, 20);
+      setHistorico(novoHistorico);
+      try { localStorage.setItem(PDV_HIST_KEY, JSON.stringify({ date: PDV_HOJE, items: novoHistorico })); } catch {}
       setUltimaVenda(entrada);
       setShowRecibo(true);
       setItens([]);

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Copy, RefreshCw, Users } from "lucide-react";
+import { Check, Copy, RefreshCw, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEquipe, alterarPapel, alterarStatus, PAPEIS, type Papel } from "@/lib/equipe-store";
+import { useEquipe, alterarPapel, alterarStatus, removerMembro, PAPEIS, type Papel } from "@/lib/equipe-store";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -30,6 +30,8 @@ function Equipe() {
   const [codigoConvite, setCodigoConvite] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [renovando, setRenovando] = useState(false);
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState<string | null>(null);
+  const podeGerenciar = auth.papel === "Proprietário" || auth.papel === "Gerente";
 
   useEffect(() => {
     if (!auth.lojaId) return;
@@ -141,6 +143,7 @@ function Equipe() {
               <th className="p-4">Função</th>
               <th className="p-4">Pode acessar</th>
               <th className="p-4">Situação</th>
+              {podeGerenciar && <th className="p-4" />}
             </tr>
           </thead>
           <tbody>
@@ -170,6 +173,36 @@ function Equipe() {
                     {m.ativo ? "Ativo" : "Bloqueado"}
                   </button>
                 </td>
+                {podeGerenciar && (
+                  <td className="p-4">
+                    {i !== 0 && (
+                      confirmandoRemocao === m.id ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { removerMembro(m.id); setConfirmandoRemocao(null); }}
+                            className="rounded-md bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => setConfirmandoRemocao(null)}
+                            className="text-xs text-muted-foreground hover:text-foreground underline"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmandoRemocao(m.id)}
+                          title="Remover membro"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

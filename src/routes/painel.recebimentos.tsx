@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  ChevronDown, ChevronRight, ChevronUp,
-  EyeOff, Package, PackageCheck, Plus, Search, X,
+  Calendar, ChevronDown, ChevronRight, ChevronUp,
+  Download, EyeOff, Package, PackageCheck, Plus, Search, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,9 @@ function Recebimentos() {
   const [cont, setCont] = useState<Record<string, { emb: string; un: string }>>({});
   const [q, setQ] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const HOJE_REC = new Date().toISOString().slice(0, 10);
 
   const nota = op.notas.find((n) => n.id === selNota);
 
@@ -124,10 +127,30 @@ function Recebimentos() {
   // ─── Histórico filtrado ───────────────────────────────────────────────────
 
   const histFiltrado = useMemo(() => {
-    if (!q.trim()) return recebimentos;
-    const t = q.toLowerCase();
-    return recebimentos.filter((r) => r.fornecedor.toLowerCase().includes(t));
-  }, [recebimentos, q]);
+    return recebimentos.filter((r) => {
+      if (q.trim() && !r.fornecedor.toLowerCase().includes(q.toLowerCase())) return false;
+      if (de && r.data.slice(0, 10) < de) return false;
+      if (ate && r.data.slice(0, 10) > ate) return false;
+      return true;
+    });
+  }, [recebimentos, q, de, ate]);
+
+  function exportarCSVHist() {
+    const rows = ["Data,Hora,Fornecedor,Pedido,Produto,Qtd Contada,Unidade,Qtd UN,Lote,Validade,Divergência"];
+    for (const r of histFiltrado) {
+      const data = r.data.slice(0, 10).split("-").reverse().join("/");
+      const hora = r.data.slice(11, 16);
+      for (const i of r.itens) {
+        const temDiv = i.qtdEsperada !== undefined && Math.abs(i.qtdUN - i.qtdEsperada) > 0;
+        rows.push([data, hora, r.fornecedor, r.pedidoNumero ?? "", i.produtoNome, String(i.qtdContada), i.unidade, String(i.qtdUN), i.lote ?? "", i.validade ? i.validade.slice(0, 10).split("-").reverse().join("/") : "", temDiv ? `${i.qtdUN} / ${i.qtdEsperada}` : ""].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","));
+      }
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `recebimentos-${HOJE_REC}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // ─── Abas ─────────────────────────────────────────────────────────────────
 
@@ -436,21 +459,60 @@ function Recebimentos() {
         {/* ── Histórico ─────────────────────────────────────────────────────── */}
         {aba === "historico" && (
           <div>
-            <div className="border-b p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Buscar por fornecedor…"
-                  className="pl-9 pr-9"
-                />
-                {q && (
+            <div className="border-b p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-48">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Buscar por fornecedor…"
+                    className="pl-9 pr-9"
+                  />
+                  {q && (
+                    <button
+                      onClick={() => setQ("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {histFiltrado.length > 0 && (
                   <button
-                    onClick={() => setQ("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={exportarCSVHist}
+                    className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted"
                   >
-                    <X className="h-4 w-4" />
+                    <Download className="h-4 w-4" /> CSV
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <input
+                  type="date"
+                  value={de}
+                  max={ate || HOJE_REC}
+                  onChange={(e) => setDe(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                  title="De"
+                />
+                <span className="text-muted-foreground text-xs">até</span>
+                <input
+                  type="date"
+                  value={ate}
+                  min={de}
+                  max={HOJE_REC}
+                  onChange={(e) => setAte(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                  title="Até"
+                />
+                {(de || ate) && (
+                  <button
+                    onClick={() => { setDe(""); setAte(""); }}
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                  >
+                    limpar
                   </button>
                 )}
               </div>
