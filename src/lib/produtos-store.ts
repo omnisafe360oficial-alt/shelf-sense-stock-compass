@@ -145,7 +145,10 @@ export function cadastrarProdutosBatch(lista: Omit<Produto, "id">[]): string[] {
         };
       })
     )
-    .then(({ error }) => { if (error) toast.error("Erro ao salvar produtos: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao salvar produtos: " + error.message);
+      else gravarAudit({ acao: "criar", modulo: "Produtos", descricao: `${lista.length} produto(s) cadastrado(s) em lote via importação XML.`, usuarioNome: "Sistema" });
+    });
   return ids;
 }
 

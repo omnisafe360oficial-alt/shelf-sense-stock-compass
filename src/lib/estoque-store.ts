@@ -287,6 +287,9 @@ export function importarEstoqueBatch(
       )
       .then(({ error }) => { if (error) toast.error("Erro ao salvar gôndola: " + error.message); });
   }
+
+  const totalUnidades = entradas.reduce((s, e) => s + e.qtd, 0);
+  gravarAudit({ acao: "entrada", modulo: "Estoque", descricao: `Importação em lote: ${entradas.length} lote(s), ${totalUnidades} un. via "${entradas[0]?.origem ?? "XML"}".`, usuarioNome: entradas[0]?.usuario ?? "Sistema" });
 }
 
 // ─── Ajuste de gôndola ────────────────────────────────────────────────────────
