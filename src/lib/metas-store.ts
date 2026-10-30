@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { getLojaId, onLojaChange } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type Metas = {
   metaDiaria: number;
@@ -46,5 +47,8 @@ export function salvarMetas(parcial: Partial<Metas>): void {
       { loja_id: lojaId, meta_diaria: estado.metaDiaria, meta_mensal: estado.metaMensal, updated_at: new Date().toISOString() },
       { onConflict: "loja_id" },
     )
-    .then(({ error }) => { if (error) toast.error("Erro ao salvar metas: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao salvar metas: " + error.message);
+      else gravarAudit({ acao: "editar", modulo: "Metas", descricao: `Metas atualizadas — diária: ${estado.metaDiaria}, mensal: ${estado.metaMensal}.`, usuarioNome: "Sistema" });
+    });
 }

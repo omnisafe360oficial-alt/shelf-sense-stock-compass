@@ -5,6 +5,7 @@ import { onLojaChange, getLojaId } from "./loja-resolver";
 import type { Produto, LocalDeposito, LocalGondola } from "./mock-data";
 import { executarTransferencia, ajustarGondola, estadoAtual } from "./estoque-store";
 import { getProdutos } from "./produtos-store";
+import { gravarAudit } from "./audit-store";
 
 export type { LocalDeposito, LocalGondola };
 
@@ -277,7 +278,10 @@ export function registrarReposicao(rep: Omit<Reposicao, "id" | "data">): Reposic
       qtd_reposta: rep.qtdReposta,
       bateu: rep.bateu,
       diferenca: rep.diferenca,
-    }).then(({ error }) => { if (error) toast.error("Erro ao salvar reposição: " + error.message); });
+    }).then(({ error }) => {
+      if (error) toast.error("Erro ao salvar reposição: " + error.message);
+      else gravarAudit({ acao: "ajuste", modulo: "Reposição", descricao: `Reposição de "${rep.produtoNome}" por ${rep.operador}: ${rep.qtdReposta} un.${rep.bateu ? "" : ` (divergência: ${rep.diferenca > 0 ? "+" : ""}${rep.diferenca})`}`, usuarioNome: rep.operador, produtoId: rep.produtoId, produtoNome: rep.produtoNome });
+    });
 
     if (rep.tarefaId) {
       const tarefa = tarefas.find((t) => t.id === rep.tarefaId);

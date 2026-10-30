@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   BarChart2, CheckCircle2, ChevronDown, ChevronRight,
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useProdutos } from "@/lib/produtos-store";
 import { useEstoque, ajustarEstoque } from "@/lib/estoque-store";
 import { useAuth } from "@/lib/auth";
+import { gravarAudit } from "@/lib/audit-store";
 import { vendasPorProduto, classificarABC, calcularScoreDivergencia, type Classe, type ScoreDivergencia } from "@/lib/computed";
 import { getLojaId } from "@/lib/loja-resolver";
 import { supabase } from "@/lib/supabase";
@@ -123,8 +124,10 @@ function ContagemRotativa() {
           `Contagem rotativa ${item.classe} — divergência de ${val - item.qtdAtual} un.`,
           usuario,
         );
+        gravarAudit({ acao: "ajuste", modulo: "Inventário", descricao: `Contagem rotativa ${item.classe}: "${item.nome}" ajustado ${item.qtdAtual} → ${val} un. (${val - item.qtdAtual > 0 ? "+" : ""}${val - item.qtdAtual}).`, usuarioNome: usuario, produtoId: item.produtoId, produtoNome: item.nome, valorAnterior: String(item.qtdAtual), valorNovo: String(val) });
         toast.success(`"${item.nome}" ajustado: ${item.qtdAtual} → ${val} un.`);
       } else {
+        gravarAudit({ acao: "ajuste", modulo: "Inventário", descricao: `Contagem rotativa ${item.classe}: "${item.nome}" confirmado sem divergências (${val} un.).`, usuarioNome: usuario, produtoId: item.produtoId, produtoNome: item.nome });
         toast.success(`Contagem de "${item.nome}" confirmada sem divergências.`);
       }
       setContando((prev) => { const n = { ...prev }; delete n[item.produtoId]; return n; });
@@ -303,9 +306,8 @@ function ContagemRotativa() {
               </thead>
               <tbody>
                 {filtrados.map((item) => (
-                  <>
+                  <Fragment key={item.produtoId}>
                     <tr
-                      key={item.produtoId}
                       className="border-b last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                       onClick={() => setExpandido(expandido === item.produtoId ? null : item.produtoId)}
                     >
@@ -337,7 +339,7 @@ function ContagemRotativa() {
                       </td>
                     </tr>
                     {expandido === item.produtoId && (
-                      <tr key={`exp-${item.produtoId}`} className="bg-muted/20">
+                      <tr className="bg-muted/20">
                         <td colSpan={5} className="px-8 py-4">
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                             Registrar contagem de "{item.nome}"
@@ -383,7 +385,7 @@ function ContagemRotativa() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
                 {filtrados.length === 0 && (
                   <tr>

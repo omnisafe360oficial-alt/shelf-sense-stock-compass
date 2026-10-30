@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { ajustarGondola, estadoAtual, executarTransferencia, registrarEntrada } from "@/lib/estoque-store";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type Inconsistencia = {
   id: string; data: string; origem: "Reposição" | "Recebimento"; produtoId: string;
@@ -170,6 +171,12 @@ export function conferirNota(notaId: string, contado: Record<string, number>, us
         referencia: inc.referencia, usuario_nome: inc.usuario, status: inc.status,
       }).then(({ error }) => { if (error) toast.error("Erro ao registrar inconsistência: " + error.message); });
     }
+    gravarAudit({
+      acao: "receber",
+      modulo: "Recebimento",
+      descricao: `Nota "${nota.numero}" conferida por ${usuario} — status: ${novoStatus}, divergências: ${novas.length}.`,
+      usuarioNome: usuario,
+    });
   }
   return novas;
 }
@@ -198,6 +205,12 @@ export function conferirReposicao(produtoId: string, encontrado: number, reposto
         referencia: inc.referencia, usuario_nome: inc.usuario, status: inc.status,
       }).then(({ error }) => { if (error) toast.error("Erro ao registrar inconsistência: " + error.message); });
     }
+    gravarAudit({
+      acao: nova.length === 0 ? "ajuste" : "ajuste",
+      modulo: "Reposição",
+      descricao: `Conferência de gôndola por ${usuario} — sistema: ${sistema}, encontrado: ${encontrado}, reposto: ${reposto}${nova.length ? ", divergência registrada" : ", sem divergências"}.`,
+      usuarioNome: usuario,
+    });
   }
   return nova.length === 0;
 }
@@ -214,5 +227,8 @@ export function resolverInconsistencia(id: string, acao: "ajustar" | "manter") {
   const novoStatus = acao === "ajustar" ? "ajustada" : "mantida";
   emitir({ ...estado, inconsistencias: estado.inconsistencias.map((i) => (i.id === id ? { ...i, status: novoStatus } : i)) });
   supabase.from("inconsistencias").update({ status: novoStatus }).eq("id", id)
-    .then(({ error }) => { if (error) toast.error("Erro ao resolver inconsistência: " + error.message); });
+    .then(({ error }) => {
+      if (error) toast.error("Erro ao resolver inconsistência: " + error.message);
+      else gravarAudit({ acao: "ajuste", modulo: "Inconsistências", descricao: `Inconsistência (${inc.origem}) ${novoStatus} — produto: ${inc.produtoId}, sistema: ${inc.sistema}, contado: ${inc.contado}.`, usuarioNome: "Sistema" });
+    });
 }
