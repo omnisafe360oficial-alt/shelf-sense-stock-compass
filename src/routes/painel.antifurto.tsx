@@ -14,6 +14,7 @@ import {
 } from "@/lib/antifurto-store";
 import { inteligenciaProdutos, type IntelProduto } from "@/lib/computed";
 import { gravarAudit } from "@/lib/audit-store";
+import { useAuth } from "@/lib/auth";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
 export const Route = createFileRoute("/painel/antifurto")({
@@ -49,12 +50,13 @@ function RowAlerta({ alerta, intelInfo, expandido, onToggle }: {
   expandido: boolean;
   onToggle: () => void;
 }) {
+  const auth = useAuth();
   function marcarInvestigado() {
     gravarAudit({
       acao: "ajuste",
       modulo: "Produtos",
       descricao: `Alerta antifurto investigado: "${alerta.produtoNome}" — ${alerta.perdaAcumulada} un. em ${alerta.ocorrencias} ajuste(s).`,
-      usuarioNome: "Gerência",
+      usuarioNome: auth.nomeProprietario ?? "Gerência",
       produtoId: alerta.produtoId,
       produtoNome: alerta.produtoNome,
     });

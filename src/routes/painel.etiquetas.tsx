@@ -7,6 +7,7 @@ import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { gravarAudit } from "@/lib/audit-store";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/painel/etiquetas")({
   head: () => ({
@@ -29,6 +30,7 @@ function brlPreco(n: number) {
 
 function Etiquetas() {
   const produtos = useProdutos();
+  const auth = useAuth();
   const [q, setQ] = useState("");
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
 
@@ -75,7 +77,7 @@ function Etiquetas() {
                   acao: "imprimir",
                   modulo: "Etiquetas",
                   descricao: `${selecionados.size} etiqueta${selecionados.size !== 1 ? "s" : ""} impressa${selecionados.size !== 1 ? "s" : ""}.`,
-                  usuarioNome: "Sistema",
+                  usuarioNome: auth.nomeProprietario ?? "Sistema",
                 });
                 window.print();
               }}

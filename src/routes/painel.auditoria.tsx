@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { ClipboardList, Search, Filter } from "lucide-react";
+import { Calendar, ClipboardList, Download, Filter, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuditLog, type AuditEntry } from "@/lib/audit-store";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -18,8 +18,14 @@ export const Route = createFileRoute("/painel/auditoria")({
   component: Auditoria,
 });
 
-const MODULOS = ["Todos", "Produtos", "PDV", "Estoque", "Configurações"];
-const ACOES = ["Todas", "criar", "editar", "excluir", "venda", "ajuste", "entrada"];
+const HOJE = new Date().toISOString().slice(0, 10);
+
+const MODULOS = [
+  "Todos", "Produtos", "PDV", "Estoque", "Configurações",
+  "Pedidos", "Recebimentos", "Devoluções", "Inventário", "Etiquetas",
+  "Equipe", "Promoções", "Metas",
+];
+const ACOES = ["Todas", "criar", "editar", "excluir", "venda", "ajuste", "entrada", "imprimir", "importar"];
 
 const BADGE: Record<string, string> = {
   criar: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
@@ -67,11 +73,15 @@ export default function Auditoria() {
   const [busca, setBusca] = useState("");
   const [modulo, setModulo] = useState("Todos");
   const [acao, setAcao] = useState("Todas");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
 
   const filtrado = useMemo(() => {
     return log.filter((e) => {
       if (modulo !== "Todos" && e.modulo !== modulo) return false;
       if (acao !== "Todas" && e.acao !== acao) return false;
+      if (de && e.data.slice(0, 10) < de) return false;
+      if (ate && e.data.slice(0, 10) > ate) return false;
       if (busca.length >= 2) {
         const q = busca.toLowerCase();
         return (
@@ -82,16 +92,42 @@ export default function Auditoria() {
       }
       return true;
     });
-  }, [log, busca, modulo, acao]);
+  }, [log, busca, modulo, acao, de, ate]);
+
+  function exportarCSV() {
+    const rows = ["Data,Hora,Módulo,Ação,Descrição,Usuário,Produto"];
+    for (const e of filtrado) {
+      const data = e.data.slice(0, 10).split("-").reverse().join("/");
+      const hora = e.data.slice(11, 16);
+      rows.push(`"${data}","${hora}","${e.modulo ?? ""}","${e.acao}","${e.descricao.replace(/"/g, '""')}","${(e.usuarioNome ?? "").replace(/"/g, '""')}","${(e.produtoNome ?? "").replace(/"/g, '""')}"`);
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria-${HOJE}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center gap-3">
-        <ClipboardList className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Log de Auditoria</h1>
-          <p className="text-sm text-muted-foreground">Histórico imutável de ações no sistema</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <ClipboardList className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Log de Auditoria</h1>
+            <p className="text-sm text-muted-foreground">Histórico imutável de ações no sistema</p>
+          </div>
         </div>
+        {filtrado.length > 0 && (
+          <button
+            onClick={exportarCSV}
+            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" /> Exportar CSV
+          </button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -106,7 +142,7 @@ export default function Auditoria() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm"
@@ -122,6 +158,35 @@ export default function Auditoria() {
           >
             {ACOES.map((a) => <option key={a}>{a}</option>)}
           </select>
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={de}
+              max={ate || HOJE}
+              onChange={(e) => setDe(e.target.value)}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              title="Data inicial"
+            />
+            <span className="text-muted-foreground text-xs">até</span>
+            <input
+              type="date"
+              value={ate}
+              min={de}
+              max={HOJE}
+              onChange={(e) => setAte(e.target.value)}
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              title="Data final"
+            />
+            {(de || ate) && (
+              <button
+                onClick={() => { setDe(""); setAte(""); }}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                limpar
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

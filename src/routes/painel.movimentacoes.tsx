@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDownToLine, ArrowRightLeft, Download, ShoppingCart, Wrench } from "lucide-react";
+import { ArrowDownToLine, ArrowRightLeft, Calendar, Download, ShoppingCart, Wrench } from "lucide-react";
 import { useEstoque, type Mov } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { cn } from "@/lib/utils";
@@ -38,12 +38,21 @@ const tipos: Record<Mov["tipo"], { l: string; icon: typeof ShoppingCart; c: stri
   ajuste: { l: "Ajuste", icon: Wrench, c: "bg-destructive/10 text-destructive" },
 };
 
+const HOJE_MOV = new Date().toISOString().slice(0, 10);
+
 function Movimentacoes() {
   const s = useEstoque();
   const produtos = useProdutos();
   const [tipo, setTipo] = useState<Mov["tipo"] | "todos">("todos");
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
   const lista = [...s.movs]
-    .filter((m) => tipo === "todos" || m.tipo === tipo)
+    .filter((m) => {
+      if (tipo !== "todos" && m.tipo !== tipo) return false;
+      if (de && m.data.slice(0, 10) < de) return false;
+      if (ate && m.data.slice(0, 10) > ate) return false;
+      return true;
+    })
     .sort((a, b) => b.data.localeCompare(a.data));
   function handleExport() {
     const cabecalho = ["Data", "Hora", "Tipo", "Produto", "Lote", "De", "Para", "Quem", "Qtd"];
@@ -69,12 +78,41 @@ function Movimentacoes() {
           <Download className="h-4 w-4" /> Exportar CSV
         </button>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         {(["todos", ...Object.keys(tipos)] as const).map((t) => (
           <button key={t} onClick={() => setTipo(t as Mov["tipo"] | "todos")} className={cn("rounded-full px-4 py-1.5 text-sm font-semibold", tipo === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
             {t === "todos" ? "Todas" : tipos[t as Mov["tipo"]].l}
           </button>
         ))}
+        <div className="flex items-center gap-1.5 ml-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <input
+            type="date"
+            value={de}
+            max={ate || HOJE_MOV}
+            onChange={(e) => setDe(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            title="De"
+          />
+          <span className="text-muted-foreground text-xs">até</span>
+          <input
+            type="date"
+            value={ate}
+            min={de}
+            max={HOJE_MOV}
+            onChange={(e) => setAte(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            title="Até"
+          />
+          {(de || ate) && (
+            <button
+              onClick={() => { setDe(""); setAte(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              limpar
+            </button>
+          )}
+        </div>
       </div>
       <div className="rounded-2xl border bg-card">
         <table className="w-full text-sm">
