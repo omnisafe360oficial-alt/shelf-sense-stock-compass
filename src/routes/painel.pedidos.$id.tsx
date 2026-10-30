@@ -13,8 +13,10 @@ import {
   usePedidos, atualizarStatusPedido, receberItemPedido,
   editarPedido, excluirPedido,
 } from "@/lib/pedidos-store";
+import { registrarInconsistenciaPedido } from "@/lib/operacao-store";
 import { useFornecedores } from "@/lib/fornecedores-store";
 import { useProdutos } from "@/lib/produtos-store";
+import { useAuth } from "@/lib/auth";
 import type { PedidoStatus, ItemPedido } from "@/lib/pedidos-store";
 import { brl } from "@/lib/mock-data";
 import { lerNfe } from "@/lib/nfe";
@@ -108,6 +110,7 @@ function BarraProgresso({ status }: { status: PedidoStatus }) {
 function DetalhesPedido() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const auth = useAuth();
   const { pedidos } = usePedidos();
   const produtos = useProdutos();
   const fornecedores = useFornecedores();
@@ -238,10 +241,16 @@ function DetalhesPedido() {
 
   const confirmarXml = () => {
     if (!conciliacao) return;
-    for (const c of conciliacao) receberItemPedido(pedido.id, c.item.id, c.qtdNf ?? 0);
+    const usuario = auth.nomeProprietario ?? "Sistema";
+    for (const c of conciliacao) {
+      receberItemPedido(pedido.id, c.item.id, c.qtdNf ?? 0);
+      if (c.qtdNf === null || c.qtdNf !== c.item.qtdSolicitada) {
+        registrarInconsistenciaPedido(c.item.produtoId, c.item.qtdSolicitada, c.qtdNf ?? 0, pedido.numero, usuario);
+      }
+    }
     const nDiv = conciliacao.filter((c) => c.qtdNf === null || c.qtdNf !== c.item.qtdSolicitada).length;
-    if (nDiv > 0) toast.warning(`Recebimento registrado com ${nDiv} divergência${nDiv !== 1 ? "s" : ""} — pedido parcial`);
-    else toast.success(`NF nº ${nfNumero} conciliada — pedido recebido`);
+    if (nDiv > 0) toast.warning(`Recebimento registrado com ${nDiv} divergência${nDiv !== 1 ? "s" : ""} — verifique em Inconsistências.`);
+    else toast.success(`NF nº ${nfNumero} conciliada — pedido recebido.`);
     setConciliacao(null);
     setShowXml(false);
   };

@@ -217,6 +217,19 @@ export function conferirReposicao(produtoId: string, encontrado: number, reposto
 
 // ─── Resolver inconsistência ──────────────────────────────────────────────────
 
+export function registrarInconsistenciaPedido(produtoId: string, sistema: number, contado: number, referencia: string, usuario: string): void {
+  const id = crypto.randomUUID();
+  const inc: Inconsistencia = { id, data: new Date().toISOString().slice(0, 16), origem: "Recebimento", produtoId, sistema, contado, referencia, usuario, status: "aberta" };
+  emitir({ ...estado, inconsistencias: [inc, ...estado.inconsistencias] });
+  const lojaId = getLojaId();
+  if (!lojaId) return;
+  supabase.from("inconsistencias").insert({
+    id: inc.id, loja_id: lojaId, data: inc.data, origem: inc.origem,
+    produto_id: inc.produtoId, sistema: inc.sistema, contado: inc.contado,
+    referencia: inc.referencia, usuario_nome: inc.usuario, status: inc.status,
+  }).then(({ error }) => { if (error) toast.error("Erro ao registrar inconsistência: " + error.message); });
+}
+
 export function resolverInconsistencia(id: string, acao: "ajustar" | "manter") {
   const inc = estado.inconsistencias.find((i) => i.id === id);
   if (!inc || inc.status !== "aberta") return;
