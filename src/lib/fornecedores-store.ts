@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { Fornecedor } from "./mock-data";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 let estado: Fornecedor[] = [];
 const ouvintes = new Set<() => void>();
@@ -82,11 +83,13 @@ export function cadastrarFornecedor(dados: Omit<Fornecedor, "id">): string {
         whatsapp: dados.whatsapp ?? null,
       })
       .then(({ error }) => { if (error) toast.error("Erro ao salvar fornecedor: " + error.message); });
+    gravarAudit({ modulo: "Fornecedores", acao: "cadastrar", descricao: `Fornecedor "${dados.nome}" cadastrado`, usuarioNome: "Sistema" });
   }
   return id;
 }
 
 export function excluirFornecedor(id: string): void {
+  const fornecedor = estado.find((f) => f.id === id);
   estado = estado.filter((f) => f.id !== id);
   notificar();
   const lojaId = getLojaId();
@@ -96,6 +99,7 @@ export function excluirFornecedor(id: string): void {
       .delete()
       .eq("id", id)
       .then(({ error }) => { if (error) toast.error("Erro ao excluir fornecedor: " + error.message); });
+    gravarAudit({ modulo: "Fornecedores", acao: "excluir", descricao: `Fornecedor "${fornecedor?.nome ?? id}" excluído`, usuarioNome: "Sistema" });
   }
 }
 
@@ -118,5 +122,7 @@ export function editarFornecedor(id: string, dados: Partial<Omit<Fornecedor, "id
       .update(payload)
       .eq("id", id)
       .then(({ error }) => { if (error) toast.error("Erro ao atualizar fornecedor: " + error.message); });
+    const fAtual = estado.find((f) => f.id === id);
+    gravarAudit({ modulo: "Fornecedores", acao: "editar", descricao: `Fornecedor "${fAtual?.nome ?? id}" atualizado`, usuarioNome: "Sistema" });
   }
 }

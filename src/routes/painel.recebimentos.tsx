@@ -43,6 +43,7 @@ const STATUS_NOTA = {
 } as const;
 
 const STATUS_PEDIDO = {
+  rascunho:   { label: "Rascunho",   cor: "bg-muted text-muted-foreground" },
   enviado:    { label: "Enviado",    cor: "bg-primary/10 text-primary" },
   confirmado: { label: "Confirmado", cor: "bg-success/12 text-success" },
   parcial:    { label: "Parcial",    cor: "bg-warning/15 text-warning" },

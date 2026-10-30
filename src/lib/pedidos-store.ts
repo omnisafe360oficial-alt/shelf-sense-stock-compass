@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
+import { gravarAudit } from "./audit-store";
 
 export type PedidoStatus = "rascunho" | "enviado" | "confirmado" | "parcial" | "recebido" | "cancelado";
 
@@ -137,6 +138,8 @@ export function criarPedido(dados: {
     status: "rascunho", total, observacao: dados.observacao || null,
   }).then(({ error }) => { if (error) toast.error("Erro ao criar pedido: " + error.message); });
 
+  gravarAudit({ modulo: "Pedidos", acao: "criar", descricao: `Pedido ${numero} criado para ${dados.fornecedorNome}`, usuarioNome: "Sistema" });
+
   for (const item of pedido.itens) {
     supabase.from("itens_pedido").insert({
       id: item.id, pedido_id: id, produto_id: item.produtoId,
@@ -159,6 +162,7 @@ export function editarPedido(id: string, dados: {
 }): void {
   const total = dados.itens.reduce((s, i) => s + i.qtdSolicitada * i.precoUnitario, 0);
   const pedidoAtual = estado.pedidos.find((p) => p.id === id);
+  gravarAudit({ modulo: "Pedidos", acao: "editar", descricao: `Pedido ${pedidoAtual?.numero ?? id} editado`, usuarioNome: "Sistema" });
   const novosItens: ItemPedido[] = dados.itens.map((i) => {
     const existente = pedidoAtual?.itens.find((e) => e.produtoId === i.produtoId);
     return { ...i, id: existente?.id ?? crypto.randomUUID(), qtdRecebida: existente?.qtdRecebida ?? 0 };
@@ -202,6 +206,8 @@ export function editarPedido(id: string, dados: {
 // ─── Excluir pedido ───────────────────────────────────────────────────────────
 
 export function excluirPedido(id: string): void {
+  const pedido = estado.pedidos.find((p) => p.id === id);
+  gravarAudit({ modulo: "Pedidos", acao: "excluir", descricao: `Pedido ${pedido?.numero ?? id} excluído`, usuarioNome: "Sistema" });
   emitir({ pedidos: estado.pedidos.filter((p) => p.id !== id) });
   supabase.from("itens_pedido").delete().eq("pedido_id", id).then(({ error }) => {
     if (error) { toast.error("Erro ao excluir itens: " + error.message); return; }
@@ -213,6 +219,8 @@ export function excluirPedido(id: string): void {
 // ─── Atualizar status ─────────────────────────────────────────────────────────
 
 export function atualizarStatusPedido(id: string, status: PedidoStatus): void {
+  const pedido = estado.pedidos.find((p) => p.id === id);
+  gravarAudit({ modulo: "Pedidos", acao: "status", descricao: `Pedido ${pedido?.numero ?? id}: ${pedido?.status ?? "?"} → ${status}`, usuarioNome: "Sistema", valorAnterior: pedido?.status, valorNovo: status });
   emitir({ pedidos: estado.pedidos.map((p) => (p.id === id ? { ...p, status } : p)) });
   supabase.from("pedidos_compra").update({ status }).eq("id", id)
     .then(({ error }) => { if (error) toast.error("Erro ao atualizar status: " + error.message); });

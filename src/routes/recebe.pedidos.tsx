@@ -10,6 +10,7 @@ export const Route = createFileRoute("/recebe/pedidos")({ component: RecebePedid
 type Filtro = "todos" | PedidoStatus;
 
 const STATUS_CFG: Record<PedidoStatus, { label: string; bg: string; text: string }> = {
+  rascunho: { label: "Rascunho", bg: "bg-muted", text: "text-muted-foreground" },
   enviado: { label: "Enviado", bg: "bg-primary/10", text: "text-primary" },
   confirmado: { label: "Confirmado", bg: "bg-success/10", text: "text-success" },
   parcial: { label: "Parcial", bg: "bg-warning/10", text: "text-warning" },

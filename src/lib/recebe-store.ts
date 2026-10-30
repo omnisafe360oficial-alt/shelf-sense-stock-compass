@@ -3,6 +3,9 @@ import { toast } from "sonner";
 import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
 import { registrarEntrada } from "./estoque-store";
+import { gravarAudit } from "./audit-store";
+import type { PedidoStatus } from "./pedidos-store";
+export type { PedidoStatus } from "./pedidos-store";
 
 export type RecebeUnidade = "UN" | "CX" | "FD" | "PCT" | "SC" | "DZ" | "BD" | "KG" | "GR" | "L" | "ML" | "GF";
 
@@ -42,8 +45,6 @@ export type ItemRecebimento = {
   observacao: string;
 };
 
-export type PedidoStatus = "enviado" | "confirmado" | "parcial" | "recebido" | "cancelado";
-
 export type ItemPedidoMock = {
   produtoId: string;
   qtdSolicitada: number;
@@ -82,7 +83,28 @@ let estado: Estado = { pedidos: [], recebimentos: [], carregando: false };
 const ouvintes = new Set<() => void>();
 const emitir = (n: Estado) => { estado = n; ouvintes.forEach((o) => o()); };
 
+function mapItemRow(i: Record<string, unknown>): ItemRecebimento {
+  return {
+    id: (i.id as string) ?? crypto.randomUUID(),
+    produtoId: (i.produto_id as string) ?? "",
+    produtoNome: (i.produto_nome as string) ?? "",
+    produtoCodigo: (i.produto_codigo as string) ?? "",
+    unidade: (i.unidade as RecebeUnidade) ?? "UN",
+    fator: (i.fator as number) ?? 1,
+    qtdContada: (i.qtd_contada as number) ?? 0,
+    qtdUN: (i.qtd_un as number) ?? 0,
+    qtdEsperada: (i.qtd_esperada as number) ?? undefined,
+    lote: (i.lote as string) ?? "",
+    validade: (i.validade as string) ?? "",
+    observacao: (i.observacao as string) ?? "",
+  };
+}
+
 function mapRecebimento(row: Record<string, unknown>): Recebimento {
+  const itensNorm = (row.recebimento_itens as unknown[]) ?? [];
+  const itens = itensNorm.length > 0
+    ? itensNorm.map((i) => mapItemRow(i as Record<string, unknown>))
+    : ((row.itens as ItemRecebimento[]) ?? []);
   return {
     id: row.id as string,
     data: row.data as string,
@@ -90,7 +112,7 @@ function mapRecebimento(row: Record<string, unknown>): Recebimento {
     pedidoId: (row.pedido_id as string) ?? undefined,
     pedidoNumero: (row.pedido_numero as string) ?? undefined,
     operador: row.operador as string,
-    itens: (row.itens as ItemRecebimento[]) ?? [],
+    itens,
     observacaoGeral: (row.observacao_geral as string) ?? "",
     totalDivergencias: (row.total_divergencias as number) ?? 0,
   };
@@ -131,7 +153,7 @@ onLojaChange(async (lojaId) => {
       .order("data_emissao", { ascending: false }),
     supabase
       .from("recebimentos")
-      .select("*")
+      .select("*, recebimento_itens(*)")
       .eq("loja_id", lojaId)
       .order("data", { ascending: false })
       .limit(200),
@@ -207,10 +229,35 @@ export function finalizarRecebimento(rec: Omit<Recebimento, "id" | "data">) {
       pedido_id: novo.pedidoId ?? null,
       pedido_numero: novo.pedidoNumero ?? null,
       operador: novo.operador,
-      itens: novo.itens,
       observacao_geral: novo.observacaoGeral,
       total_divergencias: novo.totalDivergencias,
-    }).then(({ error }) => { if (error) toast.error("Erro ao salvar recebimento: " + error.message); });
+    }).then(({ error }) => {
+      if (error) { toast.error("Erro ao salvar recebimento: " + error.message); return; }
+      for (const item of novo.itens) {
+        supabase.from("recebimento_itens").insert({
+          recebimento_id: novo.id,
+          loja_id: lojaId,
+          produto_id: item.produtoId,
+          produto_nome: item.produtoNome,
+          produto_codigo: item.produtoCodigo,
+          unidade: item.unidade,
+          fator: item.fator,
+          qtd_contada: item.qtdContada,
+          qtd_un: item.qtdUN,
+          qtd_esperada: item.qtdEsperada ?? null,
+          lote: item.lote,
+          validade: item.validade,
+          observacao: item.observacao,
+        }).then(({ error: e }) => { if (e) console.warn("Erro ao salvar item recebimento:", e.message); });
+      }
+    });
+
+    gravarAudit({
+      modulo: "Recebimentos",
+      acao: "finalizar",
+      descricao: `Recebimento de ${novo.fornecedor} com ${novo.itens.length} iten(s) finalizado`,
+      usuarioNome: novo.operador,
+    });
   }
 
   return novo;
