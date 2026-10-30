@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Truck, ChevronDown, ChevronRight, Calendar, Package, TrendingDown, Hash } from "lucide-react";
+import { Truck, ChevronDown, ChevronRight, Calendar, Package, TrendingDown, Hash, ShoppingCart, RotateCcw } from "lucide-react";
 import { useDevolicoes } from "@/lib/devolucoes-store";
+import { useRecebeEstado } from "@/lib/recebe-store";
 import { brl } from "@/lib/mock-data";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 
@@ -46,7 +47,9 @@ const PRESETS = [
 
 function HistoricoFornecedor() {
   const devolucoes = useDevolicoes();
+  const { recebimentos } = useRecebeEstado();
 
+  const [aba, setAba] = useState<"compras" | "devolucoes">("compras");
   const [de, setDe] = useState(PRESETS[0].de);
   const [ate, setAte] = useState(PRESETS[0].ate);
   const [presetAtivo, setPresetAtivo] = useState(0);
@@ -78,6 +81,51 @@ function HistoricoFornecedor() {
         d.data <= ateTs,
     );
   }, [devolucoes, de, ate]);
+
+  // Filtrar recebimentos no período
+  const recebimentosFiltrados = useMemo(() => {
+    const deTs = de + "T00:00";
+    const ateTs = ate + "T23:59";
+    return recebimentos.filter((r) => r.data >= deTs && r.data <= ateTs);
+  }, [recebimentos, de, ate]);
+
+  // Agrupar recebimentos por fornecedor
+  type GrupoCompras = {
+    nome: string;
+    totalRecebimentos: number;
+    totalItens: number;
+    totalDivergencias: number;
+    ultimaData: string;
+    recebimentos: typeof recebimentosFiltrados;
+  };
+
+  const gruposCompras = useMemo((): GrupoCompras[] => {
+    const map = new Map<string, GrupoCompras>();
+    for (const r of recebimentosFiltrados) {
+      const nome = r.fornecedor?.trim() || "Fornecedor não informado";
+      const atual = map.get(nome) ?? { nome, totalRecebimentos: 0, totalItens: 0, totalDivergencias: 0, ultimaData: "", recebimentos: [] };
+      atual.totalRecebimentos += 1;
+      atual.totalItens += r.itens.reduce((s, i) => s + i.qtdUN, 0);
+      atual.totalDivergencias += r.totalDivergencias;
+      if (!atual.ultimaData || r.data > atual.ultimaData) atual.ultimaData = r.data;
+      atual.recebimentos.push(r);
+      map.set(nome, atual);
+    }
+    return [...map.values()].sort((a, b) => b.totalRecebimentos - a.totalRecebimentos);
+  }, [recebimentosFiltrados]);
+
+  const gruposComprasFiltrados = useMemo(() => {
+    if (!busca.trim()) return gruposCompras;
+    const q = busca.toLowerCase();
+    return gruposCompras.filter((g) => g.nome.toLowerCase().includes(q));
+  }, [gruposCompras, busca]);
+
+  const kpisCompras = useMemo(() => ({
+    fornecedores: gruposCompras.length,
+    recebimentos: recebimentosFiltrados.length,
+    itens: recebimentosFiltrados.reduce((s, r) => s + r.itens.reduce((si, i) => si + i.qtdUN, 0), 0),
+    divergencias: recebimentosFiltrados.reduce((s, r) => s + r.totalDivergencias, 0),
+  }), [gruposCompras, recebimentosFiltrados]);
 
   // Agrupar por fornecedor
   type GrupoFornecedor = {
@@ -147,9 +195,147 @@ function HistoricoFornecedor() {
           Histórico por Fornecedor
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Devoluções ao fornecedor agrupadas por empresa, com totais e motivos.
+          Compras e devoluções por fornecedor agrupadas no período.
         </p>
       </div>
+
+      {/* Abas */}
+      <div className="flex gap-1 p-1 bg-muted rounded-xl w-fit">
+        <button
+          onClick={() => setAba("compras")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${aba === "compras" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <ShoppingCart className="w-4 h-4" /> Compras
+        </button>
+        <button
+          onClick={() => setAba("devolucoes")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${aba === "devolucoes" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <RotateCcw className="w-4 h-4" /> Devoluções
+        </button>
+      </div>
+
+      {/* Aba Compras */}
+      {aba === "compras" && (
+        <>
+          {/* Filtros */}
+          <div className="bg-card border rounded-xl p-4 space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Período</p>
+            <div className="flex flex-wrap gap-2">
+              {PRESETS.map((p, i) => (
+                <button key={i} onClick={() => selecionarPreset(i)}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${presetAtivo === i ? "bg-orange-600 text-white border-orange-600" : "bg-muted hover:bg-accent border-transparent"}`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <label className="text-xs text-muted-foreground">De</label>
+                <input type="date" value={de} max={ate} onChange={(e) => { setDe(e.target.value); setPresetAtivo(-1); }} className="text-xs border rounded px-2 py-1 bg-background" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">Até</label>
+                <input type="date" value={ate} min={de} onChange={(e) => { setAte(e.target.value); setPresetAtivo(-1); }} className="text-xs border rounded px-2 py-1 bg-background" />
+              </div>
+            </div>
+          </div>
+
+          {/* KPIs Compras */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Kpi icon={<Truck className="w-5 h-5 text-orange-500" />} label="Fornecedores" valor={String(kpisCompras.fornecedores)} />
+            <Kpi icon={<Hash className="w-5 h-5 text-blue-500" />} label="Recebimentos" valor={String(kpisCompras.recebimentos)} />
+            <Kpi icon={<Package className="w-5 h-5 text-purple-500" />} label="Unidades recebidas" valor={String(kpisCompras.itens)} />
+            <Kpi icon={<TrendingDown className="w-5 h-5 text-amber-500" />} label="Divergências" valor={String(kpisCompras.divergencias)} destaque={kpisCompras.divergencias > 0} />
+          </div>
+
+          {/* Busca */}
+          {gruposCompras.length > 3 && (
+            <input type="text" placeholder="Buscar fornecedor…" value={busca} onChange={(e) => setBusca(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm bg-background" />
+          )}
+
+          {/* Lista de compras por fornecedor */}
+          {gruposComprasFiltrados.length === 0 ? (
+            <div className="bg-card border rounded-xl p-8 text-center text-muted-foreground text-sm">
+              {recebimentosFiltrados.length === 0
+                ? "Nenhum recebimento no período selecionado."
+                : "Nenhum fornecedor encontrado."}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {gruposComprasFiltrados.map((g) => {
+                const aberto = expandidos.has("c:" + g.nome);
+                return (
+                  <div key={g.nome} className="bg-card border rounded-xl overflow-hidden">
+                    <button onClick={() => toggleExpand("c:" + g.nome)}
+                      className="w-full flex items-center gap-3 p-4 hover:bg-muted/40 transition-colors text-left">
+                      <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <ShoppingCart className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{g.nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {g.totalRecebimentos} recebimento{g.totalRecebimentos !== 1 ? "s" : ""} · {g.totalItens} un · última em {formatData(g.ultimaData)}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 mr-2">
+                        <p className="font-bold text-foreground">{g.totalItens} un</p>
+                        {g.totalDivergencias > 0 && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400">{g.totalDivergencias} diverg.</p>
+                        )}
+                      </div>
+                      {aberto ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                    </button>
+                    {aberto && (
+                      <div className="border-t overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/30">
+                              <th className="text-left p-3 font-medium text-muted-foreground text-xs">Data</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground text-xs">Pedido</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground text-xs">Operador</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Itens</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Unidades</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground text-xs">Diverg.</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {g.recebimentos.map((r) => (
+                              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                <td className="p-3 text-muted-foreground">{formatData(r.data)}</td>
+                                <td className="p-3 text-xs">{r.pedidoNumero ?? "—"}</td>
+                                <td className="p-3 text-xs">{r.operador}</td>
+                                <td className="p-3 text-right">{r.itens.length}</td>
+                                <td className="p-3 text-right">{r.itens.reduce((s, i) => s + i.qtdUN, 0)}</td>
+                                <td className={`p-3 text-right text-xs ${r.totalDivergencias > 0 ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"}`}>
+                                  {r.totalDivergencias > 0 ? r.totalDivergencias : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="bg-muted/30 font-semibold text-sm">
+                              <td className="p-3" colSpan={3}>Total</td>
+                              <td className="p-3 text-right">{g.totalRecebimentos}</td>
+                              <td className="p-3 text-right">{g.totalItens}</td>
+                              <td className="p-3 text-right">{g.totalDivergencias || "—"}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Aba Devoluções */}
+      {aba === "devolucoes" && <>
 
       {/* Filtros */}
       <div className="bg-card border rounded-xl p-4 space-y-3">
@@ -310,6 +496,7 @@ function HistoricoFornecedor() {
           })}
         </div>
       )}
+    </>}
     </div>
   );
 }

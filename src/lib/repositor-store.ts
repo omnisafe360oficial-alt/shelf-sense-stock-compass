@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import { onLojaChange, getLojaId } from "./loja-resolver";
 import type { Produto, LocalDeposito, LocalGondola } from "./mock-data";
 import { executarTransferencia, ajustarGondola, estadoAtual } from "./estoque-store";
+import { getProdutos } from "./produtos-store";
 
 export type { LocalDeposito, LocalGondola };
 
@@ -11,7 +12,7 @@ let produtosCache: Produto[] = [];
 
 export function getLocaisDeposito(): Record<string, LocalDeposito> {
   const result: Record<string, LocalDeposito> = {};
-  for (const p of produtosCache) {
+  for (const p of getProdutos()) {
     if (p.localDeposito) result[p.id] = p.localDeposito;
   }
   return result;
@@ -19,7 +20,7 @@ export function getLocaisDeposito(): Record<string, LocalDeposito> {
 
 export function getLocaisGondola(): Record<string, LocalGondola> {
   const result: Record<string, LocalGondola> = {};
-  for (const p of produtosCache) {
+  for (const p of getProdutos()) {
     if (p.localGondola) result[p.id] = p.localGondola;
   }
   return result;
@@ -297,11 +298,12 @@ export function registrarReposicao(rep: Omit<Reposicao, "id" | "data">): Reposic
 }
 
 export function buscarPorCodigo(codigo: string): Produto | null {
-  return produtosCache.find((p) => p.codigo === codigo.trim()) ?? null;
+  const c = codigo.trim();
+  return getProdutos().find((p) => p.codigo === c) ?? produtosCache.find((p) => p.codigo === c) ?? null;
 }
 
 export function buscarPorId(id: string): Produto | null {
-  return produtosCache.find((p) => p.id === id) ?? null;
+  return getProdutos().find((p) => p.id === id) ?? produtosCache.find((p) => p.id === id) ?? null;
 }
 
 export async function resetarTarefas() {
