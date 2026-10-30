@@ -3,7 +3,7 @@ import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import {
   ArrowUpDown, ChevronDown, ChevronUp,
-  FileCode2, GitBranch, Package, Plus, Search, X,
+  Download, FileCode2, GitBranch, Package, Plus, Search, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,6 +108,22 @@ function Produtos() {
     [est, live],
   );
 
+  function exportarCSV() {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const cabecalho = ["Código", "Nome", "Categoria", "Fornecedor", "Preço", "Mín", "Máx", "Depósito", "Gôndola", "Total", "Valor estoque", "Situação"];
+    const linhas = lista.map((p) => {
+      const { dep, gond } = live[p.id] ?? { dep: 0, gond: 0 };
+      const sit = situacao(dep, gond, p.minimo);
+      return [p.codigo, p.nome, p.categoria, p.fornecedor ?? "", p.preco.toFixed(2), String(p.minimo), String(p.maximo), String(dep), String(gond), String(dep + gond), ((dep + gond) * p.preco).toFixed(2), SIT[sit].t];
+    });
+    const csv = [cabecalho, ...linhas].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `produtos-${hoje}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function toggleSort(col: Coluna) {
     if (sortCol === col) {
       setSortOrd((o) => (o === "asc" ? "desc" : "asc"));
@@ -192,6 +208,11 @@ function Produtos() {
           </p>
         </div>
         <div className="flex gap-3">
+          {lista.length > 0 && (
+            <Button variant="outline" size="lg" onClick={exportarCSV}>
+              <Download className="h-4 w-4" /> Exportar CSV
+            </Button>
+          )}
           <Button asChild variant="outline" size="lg">
             <Link to="/painel/produtos/importar"><FileCode2 className="h-4 w-4" /> Importar XML</Link>
           </Button>

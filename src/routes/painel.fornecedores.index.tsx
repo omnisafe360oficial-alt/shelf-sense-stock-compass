@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUpDown, Building2, Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
+import { ArrowUpDown, Building2, Download, Mail, MapPin, Phone, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,6 +66,22 @@ function Fornecedores() {
     return filtrado;
   }, [q, sort, fornecedores, produtosPorFornecedor, pedidosPorFornecedor]);
 
+  function exportarCSV() {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const cab = ["Nome", "CNPJ", "Contato", "Telefone", "Email", "Cidade", "Prazo", "Nº produtos", "Total pedidos"];
+    const linhas = lista.map((f) => {
+      const qtdProd = produtosPorFornecedor[f.id] ?? 0;
+      const totalPeds = (pedidosPorFornecedor[f.id] ?? []).reduce((s: number, p: { total: number }) => s + p.total, 0);
+      return [f.nome, f.cnpj, f.contato ?? "", f.telefone ?? "", f.email ?? "", f.cidade ?? "", f.prazo ?? "", String(qtdProd), totalPeds.toFixed(2)];
+    });
+    const csv = [cab, ...linhas].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `fornecedores-${hoje}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -73,9 +89,16 @@ function Fornecedores() {
           <h1 className="text-3xl font-bold">Fornecedores</h1>
           <p className="text-muted-foreground">{fornecedores.length} fornecedor{fornecedores.length !== 1 ? "es" : ""} cadastrado{fornecedores.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button size="lg" onClick={() => navigate({ to: "/painel/fornecedores/novo" })}>
-          <Plus /> Novo fornecedor
-        </Button>
+        <div className="flex gap-3">
+          {lista.length > 0 && (
+            <Button variant="outline" size="lg" onClick={exportarCSV}>
+              <Download className="h-4 w-4" /> Exportar CSV
+            </Button>
+          )}
+          <Button size="lg" onClick={() => navigate({ to: "/painel/fornecedores/novo" })}>
+            <Plus /> Novo fornecedor
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

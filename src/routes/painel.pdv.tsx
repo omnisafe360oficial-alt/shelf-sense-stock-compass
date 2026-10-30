@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SkeletonPdv } from "@/components/ui/skeleton-page";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BellRing, CheckCircle2, Copy, MessageCircle, Minus, Pencil, Plus, Receipt, ScanBarcode, Trash2, X,
+  BellRing, CheckCircle2, Copy, Download, LogOut, MessageCircle, Minus, Pencil, Plus, Receipt, ScanBarcode, Trash2, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -252,6 +252,27 @@ function Pdv() {
 
   const podeFinalizar = itens.length > 0 && (pag !== "Dinheiro" || recebidoNum >= total);
 
+  function encerrarSessao() {
+    setHistorico([]);
+    try { localStorage.removeItem(PDV_HIST_KEY); } catch {}
+  }
+
+  function exportarCSVSessao() {
+    const rows = [["Hora", "Pagamento", "Produto", "Qtd", "Preço unit.", "Subtotal"]];
+    for (const v of historico) {
+      for (const l of v.linhas) {
+        rows.push([v.hora, v.pagamento, l.nome, String(l.qtd), l.preco.toFixed(2), (l.qtd * l.preco).toFixed(2)]);
+      }
+    }
+    rows.push(["", "", "TOTAL SESSÃO", String(historico.reduce((t, v) => t + v.qtdItens, 0)), "", fatSessao.toFixed(2)]);
+    const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `pdv-sessao-${PDV_HOJE}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -266,6 +287,20 @@ function Pdv() {
             <span className="font-semibold">{historico.length}</span>
             <span className="text-muted-foreground">venda{historico.length !== 1 ? "s" : ""} hoje ·</span>
             <span className="text-lg font-bold text-success">{brl(fatSessao)}</span>
+            <button
+              onClick={exportarCSVSessao}
+              title="Exportar relatório da sessão"
+              className="ml-1 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+            <button
+              onClick={encerrarSessao}
+              title="Encerrar sessão"
+              className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>
