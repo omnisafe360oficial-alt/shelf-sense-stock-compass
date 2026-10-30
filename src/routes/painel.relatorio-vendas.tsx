@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { BarChart2, TrendingUp, ShoppingBag, Package, Calendar } from "lucide-react";
+import { BarChart2, TrendingUp, ShoppingBag, Package, Calendar, Download } from "lucide-react";
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
@@ -129,6 +129,25 @@ function RelatorioVendas() {
     setAte(PRESETS[idx].ate);
   }
 
+  function exportarCSV() {
+    const rows = ["Data,Unidades,Receita (R$)"];
+    for (const { dia, unidades, receita } of porDia) {
+      rows.push(`"${dia.split("-").reverse().join("/")}",${unidades},${receita.toFixed(2)}`);
+    }
+    rows.push("");
+    rows.push("Produto,Unidades,Receita (R$)");
+    for (const p of topProdutos) {
+      rows.push(`"${p.nome.replace(/"/g, '""')}",${p.qtd},${p.receita.toFixed(2)}`);
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `relatorio-vendas-${de}-${ate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function formatDia(iso: string) {
     const [, m, d] = iso.split("-");
     return `${d}/${m}`;
@@ -136,12 +155,22 @@ function RelatorioVendas() {
 
   return (
     <div className="p-4 space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart2 className="w-6 h-6 text-blue-500" />
-          Relatório de Vendas
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Receita, unidades e produtos mais vendidos no período selecionado.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BarChart2 className="w-6 h-6 text-blue-500" />
+            Relatório de Vendas
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Receita, unidades e produtos mais vendidos no período selecionado.</p>
+        </div>
+        {kpis.receita > 0 && (
+          <button
+            onClick={exportarCSV}
+            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" /> Exportar CSV
+          </button>
+        )}
       </div>
 
       {/* ── Filtro de período ── */}

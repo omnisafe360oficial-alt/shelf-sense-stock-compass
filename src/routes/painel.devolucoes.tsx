@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, PackageSearch, Plus, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, Download, PackageSearch, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useDevolicoes, registrarDevolucao, type MotivoDevolucao, type NovaDevolicaoItem } from "@/lib/devolucoes-store";
+import { useAuth } from "@/lib/auth";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
 import { SkeletonListPage } from "@/components/ui/skeleton-page";
@@ -101,6 +102,7 @@ const FORM_VAZIO = {
 
 function NovaDevolucaoDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const produtos = useProdutos();
+  const auth = useAuth();
   const [form, setForm] = useState(FORM_VAZIO);
   const [itens, setItens] = useState<NovaDevolicaoItem[]>([]);
   const [buscaProd, setBuscaProd] = useState("");
@@ -138,6 +140,7 @@ function NovaDevolucaoDialog({ open, onClose }: { open: boolean; onClose: () => 
       motivo: form.motivo,
       fornecedorNome: form.fornecedorNome || undefined,
       observacao: form.observacao || undefined,
+      usuarioNome: auth.nomeProprietario ?? "Sistema",
       itens,
     });
     setSalvando(false);
@@ -301,6 +304,27 @@ function Devolucoes() {
   const totalFornecedor = devolucoes.filter((d) => d.tipo === "fornecedor").length;
   const valorTotal = devolucoes.reduce((s, d) => s + d.totalValor, 0);
 
+  function exportarCSV() {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const rows = ["Tipo,Data,Motivo,Fornecedor,Produto,Qtd,Valor unit.,Total"];
+    for (const d of devolucoes) {
+      const data = new Date(d.data).toLocaleDateString("pt-BR");
+      const tipo = d.tipo === "cliente" ? "De cliente" : "Ao fornecedor";
+      const fornecedor = d.fornecedorNome || "";
+      const motivo = MOTIVO_LABEL[d.motivo];
+      for (const item of d.itens) {
+        rows.push(`"${tipo}","${data}","${motivo}","${fornecedor}","${item.produtoNome.replace(/"/g, '""')}",${item.qtd},${item.precoUnitario.toFixed(2)},${(item.qtd * item.precoUnitario).toFixed(2)}`);
+      }
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `devolucoes-${hoje}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -310,10 +334,18 @@ function Devolucoes() {
             Devoluções de clientes e ao fornecedor — estoque atualizado automaticamente.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nova devolução
-        </Button>
+        <div className="flex gap-2">
+          {devolucoes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={exportarCSV}>
+              <Download className="h-4 w-4 mr-1.5" />
+              Exportar CSV
+            </Button>
+          )}
+          <Button onClick={() => setDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nova devolução
+          </Button>
+        </div>
       </div>
 
       {/* KPIs */}

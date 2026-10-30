@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ShoppingCart, Calendar, Package, TrendingDown, ChevronDown, ChevronRight } from "lucide-react";
+import { ShoppingCart, Calendar, Package, TrendingDown, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { useEstoque } from "@/lib/estoque-store";
 import { useProdutos } from "@/lib/produtos-store";
 import { brl } from "@/lib/mock-data";
@@ -152,6 +152,22 @@ function RelatorioCompras() {
     setAte(PRESETS[idx].ate);
   }
 
+  function exportarCSV() {
+    const rows = ["Fornecedor,Data,Produto,Lote,Qtd,Custo unit. (R$),Total est. (R$),Usuário"];
+    for (const g of grupos) {
+      for (const e of g.entradas) {
+        rows.push(`"${g.nome.replace(/"/g, '""')}","${e.data.slice(0, 10).split("-").reverse().join("/")}","${e.produtoNome.replace(/"/g, '""')}","${e.lote || ""}",${e.qtd},${e.custoUnit.toFixed(2)},${e.totalEstimado.toFixed(2)},"${(e.usuario ?? "").replace(/"/g, '""')}"`);
+      }
+    }
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `relatorio-compras-${de}-${ate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function toggleAberto(nome: string) {
     setAbertos((prev) => {
       const next = new Set(prev);
@@ -170,14 +186,24 @@ function RelatorioCompras() {
 
   return (
     <div className="p-4 space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-blue-500" />
-          Relatório de Compras
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Entradas de estoque por fornecedor com unidades recebidas e valor estimado pelo custo cadastrado.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ShoppingCart className="w-6 h-6 text-blue-500" />
+            Relatório de Compras
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Entradas de estoque por fornecedor com unidades recebidas e valor estimado pelo custo cadastrado.
+          </p>
+        </div>
+        {kpis.recebimentos > 0 && (
+          <button
+            onClick={exportarCSV}
+            className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" /> Exportar CSV
+          </button>
+        )}
       </div>
 
       {/* ── Filtro de período ── */}
